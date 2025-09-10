@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Barbeiros - Dashboard</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- CSS Personalizado -->
+    <link href="css/main.css" rel="stylesheet">
+    <link href="css/dark-mode.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="bi bi-scissors me-2"></i>
+                <span class="fw-bold">Sistema Barbeiros</span>
+            </a>
+
+            <!-- Theme Toggle -->
+            <div class="d-flex align-items-center">
+                <button id="theme-toggle" class="btn btn-outline-light me-3" type="button">
+                    <i class="bi bi-sun-fill"></i>
+                </button>
+
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle me-2"></i>
+                        <span id="user-name">Barbeiro Teste</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="logout()">
+                            <i class="bi bi-box-arrow-right me-2"></i>Sair
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" id="dev-console-link" href="/frontend/pages/dev-console" target="_blank" style="display:none;">
+                            <i class="bi bi-terminal me-2"></i>Dev Console
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block sidebar">
+                <div class="sidebar-sticky">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" onclick="showPage('dashboard')">
+                                <i class="bi bi-house-door me-2"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showPage('servicos')">
+                                <i class="bi bi-wrench me-2"></i>
+                                Serviços
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showPage('clientes')">
+                                <i class="bi bi-people me-2"></i>
+                                Clientes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showPage('agenda')">
+                                <i class="bi bi-calendar-event me-2"></i>
+                                Agenda
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showPage('usuarios')">
+                                <i class="bi bi-person-gear me-2"></i>
+                                Usuários
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="#" onclick="showPage('configuracoes')">
+                                <i class="bi bi-gear me-2"></i>
+                                Configurações
+                            </a>
+                        </li>
+                        <li class="nav-item mt-3">
+                            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                                <span>Ações Rápidas</span>
+                            </h6>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="novoAgendamento()">
+                                <i class="bi bi-plus-circle me-2"></i>
+                                Novo Agendamento
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="novoCliente()">
+                                <i class="bi bi-person-plus me-2"></i>
+                                Novo Cliente
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                <div id="main-content" class="content-wrapper">
+                    <!-- Dashboard Content -->
+                    <div id="dashboard-page" class="page active">
+                        <div class="page-header">
+                            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center">
+                                <div class="page-title-section">
+                                    <h1 class="h2 mb-1">
+                                        <i class="bi bi-house-door me-2 text-primary"></i>
+                                        Dashboard
+                                    </h1>
+                                    <p class="text-muted mb-0 small">Visão geral do seu negócio hoje</p>
+                                </div>
+                                <div class="page-actions">
+                                    <div class="btn-toolbar mb-2 mb-md-0">
+                                        <div class="btn-group me-2">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Compartilhar">
+                                                <i class="bi bi-share me-1"></i>Compartilhar
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Exportar">
+                                                <i class="bi bi-download me-1"></i>Exportar
+                                            </button>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" title="Selecionar período">
+                                            <i class="bi bi-calendar3 me-1"></i>Esta semana
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cards de Métricas Melhorados -->
+                        <div class="row mb-4">
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="card metric-card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center p-4">
+                                        <div class="metric-icon mb-3">
+                                            <i class="bi bi-calendar-check text-primary" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h2 class="metric-value mb-2" id="agendamentos-hoje">0</h2>
+                                        <h6 class="metric-label text-muted mb-2">Agendamentos Hoje</h6>
+                                        <div class="metric-trend">
+                                            <span class="badge bg-success-subtle text-success">
+                                                <i class="bi bi-arrow-up me-1"></i>+12%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="card metric-card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center p-4">
+                                        <div class="metric-icon mb-3">
+                                            <i class="bi bi-currency-dollar text-success" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h2 class="metric-value mb-2" id="receita-hoje">R$ 0,00</h2>
+                                        <h6 class="metric-label text-muted mb-2">Receita Hoje</h6>
+                                        <div class="metric-trend">
+                                            <span class="badge bg-success-subtle text-success">
+                                                <i class="bi bi-arrow-up me-1"></i>+8%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="card metric-card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center p-4">
+                                        <div class="metric-icon mb-3">
+                                            <i class="bi bi-people text-info" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h2 class="metric-value mb-2" id="clientes-ativos">0</h2>
+                                        <h6 class="metric-label text-muted mb-2">Clientes Ativos</h6>
+                                        <div class="metric-trend">
+                                            <span class="badge bg-info-subtle text-info">
+                                                <i class="bi bi-dash me-1"></i>0%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="card metric-card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center p-4">
+                                        <div class="metric-icon mb-3">
+                                            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h2 class="metric-value mb-2" id="agendamentos-concluidos">0</h2>
+                                        <h6 class="metric-label text-muted mb-2">Concluídos Hoje</h6>
+                                        <div class="metric-trend">
+                                            <span class="badge bg-success-subtle text-success">
+                                                <i class="bi bi-arrow-up me-1"></i>+15%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico de Performance Semanal -->
+                        <div class="row mb-4">
+                            <div class="col-lg-8 mb-4">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-graph-up me-2 text-primary"></i>
+                                                Performance da Semana
+                                            </h5>
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                    <i class="bi bi-calendar-week me-1"></i>Esta Semana
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="#">Esta Semana</a></li>
+                                                    <li><a class="dropdown-item" href="#">Última Semana</a></li>
+                                                    <li><a class="dropdown-item" href="#">Este Mês</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="performanceChart" height="200"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Avisos e Alertas -->
+                            <div class="col-lg-4 mb-4">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <h5 class="mb-0">
+                                            <i class="bi bi-bell me-2 text-warning"></i>
+                                            Avisos Importantes
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="avisos-list">
+                                            <div class="alert alert-info border-0 mb-3">
+                                                <div class="d-flex">
+                                                    <i class="bi bi-info-circle me-2"></i>
+                                                    <div>
+                                                        <small class="fw-semibold">Horário de Funcionamento</small>
+                                                        <div class="text-muted small">Próximo fechamento: 18:00</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="alert alert-warning border-0 mb-3">
+                                                <div class="d-flex">
+                                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                                    <div>
+                                                        <small class="fw-semibold">Cliente VIP</small>
+                                                        <div class="text-muted small">João Silva - 15:30</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="alert alert-success border-0 mb-0">
+                                                <div class="d-flex">
+                                                    <i class="bi bi-check-circle me-2"></i>
+                                                    <div>
+                                                        <small class="fw-semibold">Meta do Dia</small>
+                                                        <div class="text-muted small">85% alcançado</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Próximos Agendamentos e Ações Rápidas -->
+                        <div class="row">
+                            <div class="col-lg-8 mb-4">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-clock me-2 text-primary"></i>
+                                                Próximos Agendamentos
+                                            </h5>
+                                            <button class="btn btn-primary btn-sm" onclick="novoAgendamento()">
+                                                <i class="bi bi-plus-circle me-1"></i>Novo
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="proximos-agendamentos">
+                                            <!-- Agendamentos serão carregados dinamicamente -->
+                                            <div class="appointment-item p-3 mb-3 border rounded">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="appointment-avatar me-3">
+                                                            <i class="bi bi-person-circle text-primary" style="font-size: 2.5rem;"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h6 class="mb-1">João Cliente Teste</h6>
+                                                            <p class="mb-1 text-muted small">Corte Masculino</p>
+                                                            <div class="d-flex align-items-center">
+                                                                <i class="bi bi-clock me-1 text-muted"></i>
+                                                                <small class="text-muted">Hoje às 15:30</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge bg-success mb-2">Confirmado</span>
+                                                        <div class="mt-2">
+                                                            <button class="btn btn-outline-primary btn-sm me-1" title="Editar">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-success btn-sm me-1" title="Concluir">
+                                                                <i class="bi bi-check-circle"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-danger btn-sm" title="Cancelar">
+                                                                <i class="bi bi-x-circle"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="appointment-item p-3 mb-3 border rounded">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="appointment-avatar me-3">
+                                                            <i class="bi bi-person-circle text-info" style="font-size: 2.5rem;"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h6 class="mb-1">Maria Santos</h6>
+                                                            <p class="mb-1 text-muted small">Corte Feminino + Sombrancelha</p>
+                                                            <div class="d-flex align-items-center">
+                                                                <i class="bi bi-clock me-1 text-muted"></i>
+                                                                <small class="text-muted">Amanhã às 10:00</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge bg-warning mb-2">Pendente</span>
+                                                        <div class="mt-2">
+                                                            <button class="btn btn-outline-primary btn-sm me-1" title="Editar">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-success btn-sm me-1" title="Confirmar">
+                                                                <i class="bi bi-check-circle"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-danger btn-sm" title="Cancelar">
+                                                                <i class="bi bi-x-circle"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="text-center mt-3">
+                                                <button class="btn btn-outline-primary">
+                                                    <i class="bi bi-calendar-week me-1"></i>Ver Agenda Completa
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ações Rápidas Melhoradas -->
+                            <div class="col-lg-4 mb-4">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <h5 class="mb-0">
+                                            <i class="bi bi-lightning me-2 text-warning"></i>
+                                            Ações Rápidas
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-grid gap-3">
+                                            <button class="btn btn-primary btn-lg d-flex align-items-center justify-content-center py-3" onclick="novoAgendamento()">
+                                                <div class="text-center">
+                                                    <i class="bi bi-calendar-plus d-block" style="font-size: 1.5rem;"></i>
+                                                    <span class="fw-semibold">Novo Agendamento</span>
+                                                </div>
+                                            </button>
+                                            <button class="btn btn-success btn-lg d-flex align-items-center justify-content-center py-3" onclick="novoCliente()">
+                                                <div class="text-center">
+                                                    <i class="bi bi-person-plus-fill d-block" style="font-size: 1.5rem;"></i>
+                                                    <span class="fw-semibold">Novo Cliente</span>
+                                                </div>
+                                            </button>
+                                            <button class="btn btn-info btn-lg d-flex align-items-center justify-content-center py-3" onclick="novoServico()">
+                                                <div class="text-center">
+                                                    <i class="bi bi-wrench-adjustable d-block" style="font-size: 1.5rem;"></i>
+                                                    <span class="fw-semibold">Novo Serviço</span>
+                                                </div>
+                                            </button>
+                                        </div>
+
+                                        <!-- Estatísticas Rápidas -->
+                                        <div class="mt-4 pt-3 border-top">
+                                            <h6 class="text-muted mb-3">Resumo do Dia</h6>
+                                            <div class="row g-2 text-center">
+                                                <div class="col-4">
+                                                    <div class="p-2 bg-light rounded">
+                                                        <div class="fw-bold text-primary">8</div>
+                                                        <small class="text-muted">Total</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="p-2 bg-success-subtle rounded">
+                                                        <div class="fw-bold text-success">5</div>
+                                                        <small class="text-muted">Feitos</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="p-2 bg-warning-subtle rounded">
+                                                        <div class="fw-bold text-warning">3</div>
+                                                        <small class="text-muted">Restam</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Página de Serviços Melhorada -->
+                    <div id="servicos-page" class="page" style="display: none;">
+                        <div class="page-header">
+                            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center">
+                                <div class="page-title-section">
+                                    <h1 class="h2 mb-1">
+                                        <i class="bi bi-wrench-adjustable me-2 text-primary"></i>
+                                        Serviços
+                                    </h1>
+                                    <p class="text-muted mb-0 small">Gerencie os serviços oferecidos pela sua barbearia</p>
+                                </div>
+                                <div class="page-actions">
+                                    <div class="btn-toolbar mb-2 mb-md-0">
+                                        <div class="btn-group me-2">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Exportar" onclick="exportarServicos()">
+                                                <i class="bi bi-download me-1"></i>Exportar
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Importar" onclick="importarServicos()">
+                                                <i class="bi bi-upload me-1"></i>Importar
+                                            </button>
+                                        </div>
+                                        <button type="button" class="btn btn-primary btn-sm" onclick="novoServico()">
+                                            <i class="bi bi-plus-circle me-1"></i>Novo Serviço
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cards de Métricas de Serviços -->
+                        <div class="row mb-4">
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="card metric-card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center p-4">
+                                        <div class="metric-icon mb-3">
+                                            <i class="bi bi-wrench-adjustable-circle text-primary" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h2 class="metric-value mb-2" id="total-servicos">0</h2>
+                                        <h6 class="metric-label text-muted mb-2">Total de Serviços</h6>
+                                        <div class="metric-trend">
+                                            <span class="badge bg-primary-subtle text-primary">
+                                                <i class="bi bi-circle-fill me-1"></i>Ativos
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="card metric-card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center p-4">
+                                        <div class="metric-icon mb-3">
+                                            <i class="bi bi-cash text-success" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h2 class="metric-value mb-2" id="receita-media">R$ 0,00</h2>
+                                        <h6 class="metric-label text-muted mb-2">Receita Média</h6>
+                                        <div class="metric-trend">
+                                            <span class="badge bg-success-subtle text-success">
+                                                <i class="bi bi-arrow-up me-1"></i>+8%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="card metric-card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center p-4">
+                                        <div class="metric-icon mb-3">
+                                            <i class="bi bi-clock text-info" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h2 class="metric-value mb-2" id="duracao-media">0 min</h2>
+                                        <h6 class="metric-label text-muted mb-2">Duração Média</h6>
+                                        <div class="metric-trend">
+                                            <span class="badge bg-info-subtle text-info">
+                                                <i class="bi bi-dash me-1"></i>0%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="card metric-card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center p-4">
+                                        <div class="metric-icon mb-3">
+                                            <i class="bi bi-graph-up text-warning" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h2 class="metric-value mb-2" id="mais-popular">-</h2>
+                                        <h6 class="metric-label text-muted mb-2">Mais Popular</h6>
+                                        <div class="metric-trend">
+                                            <span class="badge bg-warning-subtle text-warning">
+                                                <i class="bi bi-star me-1"></i>Top
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filtros e Busca -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body p-4">
+                                        <div class="row g-3 align-items-end">
+                                            <div class="col-md-4">
+                                                <label for="servico-search" class="form-label fw-semibold">
+                                                    <i class="bi bi-search me-1"></i>Buscar Serviço
+                                                </label>
+                                                <input type="text" class="form-control" id="servico-search" placeholder="Nome do serviço..." onkeyup="filtrarServicos()">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="servico-status" class="form-label fw-semibold">
+                                                    <i class="bi bi-filter me-1"></i>Status
+                                                </label>
+                                                <select class="form-select" id="servico-status" onchange="filtrarServicos()">
+                                                    <option value="">Todos</option>
+                                                    <option value="true">Ativos</option>
+                                                    <option value="false">Inativos</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="servico-ordenacao" class="form-label fw-semibold">
+                                                    <i class="bi bi-sort-alpha-down me-1"></i>Ordenar por
+                                                </label>
+                                                <select class="form-select" id="servico-ordenacao" onchange="ordenarServicos()">
+                                                    <option value="nome">Nome</option>
+                                                    <option value="valor">Valor</option>
+                                                    <option value="duracao">Duração</option>
+                                                    <option value="popularidade">Popularidade</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="d-grid">
+                                                    <button type="button" class="btn btn-outline-secondary" onclick="limparFiltros()">
+                                                        <i class="bi bi-x-circle me-1"></i>Limpar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Serviços -->
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0 py-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-list-check me-2 text-primary"></i>
+                                        Lista de Serviços
+                                        <span class="badge bg-primary ms-2" id="contador-servicos">0</span>
+                                    </h5>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="toggleVisualizacaoServicos()" id="btn-toggle-view">
+                                            <i class="bi bi-grid me-1"></i>Grade
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <!-- Visualização em Tabela -->
+                                <div id="servicos-table-view" class="servicos-view">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Serviço</th>
+                                                    <th>Duração</th>
+                                                    <th>Valor</th>
+                                                    <th>Status</th>
+                                                    <th>Popularidade</th>
+                                                    <th class="text-end">Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="servicos-table-body">
+                                                <!-- Serviços serão carregados dinamicamente -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div id="servicos-empty-table" class="text-center py-5" style="display: none;">
+                                        <i class="bi bi-wrench-adjustable text-muted" style="font-size: 3rem;"></i>
+                                        <h5 class="mt-3 text-muted">Nenhum serviço encontrado</h5>
+                                        <p class="text-muted">Crie seu primeiro serviço para começar</p>
+                                        <button class="btn btn-primary" onclick="novoServico()">
+                                            <i class="bi bi-plus-circle me-1"></i>Criar Primeiro Serviço
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Visualização em Cards -->
+                                <div id="servicos-cards-view" class="servicos-view" style="display: none;">
+                                    <div id="servicos-cards-container" class="row g-4">
+                                        <!-- Cards de serviços serão carregados dinamicamente -->
+                                    </div>
+                                    <div id="servicos-empty-cards" class="text-center py-5" style="display: none;">
+                                        <i class="bi bi-wrench-adjustable text-muted" style="font-size: 3rem;"></i>
+                                        <h5 class="mt-3 text-muted">Nenhum serviço encontrado</h5>
+                                        <p class="text-muted">Crie seu primeiro serviço para começar</p>
+                                        <button class="btn btn-primary" onclick="novoServico()">
+                                            <i class="bi bi-plus-circle me-1"></i>Criar Primeiro Serviço
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="clientes-page" class="page" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Clientes</h1>
+                            <button class="btn btn-primary" onclick="novoCliente()">
+                                <i class="bi bi-person-plus me-2"></i>Novo Cliente
+                            </button>
+                        </div>
+                        <div id="clientes-content">
+                            <div class="text-center">
+                                <i class="bi bi-arrow-clockwise" style="font-size: 3rem;"></i>
+                                <p class="mt-2">Carregando clientes...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="agenda-page" class="page" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Agenda</h1>
+                            <button class="btn btn-primary" onclick="novoAgendamento()">
+                                <i class="bi bi-calendar-plus me-2"></i>Novo Agendamento
+                            </button>
+                        </div>
+                        <div id="agenda-content">
+                            <div class="text-center">
+                                <i class="bi bi-calendar-week" style="font-size: 3rem;"></i>
+                                <p class="mt-2">Agenda será carregada aqui</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="usuarios-page" class="page" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Usuários</h1>
+                            <button class="btn btn-primary" onclick="novoUsuario()">
+                                <i class="bi bi-person-add me-2"></i>Novo Usuário
+                            </button>
+                        </div>
+                        <div id="usuarios-content">
+                            <div class="text-center">
+                                <i class="bi bi-arrow-clockwise" style="font-size: 3rem;"></i>
+                                <p class="mt-2">Carregando usuários...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="configuracoes-page" class="page" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Configurações</h1>
+                        </div>
+                        <div id="configuracoes-content">
+                            <!-- Conteúdo das configurações será carregado aqui -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Genérico para Formulários -->
+    <div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="formModalTitle">Modal Title</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="formModalBody">
+                    <!-- Conteúdo do formulário será inserido aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- JavaScript Personalizado -->
+    <script src="js/router.js"></script>
+    <script src="js/pages/clientes.js"></script>
+    <script src="js/pages/servicos.js"></script>
+    <script src="js/pages/agenda.js"></script>
+    <script src="js/pages/usuarios.js"></script>
+    <script src="js/pages/configuracoes.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script>
+      // Exibir links admin/dev somente para system_admin
+      try {
+        const raw = localStorage.getItem('barbeiros-user');
+        const user = raw ? JSON.parse(raw) : null;
+        const email = (user && (user.email || user?.mail)) || '';
+        const isAdmin = user && (user.role === 'system_admin' || user.permissions?.admin === true || user.permissions?.system === true);
+        const allowDev = isAdmin || email === 'admin@teste.com' || email === 'amin@teste.com';
+        if (allowDev) {
+          const dev = document.getElementById('dev-console-link'); if (dev) dev.style.display = '';
+        }
+      } catch (_) {}
+    </script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - Sistema de Agendamentos</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Arquivos locais -->
+    <link href="style.css" rel="stylesheet">
+    <script src="app.js" defer></script>
+
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
+        <div class="container-fluid">
+            <button class="btn btn-outline-secondary d-md-none me-2" type="button" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-calendar-alt me-2"></i>
+                Painel Administrativo
+            </a>
+
+            <div class="d-flex align-items-center">
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user me-2"></i>
+                        <span id="userName">Carregando...</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="showSettings()">
+                            <i class="fas fa-cog me-2"></i>Configurações
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="logout()">
+                            <i class="fas fa-sign-out-alt me-2"></i>Sair
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 px-0 sidebar" id="sidebar">
+                <nav class="nav flex-column py-3">
+                    <a class="nav-link active" href="#" onclick="showDashboard()">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
+                    </a>
+                    <a class="nav-link" href="#" onclick="showServices()">
+                        <i class="fas fa-cut"></i>
+                        Serviços
+                    </a>
+                    <a class="nav-link" href="#" onclick="showAppointments()">
+                        <i class="fas fa-calendar-check"></i>
+                        Agendamentos
+                    </a>
+                    <a class="nav-link" href="#" onclick="showClients()">
+                        <i class="fas fa-users"></i>
+                        Clientes
+                    </a>
+                    <a class="nav-link" href="#" onclick="showReports()">
+                        <i class="fas fa-chart-bar"></i>
+                        Relatórios
+                    </a>
+                    <a class="nav-link" href="#" onclick="showSettings()">
+                        <i class="fas fa-cog"></i>
+                        Configurações
+                    </a>
+                    <a class="nav-link" href="#" onclick="showSystemStatus()">
+                        <i class="fas fa-server"></i>
+                        Sistema
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- Dashboard Content -->
+                <div id="dashboardContent">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
+                        <button class="btn btn-primary" onclick="refreshDashboard()">
+                            <i class="fas fa-sync-alt me-2"></i>Atualizar
+                        </button>
+                    </div>
+
+                    <!-- Métricas -->
+                    <div class="stats-grid" id="metricsGrid">
+                        <!-- Métricas serão carregadas dinamicamente -->
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="chart-container">
+                                <h5><i class="fas fa-chart-line me-2"></i>Agendamentos nos Últimos 7 Dias</h5>
+                                <canvas id="appointmentsChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="chart-container">
+                                <h5><i class="fas fa-chart-pie me-2"></i>Status dos Agendamentos</h5>
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agendamentos Recentes -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Agendamentos Recentes</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="recentAppointmentsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Cliente</th>
+                                            <th>Serviço</th>
+                                            <th>Data/Hora</th>
+                                            <th>Status</th>
+                                            <th>Valor</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Dados serão carregados dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Outros conteúdos serão carregados aqui -->
+                <div id="servicesContent" style="display: none;">
+                    <!-- Conteúdo de serviços -->
+                </div>
+                <div id="appointmentsContent" style="display: none;">
+                    <!-- Conteúdo de agendamentos -->
+                </div>
+                <div id="clientsContent" style="display: none;">
+                    <!-- Conteúdo de clientes -->
+                </div>
+                <div id="reportsContent" style="display: none;">
+                    <!-- Conteúdo de relatórios -->
+                </div>
+                <div id="settingsContent" style="display: none;">
+                    <!-- Conteúdo de configurações -->
+                </div>
+                <div id="systemContent" style="display: none;">
+                    <!-- Conteúdo de sistema -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

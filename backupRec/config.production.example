@@ -1,0 +1,190 @@
+# Arquivo de configuração de produção
+# COPIE este arquivo para .env.production e configure suas senhas
+
+# Ambiente
+NODE_ENV=production
+
+# Banco de dados PostgreSQL (local no container)
+DB_HOST=db
+DB_PORT=5432
+DB_NAME=agendamento
+DB_USER=agendamento_user
+DB_PASSWORD=agendamento_pass_2024
+
+# Aplicação
+PORT=3000
+
+# WhatsApp - Evolution API (já incluída no docker-compose)
+WHATSAPP_STRATEGY=evolution
+WHATSAPP_API_URL=http://evolution-api:8080
+WHATSAPP_ACCESS_TOKEN=
+WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_VERIFY_TOKEN=
+
+# Segurança - ALTERE ESTAS CHAVES!
+JWT_SECRET=sua_chave_jwt_super_secreta_aqui_altere_em_producao_mínimo_32_caracteres
+JWT_EXPIRES_IN=24h
+REFRESH_TOKEN_EXPIRES_IN=7d
+BCRYPT_ROUNDS=12
+
+# Backup
+BACKUP_DIR=./backups
+BACKUP_RETENTION_DAYS=30
+MAX_BACKUPS=10
+FILES_DIR=./uploads
+
+# ====================
+# CONFIGURAÇÕES DE PERFORMANCE
+# ====================
+
+# Rate Limiting Otimizado
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Limites de requisição
+REQUEST_LIMIT=10mb
+
+# Pool de conexões do banco otimizado
+DB_MAX_CONNECTIONS=20
+DB_MIN_CONNECTIONS=2
+DB_IDLE_TIMEOUT=30000
+DB_CONNECTION_TIMEOUT=10000
+DB_ACQUIRE_TIMEOUT=30000
+
+# Cache
+CACHE_TTL=1800  # 30 minutos
+DASHBOARD_CACHE_TTL=900  # 15 minutos
+
+# Conversas
+CONVERSATION_TIMEOUT=1800000  # 30 minutos
+MAX_QUEUE_SIZE=10
+MAX_SIMILAR_MESSAGES=3
+QUEUE_CLEANUP_INTERVAL=300000  # 5 minutos
+
+# ====================
+# CONFIGURAÇÕES DE SEGURANÇA
+# ====================
+
+# CORS - Configure apenas domínios autorizados
+CORS_ORIGIN=http://localhost:3000,http://127.0.0.1:3000
+
+# JWT - ALTERE ESTAS CHAVES EM PRODUÇÃO!
+JWT_SECRET=sua_chave_jwt_super_secreta_aqui_altere_em_producao_mínimo_32_caracteres
+JWT_EXPIRES_IN=24h
+JWT_REFRESH_SECRET=sua_chave_refresh_super_secreta_aqui_altere_em_producao_mínimo_32_caracteres
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Bcrypt rounds (equilíbrio segurança/performance)
+BCRYPT_ROUNDS=12
+
+# SSL/TLS
+SSL_ENABLED=true
+SSL_REJECT_UNAUTHORIZED=false
+
+# ====================
+# CONFIGURAÇÕES DE LOG
+# ====================
+
+# Logging otimizado para produção
+LOG_LEVEL=warn
+LOG_FILE=./logs/app.log
+LOG_MAX_SIZE=10m
+LOG_MAX_FILES=5
+
+# Morgan logging format
+LOG_FORMAT=combined
+
+# ====================
+# CONFIGURAÇÕES DE BACKUP
+# ====================
+
+# Backup otimizado
+BACKUP_DIR=/app/backups
+BACKUP_RETENTION_DAYS=30
+MAX_BACKUPS=10
+FILES_DIR=/app/uploads
+
+# Compressão
+BACKUP_COMPRESSION_LEVEL=6
+
+# ====================
+# CONFIGURAÇÕES DE MONITORAMENTO
+# ====================
+
+# Métricas da aplicação
+ENABLE_METRICS=true
+METRICS_PORT=9090
+
+# Health checks
+HEALTH_CHECK_INTERVAL=30000
+HEALTH_CHECK_TIMEOUT=10000
+HEALTH_CHECK_RETRIES=3
+
+# ====================
+# CONFIGURAÇÕES DE EMAIL (OPCIONAL)
+# ====================
+
+# SMTP para notificações
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_SECURE=false
+EMAIL_USER=seu_email@gmail.com
+EMAIL_PASS=sua_senha_app
+EMAIL_FROM=noreply@seusistema.com
+
+# Templates de email
+EMAIL_TEMPLATES_DIR=./templates/email
+
+# ====================
+# CONFIGURAÇÕES DE WHATSAPP
+# ====================
+
+# Evolution API
+EVOLUTION_API_URL=http://evolution-api:8080
+EVOLUTION_API_KEY=sua-chave-api-aqui
+EVOLUTION_INSTANCE_NAME=meu-sistema-agendamento
+
+# Webhook settings
+WEBHOOK_TIMEOUT=30000
+WEBHOOK_RETRIES=3
+WEBHOOK_RETRY_DELAY=1000
+
+# Rate limiting do WhatsApp
+WHATSAPP_RATE_LIMIT=30
+WHATSAPP_RATE_WINDOW=60000
+
+# ====================
+# CONFIGURAÇÕES DE SISTEMA
+# ====================
+
+# Otimizações do Node.js
+NODE_OPTIONS=--max-old-space-size=512
+UV_THREADPOOL_SIZE=4
+
+# Timezone
+TZ=America/Sao_Paulo
+
+# Memory monitoring
+MEMORY_MONITORING=true
+MEMORY_THRESHOLD=0.8  # 80% de uso
+
+# CPU monitoring
+CPU_MONITORING=true
+CPU_THRESHOLD=0.8  # 80% de uso
+
+# ====================
+# CONFIGURAÇÕES DE DESENVOLVIMENTO (IGNORAR EM PROD)
+# ====================
+
+# Debug (desabilitar em produção)
+DEBUG=false
+DEV_MODE=false
+
+# Hot reload (apenas desenvolvimento)
+HOT_RELOAD=false
+
+# Database debug (desabilitar em produção)
+DB_DEBUG=false
+
+# API documentation (apenas desenvolvimento)
+API_DOCS_ENABLED=false

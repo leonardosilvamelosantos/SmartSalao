@@ -1,0 +1,79 @@
+# Arquivos de desenvolvimento
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Arquivos de controle de versão
+.git
+.gitignore
+.github
+
+# Arquivos de documentação (exceto essenciais)
+*.md
+!README.md
+!WHATSAPP_INTEGRATION_GUIDE.md
+
+# Arquivos de configuração de desenvolvimento
+.env
+.env.local
+.env.development
+.env.test
+
+# Arquivos temporários
+*.tmp
+*.temp
+.cache
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Diretórios de teste
+test
+tests
+__tests__
+coverage
+.nyc_output
+
+# Arquivos de IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Arquivos de backup
+*.bak
+*.backup
+backups/
+
+# Arquivos de configuração locais
+config.local.js
+config.development.js
+
+# Scripts de desenvolvimento
+scripts/dev-*.js
+scripts/test-*.js
+
+# Arquivos Docker temporários
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+.docker
+
+# Diretórios de build
+dist
+build
+.next
+.nuxt
+
+# Arquivos de métricas e relatórios
+*.lcov
+.coverage
+reports/

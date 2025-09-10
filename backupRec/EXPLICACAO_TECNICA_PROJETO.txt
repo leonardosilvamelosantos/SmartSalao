@@ -1,0 +1,612 @@
+================================================================================
+EXPLICAÇÃO TÉCNICA COMPLETA - SISTEMA DE AGENDAMENTO WHATSAPP MULTI-TENANT
+================================================================================
+
+DESCRIÇÃO GERAL:
+================
+Este é um sistema de agendamento via WhatsApp implementado com arquitetura
+multi-tenant. Permite que múltiplas organizações (tenants) utilizem a mesma
+instância da aplicação com isolamento completo de dados.
+
+TECNOLOGIAS UTILIZADAS:
+=======================
+- Node.js + Express.js (Backend API)
+- PostgreSQL (Banco de dados)
+- WhatsApp Business API (Integração WhatsApp)
+- JWT (Autenticação)
+- Joi (Validação de dados)
+- Axios (HTTP Client)
+
+================================================================================
+ESTRUTURA DE ARQUIVOS E FUNCIONALIDADES
+================================================================================
+
+1. ARQUIVOS PRINCIPAIS DE CONFIGURAÇÃO
+======================================
+
+1.1 package.json
+----------------
+Arquivo de configuração do projeto Node.js contendo:
+- Dependências: express, pg, axios, bcryptjs, jsonwebtoken, joi, cors, helmet
+- Scripts: start, dev, migrate, migrate:drop
+- Configurações do projeto: nome, versão, autor
+
+Funções principais:
+- npm start: Inicia servidor em produção
+- npm run dev: Inicia servidor com nodemon (desenvolvimento)
+- npm run migrate: Executa migrações do banco
+- npm run migrate:drop: Remove tabelas do banco
+
+1.2 src/index.js
+----------------
+Arquivo principal do servidor Express.js contendo:
+- Configuração do servidor Express
+- Middlewares de segurança (Helmet, CORS)
+- Rate limiting
+- Parsing de JSON
+- Rotas da aplicação
+- Tratamento de erros global
+- Middleware 404
+
+Funções implementadas:
+- Configuração de middlewares de segurança
+- Rate limiting para proteção contra ataques
+- Parsing automático de JSON e URL-encoded
+- Importação dinâmica de rotas
+- Tratamento centralizado de erros
+- Graceful shutdown do servidor
+
+2. BANCO DE DADOS E MIGRAÇÕES
+=============================
+
+2.1 config/database.js
+----------------------
+Configuração da conexão com PostgreSQL usando pg.Pool:
+- Configurações de host, porta, usuário, senha
+- Pool de conexões com limites e timeouts
+- Event listeners para debug e tratamento de erros
+
+Funções implementadas:
+- Pool de conexões otimizado
+- Reconexão automática em caso de falha
+- Logging de conexões estabelecidas e perdidas
+- Tratamento de erros de conexão
+
+2.2 src/database/migrations.js
+------------------------------
+Sistema de migrações para criação das tabelas do banco:
+
+Tabelas implementadas:
+- tenants: Clientes/organizações do sistema
+- usuarios: Usuários (donos de salões) - MULTI-TENANT
+- servicos: Serviços oferecidos - MULTI-TENANT
+- clientes: Clientes dos salões - MULTI-TENANT
+- agendamentos: Agendamentos marcados - MULTI-TENANT
+- slots: Horários disponíveis - MULTI-TENANT
+
+Índices otimizados para isolamento por tenant:
+- idx_tenants_dominio: Busca rápida por domínio
+- idx_usuarios_tenant: Filtro por tenant
+- idx_usuarios_tenant_whatsapp: Unicidade WhatsApp por tenant
+- idx_servicos_tenant: Filtro por tenant
+- idx_clientes_tenant: Filtro por tenant
+- idx_clientes_tenant_whatsapp: Unicidade WhatsApp por tenant
+- idx_agendamentos_tenant: Filtro por tenant
+- idx_slots_tenant: Filtro por tenant
+
+Funções implementadas:
+- runMigrations(): Executa criação de todas as tabelas
+- dropTables(): Remove todas as tabelas (desenvolvimento)
+- Sistema de isolamento completo por tenant_id
+
+3. MODELOS (MODELS)
+===================
+
+3.1 src/models/BaseModel.js
+---------------------------
+Classe base abstrata para todos os modelos, implementando:
+- findAll(): Busca com paginação e filtros
+- findById(): Busca por ID primário
+- create(): Criação de registros
+- update(): Atualização de registros
+- delete(): Exclusão de registros
+- count(): Contagem de registros
+- query(): Execução de queries customizadas
+
+Recursos multi-tenant implementados:
+- tenantId opcional em todos os métodos
+- Filtros automáticos por tenant_id
+- Validação de isolamento de dados
+- Índices otimizados para performance
+
+3.2 src/models/Tenant.js
+------------------------
+Modelo específico para gerenciamento de tenants:
+
+Funções implementadas:
+- findByDomain(): Busca tenant por domínio/subdomínio
+- findByIdActive(): Busca tenant ativo por ID
+- create(): Criação com validação de domínio único
+- update(): Atualização com validação de domínio
+- findActive(): Lista tenants ativos
+- Validações de unicidade de domínio
+
+3.3 src/models/Usuario.js
+-------------------------
+Modelo para usuários (donos de salões) com isolamento multi-tenant:
+
+Funções implementadas:
+- findByWhatsapp(): Busca por WhatsApp (filtrado por tenant)
+- findWithServices(): Busca usuário com serviços relacionados
+- findWithStats(): Busca com estatísticas (usuários, clientes, agendamentos)
+- updateHorarios(): Atualização de configuração de horários
+- create(): Criação com validações específicas por tenant
+- Validação de unicidade de WhatsApp por tenant
+
+3.4 src/models/Servico.js
+-------------------------
+Modelo para serviços oferecidos pelos salões:
+
+Funções implementadas:
+- findByUsuario(): Busca serviços de um usuário específico
+- findByIdWithUsuario(): Busca serviço com dados do usuário
+- Validações de duração e valor
+- Isolamento automático por tenant
+
+3.5 src/models/Cliente.js
+-------------------------
+Modelo para clientes dos salões:
+
+Funções implementadas:
+- findByUsuario(): Busca clientes de um usuário específico
+- findByWhatsapp(): Busca por WhatsApp do cliente
+- Validação de WhatsApp único por tenant
+- Isolamento automático por tenant
+
+3.6 src/models/Agendamento.js
+-----------------------------
+Modelo para agendamentos marcados:
+
+Funções implementadas:
+- findByUsuario(): Busca agendamentos de um usuário
+- findByCliente(): Busca agendamentos de um cliente
+- findByData(): Busca por data específica
+- updateStatus(): Atualização de status do agendamento
+- Validações de conflito de horário
+
+3.7 src/models/Slot.js
+----------------------
+Modelo para gerenciamento de horários disponíveis:
+
+Funções implementadas:
+- findByUsuario(): Busca slots de um usuário
+- findAvailable(): Busca slots disponíveis
+- reserveSlot(): Reserva um slot para agendamento
+- releaseSlot(): Libera slot reservado
+- generateSlotsForUser(): Gera slots para um usuário
+- generateSlotsForNextDays(): Gera slots para próximos dias
+
+4. CONTROLLERS
+==============
+
+4.1 src/controllers/TenantController.js
+---------------------------------------
+Controller para operações CRUD de tenants:
+
+Métodos implementados:
+- index(): Lista tenants com paginação e busca
+- show(): Busca tenant específico por ID
+- create(): Criação de novo tenant
+- update(): Atualização de tenant existente
+- delete(): Exclusão de tenant (com validações)
+- findByDomain(): Busca tenant por domínio
+
+Validações implementadas:
+- Verificação de domínio único
+- Validação de existência antes de operações
+- Verificação de dependências antes de exclusão
+
+4.2 src/controllers/UsuarioController.js
+----------------------------------------
+Controller para operações com usuários (multi-tenant):
+
+Métodos implementados:
+- index(): Lista usuários com paginação e filtros (por tenant)
+- show(): Busca usuário específico (validado por tenant)
+- create(): Criação de usuário (isolado por tenant)
+- update(): Atualização de usuário (validado por tenant)
+- delete(): Exclusão de usuário (validado por tenant)
+- showWithDetails(): Busca com serviços e estatísticas
+
+Recursos multi-tenant:
+- tenantId extraído automaticamente do middleware
+- Filtros automáticos por tenant
+- Validação de unicidade por tenant
+- Verificação de agendamentos ativos antes de exclusão
+
+4.3 src/controllers/ServicoController.js
+----------------------------------------
+Controller para operações com serviços:
+
+Métodos implementados:
+- index(): Lista serviços com filtros
+- show(): Busca serviço específico
+- create(): Criação de novo serviço
+- update(): Atualização de serviço
+- delete(): Exclusão de serviço
+- findByUsuario(): Busca serviços de um usuário
+
+4.4 src/controllers/ClienteController.js
+----------------------------------------
+Controller para operações com clientes:
+
+Métodos implementados:
+- index(): Lista clientes com filtros
+- show(): Busca cliente específico
+- create(): Criação de novo cliente
+- update(): Atualização de cliente
+- delete(): Exclusão de cliente
+- findByUsuario(): Busca clientes de um usuário
+
+4.5 src/controllers/AgendamentoController.js
+---------------------------------------------
+Controller para operações com agendamentos:
+
+Métodos implementados:
+- index(): Lista agendamentos com filtros
+- show(): Busca agendamento específico
+- create(): Criação de novo agendamento (com validações)
+- update(): Atualização de agendamento
+- cancel(): Cancelamento de agendamento
+- confirm(): Confirmação de agendamento
+- findByUsuario(): Busca agendamentos de um usuário
+- findByCliente(): Busca agendamentos de um cliente
+
+5. MIDDLEWARE
+=============
+
+5.1 src/middleware/tenant.js
+----------------------------
+Middleware principal para isolamento multi-tenant:
+
+Funcionalidades implementadas:
+- Identificação de tenant por header X-Tenant-ID
+- Identificação por subdomínio (tenant1.dominio.com)
+- Identificação por query parameter (?tenant=tenant1)
+- Identificação por JWT token
+- Validação de existência e status ativo do tenant
+- Adição de contexto tenant à requisição
+- Logging automático do tenant identificado
+
+Funções exportadas:
+- tenantMiddleware: Obriga identificação do tenant
+- optionalTenantMiddleware: Permite tenant opcional
+
+5.2 src/middleware/validation.js
+--------------------------------
+Middleware de validação usando Joi:
+
+Schemas implementados:
+- usuarioSchema: Validação de dados de usuário
+- servicoSchema: Validação de dados de serviço
+- clienteSchema: Validação de dados de cliente
+- tenantSchema: Validação de dados de tenant
+- agendamentoSchema: Validação de dados de agendamento
+
+Funções implementadas:
+- validate(): Função genérica de validação
+- validateUsuario: Validação específica de usuário
+- validateServico: Validação específica de serviço
+- validateCliente: Validação específica de cliente
+- validateTenant: Validação específica de tenant
+- validateAgendamento: Validação específica de agendamento
+- validateId: Validação de parâmetros ID
+- validatePagination: Validação de parâmetros de paginação
+
+6. ROTAS (ROUTES)
+=================
+
+6.1 src/routes/tenants.js
+-------------------------
+Rotas para gerenciamento de tenants:
+- GET /api/tenants: Lista tenants
+- POST /api/tenants: Cria tenant
+- GET /api/tenants/:id: Busca tenant específico
+- PUT /api/tenants/:id: Atualiza tenant
+- DELETE /api/tenants/:id: Exclui tenant
+- GET /api/tenants/domain/:dominio: Busca por domínio
+
+6.2 src/routes/usuarios.js
+--------------------------
+Rotas para usuários (com middleware multi-tenant):
+- GET /api/usuarios: Lista usuários (filtrado por tenant)
+- POST /api/usuarios: Cria usuário (isolado por tenant)
+- GET /api/usuarios/:id: Busca usuário específico
+- PUT /api/usuarios/:id: Atualiza usuário
+- DELETE /api/usuarios/:id: Exclui usuário
+- GET /api/usuarios/:id/detalhes: Busca com detalhes
+- PUT /api/usuarios/:id/horarios: Atualiza horários
+- POST /api/usuarios/:id/regenerate-slots: Regenera slots
+
+Middleware aplicado:
+- tenantMiddleware: Isolamento obrigatório
+- validateUsuario: Validação de dados
+- validateId: Validação de parâmetros
+
+6.3 src/routes/servicos.js
+--------------------------
+Rotas para serviços:
+- GET /api/servicos: Lista serviços
+- POST /api/servicos: Cria serviço
+- GET /api/servicos/:id: Busca serviço
+- PUT /api/servicos/:id: Atualiza serviço
+- DELETE /api/servicos/:id: Exclui serviço
+
+6.4 src/routes/clientes.js
+--------------------------
+Rotas para clientes:
+- GET /api/clientes: Lista clientes
+- POST /api/clientes: Cria cliente
+- GET /api/clientes/:id: Busca cliente
+- PUT /api/clientes/:id: Atualiza cliente
+- DELETE /api/clientes/:id: Exclui cliente
+
+6.5 src/routes/agendamentos.js
+------------------------------
+Rotas para agendamentos:
+- GET /api/agendamentos: Lista agendamentos
+- POST /api/agendamentos: Cria agendamento
+- GET /api/agendamentos/:id: Busca agendamento
+- PUT /api/agendamentos/:id: Atualiza agendamento
+- DELETE /api/agendamentos/:id: Cancela agendamento
+- PATCH /api/agendamentos/:id/confirm: Confirma agendamento
+- PATCH /api/agendamentos/:id/cancel: Cancela agendamento
+
+6.6 src/routes/whatsapp.js
+--------------------------
+Rotas para integração WhatsApp:
+- POST /api/whatsapp/webhook: Recebe webhooks do WhatsApp
+- GET /api/whatsapp/webhook: Verifica webhook
+- POST /api/whatsapp/send-message: Envia mensagem
+- GET /api/whatsapp/status: Verifica status da integração
+
+7. SERVIÇOS (SERVICES)
+======================
+
+7.1 src/services/WhatsappService.js
+-----------------------------------
+Serviço de integração com WhatsApp Business API:
+
+Métodos implementados:
+- sendTextMessage(): Envia mensagem de texto simples
+- sendInteractiveMessage(): Envia mensagem com botões
+- sendListMessage(): Envia lista de opções
+- processWebhook(): Processa webhooks recebidos
+- verifyWebhook(): Verifica token de webhook
+- sendWelcomeMessage(): Mensagem de boas-vindas
+- sendServicesList(): Lista de serviços disponíveis
+- sendAvailableSlots(): Horários disponíveis
+- sendBookingConfirmation(): Confirmação de agendamento
+- sendReminder(): Lembretes de agendamento
+- checkStatus(): Verifica status da integração
+
+7.2 src/services/SlotService.js
+-------------------------------
+Serviço para gerenciamento de slots de horário:
+
+Métodos implementados:
+- generateSlotsForUser(): Gera slots para um usuário
+- generateSlotsForNextDays(): Gera slots para próximos dias
+- updateSlotsForUser(): Atualiza slots após mudança de horários
+- findAvailableSlots(): Busca slots disponíveis
+- reserveSlot(): Reserva slot para agendamento
+- releaseSlot(): Libera slot reservado
+- validateSlotAvailability(): Valida disponibilidade
+
+8. UTILITÁRIOS E CONFIGURAÇÕES
+==============================
+
+8.1 .env (Arquivo de configuração)
+----------------------------------
+Variáveis de ambiente:
+- DB_HOST: Host do banco de dados
+- DB_PORT: Porta do banco
+- DB_NAME: Nome do banco
+- DB_USER: Usuário do banco
+- DB_PASSWORD: Senha do banco
+- JWT_SECRET: Chave secreta para JWT
+- WHATSAPP_API_URL: URL da API WhatsApp
+- WHATSAPP_ACCESS_TOKEN: Token de acesso WhatsApp
+- WHATSAPP_PHONE_NUMBER_ID: ID do número WhatsApp
+- WHATSAPP_VERIFY_TOKEN: Token de verificação webhook
+
+8.2 scripts/migrate.js
+----------------------
+Script para execução de migrações:
+- Importa funções de migração
+- Executa runMigrations() ou dropTables()
+- Tratamento de erros e saída do processo
+
+9. ARQUITETURA MULTI-TENANT DETALHADA
+=====================================
+
+9.1 Isolamento de Dados
+-----------------------
+- Cada tenant possui seu próprio conjunto de dados
+- tenant_id adicionado em todas as tabelas
+- Foreign keys com CASCADE para limpeza automática
+- Índices otimizados para consultas por tenant
+
+9.2 Identificação de Tenant
+---------------------------
+1. Header HTTP: X-Tenant-ID
+2. Subdomínio: tenant1.dominio.com
+3. Query Parameter: ?tenant=tenant1
+4. JWT Token: campo id_tenant
+
+9.3 Middleware de Isolamento
+----------------------------
+- tenantMiddleware: Obriga identificação do tenant
+- Validação de existência e status ativo
+- Adição automática de filtros por tenant_id
+- Logging detalhado para auditoria
+
+9.4 Segurança Multi-Tenant
+--------------------------
+- Dados completamente isolados
+- Validações de unicidade por tenant
+- Verificações de permissão automática
+- Auditoria de operações por tenant
+
+10. FUNCIONALIDADES PRINCIPAIS
+==============================
+
+10.1 Sistema de Agendamento
+---------------------------
+- Criação e gerenciamento de usuários (salões)
+- Cadastro de serviços oferecidos
+- Cadastro de clientes
+- Sistema de slots automáticos
+- Agendamento com validações de conflito
+- Confirmação e cancelamento de agendamentos
+
+10.2 Integração WhatsApp
+------------------------
+- Recebimento de mensagens via webhook
+- Processamento automático de comandos
+- Envio de mensagens interativas
+- Confirmações automáticas
+- Lembretes de agendamento
+
+10.3 Multi-Tenant Completo
+---------------------------
+- Gestão de tenants (clientes/organizações)
+- Isolamento total de dados
+- Domínios personalizados
+- Configurações específicas por tenant
+- Relatórios por tenant
+
+11. PADRÕES DE DESENVOLVIMENTO
+==============================
+
+11.1 Estrutura de Código
+------------------------
+- Separação clara entre camadas (Routes, Controllers, Models, Services)
+- Middleware para responsabilidades transversais
+- Tratamento centralizado de erros
+- Validação consistente de dados
+
+11.2 Convenções de Nomenclatura
+-------------------------------
+- Classes PascalCase (UsuarioController, TenantModel)
+- Funções camelCase (findById, createTenant)
+- Arquivos kebab-case (tenant-controller.js)
+- Constantes UPPER_SNAKE_CASE (JWT_SECRET)
+
+11.3 Tratamento de Erros
+------------------------
+- Try-catch em todos os controllers
+- Respostas padronizadas de erro
+- Logging detalhado de erros
+- Códigos HTTP apropriados
+
+11.4 Validação de Dados
+-----------------------
+- Joi para validação robusta
+- Mensagens de erro claras
+- Validação tanto no frontend quanto backend
+- Sanitização automática de dados
+
+12. PERFORMANCE E OTIMIZAÇÃO
+=============================
+
+12.1 Banco de Dados
+-------------------
+- Pool de conexões otimizado
+- Índices estratégicos por tenant
+- Queries otimizadas com JOINs apropriados
+- Cache potencial para dados frequentes
+
+12.2 API
+--------
+- Rate limiting para proteção
+- Compressão de respostas
+- Timeout apropriados
+- Logs de performance
+
+13. MONITORAMENTO E LOGS
+=========================
+
+13.1 Logs Implementados
+-----------------------
+- Conexões de banco estabelecidas/perdidas
+- Erros de validação
+- Operações de tenant identificadas
+- Tentativas de acesso não autorizado
+- Performance de queries
+
+13.2 Monitoramento
+------------------
+- Health check endpoint (/health)
+- Status de conectividade com banco
+- Status da integração WhatsApp
+- Métricas de uso por tenant
+
+14. SEGURANÇA IMPLEMENTADA
+==========================
+
+14.1 Autenticação e Autorização
+-------------------------------
+- JWT para autenticação stateless
+- Middleware de validação de tokens
+- Controle de acesso baseado em tenant
+- Proteção contra ataques comuns
+
+14.2 Validação de Dados
+-----------------------
+- Sanitização de inputs
+- Validação de tipos e formatos
+- Limitação de tamanho de dados
+- Proteção contra SQL injection
+
+14.3 Segurança de Infraestrutura
+--------------------------------
+- Helmet para headers de segurança
+- CORS configurado adequadamente
+- Rate limiting implementado
+- Timeout de conexões
+
+15. TESTABILIDADE
+=================
+
+15.1 Estrutura de Testes (Removida)
+-----------------------------------
+- Testes mockados para isolamento
+- Testes de integração para APIs
+- Cobertura de cenários críticos
+- Testes automatizados com Jest
+
+16. DEPLOYMENT E PRODUÇÃO
+==========================
+
+16.1 Configurações de Produção
+-------------------------------
+- Variáveis de ambiente separadas
+- Configurações de banco otimizadas
+- Logs estruturados
+- Monitoramento de saúde
+
+16.2 Escalabilidade
+-------------------
+- Arquitetura stateless
+- Cache implementável
+- Balanceamento de carga possível
+- Escalabilidade horizontal
+
+================================================================================
+FIM DA EXPLICAÇÃO TÉCNICA
+================================================================================
+
+Este documento fornece uma visão completa da arquitetura, implementação e
+funcionalidades do sistema de agendamento WhatsApp multi-tenant, incluindo
+todos os detalhes técnicos das funções implementadas em cada arquivo.
