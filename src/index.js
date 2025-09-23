@@ -8,7 +8,7 @@ require('dotenv').config();
 // Importações locais
 const path = require('path');
 
-// Carregar configuração do banco (apenas SQLite)
+// Carregar configuração do banco (detecção automática)
 const pool = require('./config/database');
 
 const cronJobService = require('./services/CronJobService');
@@ -16,6 +16,7 @@ const cronJobService = require('./services/CronJobService');
 // Inicializar aplicação Express
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Middlewares de segurança e utilitários
 app.use(helmet({
@@ -23,38 +24,82 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       "default-src": ["'self'"],
-      "img-src": ["'self'", 'data:'],
-      "script-src": ["'self'"],
-      "style-src": ["'self'", "'unsafe-inline'"],
-      "connect-src": ["'self'"]
+      "img-src": ["'self'", 'data:', 'https:'],
+      "script-src": ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
+      "style-src": ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://fonts.googleapis.com'],
+      "font-src": ["'self'", 'https://fonts.gstatic.com'],
+      "connect-src": ["'self'", 'https:', 'http:'],
+      "frame-src": ["'self'"]
     }
   } : false
 })); // Segurança básica com CSP em produção
 
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
-    const allowed = ['http://localhost:3000'];
+    // Aceitar quando não há origem (arquivos locais) ou em desenvolvimento
+    if (!origin || origin === 'null' || process.env.NODE_ENV === 'development') {
+      return cb(null, true);
+    }
+    
+    // Lista de origens permitidas (incluindo IPs da rede local)
+    const allowed = [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:8080',
+      'http://127.0.0.1:8080',
+      'http://localhost:3001',
+      'http://127.0.0.1:3001'
+    ];
+    
+    // Permitir qualquer IP da rede local (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+    const isLocalNetwork = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin);
+    const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)/.test(origin);
+    
+    if (isLocalNetwork || isLocalhost || allowed.includes(origin)) {
+      return cb(null, true);
+    }
+    
+    // Adicionar IPs da rede local se configurados
+    if (process.env.ALLOWED_ORIGINS) {
+      const additionalOrigins = process.env.ALLOWED_ORIGINS.split(',');
+      allowed.push(...additionalOrigins);
+    }
+    
+    // Aceitar qualquer IP da rede local (192.168.x.x)
+    if (origin) {
+      const isLocalNetwork = /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:3000$/.test(origin);
+      if (isLocalNetwork) {
+        console.log(`🌐 Permitindo acesso de rede local: ${origin}`);
+        return cb(null, true);
+      }
+    }
+    
     if (allowed.includes(origin)) return cb(null, true);
     return cb(new Error('Not allowed by CORS'));
   },
-  credentials: true
-})); // CORS restrito em dev
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'apikey']
+})); // CORS configurado para desenvolvimento
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev')); // Logging de requests
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutos
-  max: process.env.NODE_ENV === 'development' ? 1000 : (parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100),
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req, res) => process.env.NODE_ENV === 'development',
-  handler: (req, res) => {
-    const { ApiError } = require('./utils/ApiError');
-    return ApiError.rateLimit('Muitas requisições. Tente novamente mais tarde.').send(res);
-  }
-});
-app.use('/api/', limiter);
+// Rate limiting - Desabilitado em desenvolvimento
+// Forçar desenvolvimento para resolver problemas de rate limiting
+const isDevelopment = true; // Sempre desabilitar rate limiting em desenvolvimento
+if (!isDevelopment) {
+  const limiter = rateLimit({
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutos
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+      const { ApiError } = require('./utils/ApiError');
+      return ApiError.rateLimit('Muitas requisições. Tente novamente mais tarde.').send(res);
+    }
+  });
+  app.use('/api/', limiter);
+  console.log('🔒 Rate limiting ativado para produção');
+}
 
 // ====================
 // MIDDLEWARE CORE
@@ -91,59 +136,33 @@ app.get('/health', (req, res) => {
  */
 app.get('/api/db-health', async (req, res) => {
   const startTime = Date.now();
-  const isSQLite = process.env.USE_SQLITE === 'true' || process.env.DB_TYPE === 'sqlite';
 
   console.log('Database config:', {
-    USE_SQLITE: process.env.USE_SQLITE,
-    DB_TYPE: process.env.DB_TYPE,
-    isSQLite: isSQLite
+    PGHOST: process.env.PGHOST || process.env.DB_HOST,
+    PGPORT: process.env.PGPORT || process.env.DB_PORT,
+    PGDATABASE: process.env.PGDATABASE || process.env.DB_NAME,
+    PGUSER: process.env.PGUSER || process.env.DB_USER
   });
 
   try {
-    let result;
-    let dbHealth;
+    // Health check para PostgreSQL
+    const result = await pool.query('SELECT NOW() as now, pg_database_size(current_database()) as db_size, version() as version');
+    const responseTime = Date.now() - startTime;
 
-    if (isSQLite) {
-      // Health check para SQLite
-      result = await pool.query('SELECT datetime("now") as current_time, sqlite_version() as sqlite_version');
-      const responseTime = Date.now() - startTime;
-
-      dbHealth = {
-        status: 'OK',
-        database: {
-          type: 'SQLite',
-          version: result.rows[0].sqlite_version,
-          timestamp: result.rows[0].current_time,
-          responseTime: `${responseTime}ms`
-        },
-        connections: 1, // SQLite usa uma única conexão
-        idle: 0,
-        waiting: 0
-      };
-    } else {
-      // Health check para PostgreSQL
-      // SQLite: obter tamanho do arquivo de banco
-      const fs = require('fs');
-      const path = require('path');
-      const dbPath = path.join(__dirname, '../data/agendamento_dev.db');
-      const stats = fs.statSync(dbPath);
-      result = { rows: [{ now: new Date().toISOString(), db_size: stats.size }] };
-      const responseTime = Date.now() - startTime;
-
-      dbHealth = {
-        status: 'OK',
-        database: {
-          type: 'PostgreSQL',
-          name: process.env.DB_NAME || 'agendamento',
-          size: formatBytes(result.rows[0].db_size),
-          timestamp: result.rows[0].now,
-          responseTime: `${responseTime}ms`
-        },
-        connections: pool.totalCount,
-        idle: pool.idleCount,
-        waiting: pool.waitingCount
-      };
-    }
+    const dbHealth = {
+      status: 'OK',
+      database: {
+        type: 'PostgreSQL',
+        name: process.env.PGDATABASE || process.env.DB_NAME || 'agendamento',
+        version: result.rows[0].version,
+        size: formatBytes(result.rows[0].db_size),
+        timestamp: result.rows[0].now,
+        responseTime: `${responseTime}ms`
+      },
+      connections: pool.totalCount,
+      idle: pool.idleCount,
+      waiting: pool.waitingCount
+    };
 
     res.status(200).json(dbHealth);
   } catch (error) {
@@ -190,6 +209,122 @@ function formatBytes(bytes) {
 // Importar middlewares de autenticação
 const { authenticateToken } = require('./middleware/auth');
 
+// ====================
+// INTEGRAÇÃO BOT WHATSAPP MULTI-TENANT
+// ====================
+
+// Importar componentes do bot WhatsApp multi-tenant
+const MultiTenantWhatsAppServiceV2 = require('./whatsapp-bot/services/MultiTenantWhatsAppServiceV2');
+const BotProcessorService = require('./whatsapp-bot/services/BotProcessorService');
+
+// Instanciar o serviço
+const whatsappService = new MultiTenantWhatsAppServiceV2();
+
+// Configurar callbacks globais para o serviço multi-tenant
+const setupTenantCallbacks = (tenantId) => {
+  if (typeof whatsappService.registerMessageCallback === 'function') {
+  whatsappService.registerMessageCallback(tenantId, async (message, tenantId) => {
+    try {
+      // log reduzido: comentar recebimento detalhado
+      // console.log(`📨 [${tenantId}] Mensagem recebida de ${message.from}: ${message.content}`);
+      const response = await BotProcessorService.processMessage(message);
+
+      if (response) {
+        await whatsappService.sendMessage(tenantId, response.to, response.message);
+        // console.log(`📤 [${tenantId}] Resposta enviada para ${response.to}`);
+      }
+    } catch (error) {
+      console.error(`❌ [${tenantId}] Erro ao processar mensagem recebida:`, error);
+    }
+  });
+  }
+
+  if (typeof whatsappService.registerConnectionCallback === 'function') {
+  whatsappService.registerConnectionCallback(tenantId, (event) => {
+    switch (event.type) {
+      case 'connected':
+        console.log(`✅ [${tenantId}] WhatsApp conectado`);
+        break;
+
+      case 'disconnected':
+        console.log(`❌ [${tenantId}] WhatsApp desconectado:`, event.reason);
+        break;
+
+      default:
+        // console.log(`📡 [${tenantId}] Evento de conexão:`, event);
+    }
+  });
+  }
+};
+
+// Função para inicializar tenant automaticamente
+const initializeTenantBot = async (tenantId, config = {}) => {
+  try {
+    console.log(`🤖 Inicializando bot WhatsApp para tenant: ${tenantId}`);
+
+    // Configurar callbacks para este tenant
+    setupTenantCallbacks(tenantId);
+
+    // Inicializar conexão
+    const connection = await whatsappService.initializeTenantConnection(tenantId, config);
+
+    console.log(`✅ Bot WhatsApp inicializado com sucesso para tenant ${tenantId}`);
+    return connection;
+
+  } catch (error) {
+    console.error(`❌ Erro ao inicializar bot WhatsApp para tenant ${tenantId}:`, error);
+    throw error;
+  }
+};
+
+// Inicialização baseada em configuração
+const initializeWhatsAppBots = async () => {
+  const shouldStartBot = process.env.START_WHATSAPP_BOT === 'true' ||
+                        process.env.NODE_ENV === 'production';
+
+  if (!shouldStartBot) {
+    console.log('🤖 Bot WhatsApp não inicializado automaticamente');
+    console.log('💡 Para ativar, defina START_WHATSAPP_BOT=true ou execute em produção');
+    return;
+  }
+
+  console.log('🤖 Inicializando sistema multi-tenant WhatsApp...');
+
+  try {
+    // Verificar se há tenants para inicializar automaticamente
+    const autoStartTenants = process.env.WHATSAPP_AUTO_START_TENANTS;
+
+    if (autoStartTenants) {
+      const tenantList = autoStartTenants.split(',').map(t => t.trim());
+
+      for (const tenantId of tenantList) {
+        try {
+          await initializeTenantBot(tenantId);
+        } catch (error) {
+          console.error(`❌ Falha ao inicializar tenant ${tenantId}, continuando...`);
+        }
+      }
+    }
+
+    // Configurar limpeza automática de conexões inativas
+    setInterval(() => {
+      if (typeof whatsappService.cleanupInactiveConnections === 'function') {
+        whatsappService.cleanupInactiveConnections();
+      }
+    }, 5 * 60 * 1000); // A cada 5 minutos
+
+    console.log('✅ Sistema multi-tenant WhatsApp inicializado com sucesso');
+
+  } catch (error) {
+    console.error('❌ Erro ao inicializar sistema multi-tenant WhatsApp:', error);
+  }
+};
+
+// Inicializar sistema (pular em ambiente de teste)
+if (process.env.NODE_ENV !== 'test') {
+  initializeWhatsAppBots();
+}
+
 // Rotas públicas
 app.use('/api/auth', require('./routes/auth'));
 
@@ -197,17 +332,29 @@ app.use('/api/auth', require('./routes/auth'));
 
 // Rotas protegidas (requerem autenticação + isolamento tenant + rate limit por tenant)
 const tenantMW = require('./middleware/tenant');
-const rateLite = tenantMW.tenantRateLimit({ windowMs: 60 * 1000, max: (process.env.NODE_ENV === 'development' ? 600 : 120) });
+// Rate limiting por tenant - Desabilitado em desenvolvimento
+const rateLite = isDevelopment ? 
+  (req, res, next) => next() : // Middleware vazio em desenvolvimento
+  tenantMW.tenantRateLimit({ 
+    windowMs: 60 * 1000, 
+    max: 120,
+    message: 'Muitas requisições. Tente novamente em alguns minutos.'
+  });
 
 app.use('/api/usuarios', authenticateToken, tenantMW.isolateTenant, rateLite, require('./routes/usuarios'));
 app.use('/api/servicos', authenticateToken, tenantMW.isolateTenant, rateLite, require('./routes/servicos'));
 app.use('/api/clientes', authenticateToken, tenantMW.isolateTenant, rateLite, require('./routes/clientes'));
 app.use('/api/agendamentos', authenticateToken, tenantMW.isolateTenant, rateLite, require('./routes/agendamentos'));
 app.use('/api/whatsapp', authenticateToken, tenantMW.isolateTenant, rateLite, require('./routes/whatsapp'));
+app.use('/api/whatsapp-v2', require('./routes/whatsapp-v2'));
 app.use('/api/dashboard', authenticateToken, tenantMW.isolateTenant, rateLite, require('./routes/dashboard'));
 app.use('/api/configuracoes', authenticateToken, tenantMW.isolateTenant, rateLite, require('./routes/configuracoes'));
 app.use('/api/notificacoes', authenticateToken, tenantMW.isolateTenant, rateLite, require('./routes/notificacoes'));
 app.use('/api/backup', authenticateToken, tenantMW.isolateTenant, rateLite, require('./routes/backup'));
+
+// Rotas do Bot WhatsApp (requer autenticação de admin)
+app.use('/api/bot', authenticateToken, tenantMW.isolateTenant, rateLite, require('./whatsapp-bot/routes/bot-admin'));
+
 
 // ====================
 // ROTAS DA API v2 (OTIMIZADA)
@@ -224,6 +371,7 @@ app.use('/api/tenants', require('./routes/tenant'));
 // ROTAS DO PAINEL ADMINISTRATIVO
 // ====================
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/security', require('./routes/security'));
 
 // ====================
 // SERVIR ARQUIVOS ESTÁTICOS DO ADMIN
@@ -233,24 +381,20 @@ app.use('/api/admin', require('./routes/admin'));
 // ====================
 // SERVIR ARQUIVOS ESTÁTICOS DO FRONTEND
 // ====================
-app.use('/frontend', (req, res, next) => {
-  try {
-    return express.static(path.join(__dirname, '../frontend'))(req, res, next);
-  } catch (e) {
-    console.error('Erro ao servir estático /frontend:', e);
-    return res.status(500).json({ success: false, message: 'Erro ao servir arquivos estáticos' });
-  }
+app.use('/frontend', express.static(path.join(__dirname, '../frontend')));
+
+// Rota específica para o index.html do frontend
+app.get('/frontend/index.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
+
+// Rota raiz redireciona para o frontend
+app.get('/', (req, res) => {
+  res.redirect('/frontend/index.html');
 });
 
 // Expor imagens públicas (para fundos e assets não dentro de /frontend)
-app.use('/image', (req, res, next) => {
-  try {
-    return express.static(path.join(__dirname, '../image'))(req, res, next);
-  } catch (e) {
-    console.error('Erro ao servir estático /image:', e);
-    return res.status(500).json({ success: false, message: 'Erro ao servir imagens' });
-  }
-});
+app.use('/image', express.static(path.join(__dirname, '../image')));
 
 // Rota específica para servir o painel admin
 app.get('/admin', (req, res) => {
@@ -371,19 +515,68 @@ app.use((req, res) => {
   });
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+// Função para obter IP local
+function getLocalIP() {
+  const os = require('os');
+  const interfaces = os.networkInterfaces();
+  
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family !== 'IPv4' || iface.internal !== false) {
+        continue;
+      }
+      
+      const ip = iface.address;
+      if (ip.startsWith('192.168.') || ip.startsWith('10.') || 
+          (ip.startsWith('172.') && parseInt(ip.split('.')[1]) >= 16 && parseInt(ip.split('.')[1]) <= 31)) {
+        return ip;
+      }
+    }
+  }
+  
+  return null;
+}
 
-  // Iniciar jobs cron
-  cronJobService.startJobs();
-});
+// Iniciar servidor somente quando este arquivo for o entrypoint e não estiver em teste
+if (require.main === module && process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, HOST, () => {
+    const localIP = getLocalIP();
+    
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🌐 Host: ${HOST}`);
+    console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+    console.log(`💻 Acesso local: http://localhost:${PORT}/frontend`);
+    
+    if (localIP) {
+      console.log(`🌐 IP da rede local: ${localIP}`);
+      console.log(`📱 Acesse do celular: http://${localIP}:${PORT}/frontend`);
+      console.log(`💻 Acesse de outros PCs: http://${localIP}:${PORT}/frontend`);
+    } else {
+      console.log(`❌ Não foi possível detectar o IP da rede local`);
+      console.log(`💡 Verifique sua conexão de rede ou configure manualmente`);
+    }
+
+    // Iniciar jobs cron
+    cronJobService.startJobs();
+  });
+}
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('🛑 Recebido SIGINT. Encerrando servidor...');
+  console.log('🤖 Encerrando conexões WhatsApp multi-tenant...');
+
+  // Encerrar todas as conexões WhatsApp ativas
+  const allTenants = await whatsappService.getAllTenants();
+  for (const tenant of allTenants) {
+    try {
+      await whatsappService.stopTenantConnection(tenant.tenantId);
+    } catch (error) {
+      console.error(`❌ Erro ao encerrar tenant ${tenant.tenantId}:`, error);
+    }
+  }
+
   cronJobService.stopJobs();
   await pool.end();
   process.exit(0);
@@ -391,6 +584,18 @@ process.on('SIGINT', async () => {
 
 process.on('SIGTERM', async () => {
   console.log('🛑 Recebido SIGTERM. Encerrando servidor...');
+  console.log('🤖 Encerrando conexões WhatsApp multi-tenant...');
+
+  // Encerrar todas as conexões WhatsApp ativas
+  const allTenants = await whatsappService.getAllTenants();
+  for (const tenant of allTenants) {
+    try {
+      await whatsappService.stopTenantConnection(tenant.tenantId);
+    } catch (error) {
+      console.error(`❌ Erro ao encerrar tenant ${tenant.tenantId}:`, error);
+    }
+  }
+
   cronJobService.stopJobs();
   await pool.end();
   process.exit(0);

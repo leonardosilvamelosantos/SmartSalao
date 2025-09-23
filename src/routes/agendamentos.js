@@ -9,8 +9,15 @@ const { validateId, validatePagination } = require('../middleware/validation');
  */
 router.get('/', async (req, res) => {
   try {
+    // Log reduzido para evitar spam
+    // console.log('🔍 [DEBUG] GET /api/agendamentos chamado');
+    
     const agendamentoService = new AgendamentoService();
     const resultado = await agendamentoService.buscarAgendamentos(req.user.id, req.query);
+    
+    // Log reduzido
+    // console.log('🔍 [DEBUG] Resultado final:', resultado.success, resultado.data?.length || 0, 'agendamentos');
+    
     res.json(resultado);
   } catch (error) {
     console.error('Erro ao buscar agendamentos:', error);
@@ -63,8 +70,14 @@ router.get('/:id', validateId, async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
+    // Log reduzido para evitar spam
+    // console.log('🔍 [DEBUG] POST /api/agendamentos chamado');
+    
     const agendamentoService = new AgendamentoService();
     const resultado = await agendamentoService.criarAgendamento(req.user.id, req.body);
+    
+    // Log reduzido
+    // console.log('🔍 [DEBUG] Resultado da criação:', resultado);
     
     if (resultado.success) {
       res.status(201).json(resultado);
@@ -103,11 +116,23 @@ router.put('/:id', validateId, async (req, res) => {
 router.patch('/:id/confirmar', validateId, async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id;
+    
+    console.log(`✅ Rota PATCH /api/agendamentos/${id}/confirmar chamada para usuário: ${userId}`);
+    
+    if (!userId) {
+      console.log(`❌ Usuário não autenticado`);
+      return res.status(401).json({ success: false, message: 'Usuário não autenticado' });
+    }
+    
     const agendamentoService = new AgendamentoService();
-    const resultado = await agendamentoService.confirmarAgendamento(id, req.user.id);
+    const resultado = await agendamentoService.confirmarAgendamento(id, userId);
+    
+    console.log(`📤 Resultado da confirmação:`, resultado);
     res.json(resultado);
   } catch (error) {
-    console.error('Erro ao confirmar agendamento:', error);
+    console.error('❌ Erro ao confirmar agendamento:', error);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({ success: false, message: 'Erro interno do servidor' });
   }
 });
@@ -133,11 +158,23 @@ router.patch('/:id/cancelar', validateId, async (req, res) => {
 router.delete('/:id', validateId, async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id;
+    
+    console.log(`🗑️ Rota DELETE /api/agendamentos/${id} chamada para usuário: ${userId}`);
+    
+    if (!userId) {
+      console.log(`❌ Usuário não autenticado`);
+      return res.status(401).json({ success: false, message: 'Usuário não autenticado' });
+    }
+    
     const agendamentoService = new AgendamentoService();
-    const resultado = await agendamentoService.cancelarAgendamento(id, req.user.id);
+    const resultado = await agendamentoService.cancelarAgendamento(id, userId);
+    
+    console.log(`📤 Resultado do cancelamento:`, resultado);
     res.json(resultado);
   } catch (error) {
-    console.error('Erro ao deletar agendamento:', error);
+    console.error('❌ Erro ao deletar agendamento:', error);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({ success: false, message: 'Erro interno do servidor' });
   }
 });

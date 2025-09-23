@@ -10,7 +10,9 @@ class Router {
     }
 
     async navigate(pageName) {
-        if (this.currentPage === pageName) return;
+        if (this.currentPage === pageName) {
+            return;
+        }
 
         // Esconder todas as páginas
         document.querySelectorAll('.page').forEach(page => {
@@ -26,6 +28,8 @@ class Router {
         const targetPage = document.getElementById(`${pageName}-page`);
         if (targetPage) {
             targetPage.classList.add('active');
+        } else {
+            console.error('❌ Router: Página', pageName, 'não encontrada');
         }
 
         // Ativar link correspondente
@@ -38,7 +42,11 @@ class Router {
 
         // Carregar dados da página se existir
         if (this.pages[pageName] && typeof this.pages[pageName].load === 'function') {
-            await this.pages[pageName].load();
+            try {
+                await this.pages[pageName].load();
+            } catch (error) {
+                console.error('❌ Router: Erro ao carregar dados da página', pageName, ':', error);
+            }
         }
     }
 }

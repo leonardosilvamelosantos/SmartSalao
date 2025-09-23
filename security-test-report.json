@@ -1,0 +1,16 @@
+{
+  "summary": {
+    "total": 5,
+    "passed": 2,
+    "failed": 3,
+    "duration": "21031ms"
+  },
+  "errors": [
+    "Testes automatizados falharam",
+    "Configuração de Produção: Variável de ambiente NODE_ENV não definida",
+    "Configurações de Segurança: Rate Limiting não está configurado corretamente"
+  ],
+  "warnings": [],
+  "timestamp": "2025-09-23T12:16:22.134Z",
+  "environment": "development"
+}

@@ -112,7 +112,13 @@ class DashboardService {
       AND a.start_at < ?
     `, [userId, today, tomorrow]);
 
-    return metrics[0];
+    const row = metrics[0] || {};
+    return {
+      appointments_today: parseInt(row.appointments_today || 0),
+      confirmed_today: parseInt(row.confirmed_today || 0),
+      completed_today: parseInt(row.completed_today || 0),
+      revenue_today: parseFloat(row.revenue_today || 0)
+    };
   }
 
   /**
@@ -137,8 +143,12 @@ class DashboardService {
       AND a.start_at >= ?
       AND a.start_at < ?
     `, [userId, weekStart, weekEnd]);
-
-    return metrics[0];
+    const row = metrics[0] || {};
+    return {
+      appointments_week: parseInt(row.appointments_week || 0),
+      completed_week: parseInt(row.completed_week || 0),
+      revenue_week: parseFloat(row.revenue_week || 0)
+    };
   }
 
   /**
@@ -157,14 +167,18 @@ class DashboardService {
         COUNT(*) as appointments_month,
         COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_month,
         COALESCE(SUM(CASE WHEN status = 'completed' THEN s.valor END), 0) as revenue_month
-      FROM tenant_teste_agendamentos a
-      JOIN tenant_teste_servicos s ON a.id_servico = s.id_servico
+      FROM agendamentos a
+      JOIN servicos s ON a.id_servico = s.id_servico
       WHERE a.id_usuario = ?
       AND a.start_at >= ?
       AND a.start_at < ?
     `, [userId, monthStart, nextMonth]);
-
-    return metrics[0];
+    const row = metrics[0] || {};
+    return {
+      appointments_month: parseInt(row.appointments_month || 0),
+      completed_month: parseInt(row.completed_month || 0),
+      revenue_month: parseFloat(row.revenue_month || 0)
+    };
   }
 
   /**
@@ -328,7 +342,7 @@ class DashboardService {
         FROM dashboard_cache
         WHERE id_usuario = ?
         AND tipo = ?
-        AND expires_at > datetime('now')
+        AND expires_at > NOW()
         ORDER BY data_calculo DESC
         LIMIT 1
       `, [userId, cacheKey]);
@@ -358,13 +372,13 @@ class DashboardService {
       expiresAt.setMinutes(expiresAt.getMinutes() + ttlMinutes);
 
       await Agendamento.query(`
-        INSERT INTO dashboard_cache (id_usuario, tipo, dados, expires_at)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO dashboard_cache (id_usuario, tipo, dados, expires_at, data_calculo)
+        VALUES (?, ?, ?, ?, NOW())
         ON CONFLICT (id_usuario, tipo)
         DO UPDATE SET
           dados = EXCLUDED.dados,
           expires_at = EXCLUDED.expires_at,
-          data_calculo = datetime('now')
+          data_calculo = NOW()
       `, [userId, cacheKey, JSON.stringify(data), expiresAt.toISOString()]);
 
     } catch (error) {

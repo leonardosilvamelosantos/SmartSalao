@@ -2,7 +2,7 @@ const BaseModel = require('../models/BaseModel');
 
 class ConfiguracaoService {
   constructor() {
-    this.configuracaoModel = new BaseModel('configuracoes');
+    this.configuracaoModel = new BaseModel('configuracoes', 'id_configuracao');
   }
 
   async getConfiguracoes(userId) {
@@ -35,8 +35,13 @@ class ConfiguracaoService {
 
   async updateConfiguracoes(userId, data) {
     try {
+      console.log('🔧 ConfiguracaoService.updateConfiguracoes - Iniciando');
+      console.log('👤 UserId:', userId);
+      console.log('📝 Data recebida:', data);
+      
       // Verificar se configurações existem
       const existingConfig = await this.configuracaoModel.findBy({ id_usuario: userId });
+      console.log('🔍 Configurações existentes:', existingConfig);
       
       const configData = {
         id_usuario: userId,
@@ -60,7 +65,8 @@ class ConfiguracaoService {
         horas_lembrete: data.horas_lembrete || 24,
         metodo_pagamento_padrao: data.metodo_pagamento_padrao || 'dinheiro',
         aceitar_pix: data.aceitar_pix ? 1 : 0,
-        updated_at: new Date().toISOString()
+        auto_confirm_whatsapp: data.auto_confirm_whatsapp ? 1 : 0
+        // updated_at será definido automaticamente pelo BaseModel
       };
 
       if (existingConfig && existingConfig.length > 0) {
@@ -68,8 +74,9 @@ class ConfiguracaoService {
         await this.configuracaoModel.update(existingConfig[0].id_configuracao, configData);
       } else {
         // Criar novas configurações
-        configData.created_at = new Date().toISOString();
-        await this.configuracaoModel.create(configData);
+        console.log('➕ Criando novas configurações');
+        // created_at e updated_at serão definidos automaticamente pelo BaseModel
+        const newId = await this.configuracaoModel.create(configData);
       }
 
       // Se há alteração de senha
@@ -112,6 +119,7 @@ class ConfiguracaoService {
       horas_lembrete: 24,
       metodo_pagamento_padrao: 'dinheiro',
       aceitar_pix: 0,
+      auto_confirm_whatsapp: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -155,7 +163,7 @@ class ConfiguracaoService {
   async updatePassword(userId, senhaAtual, novaSenha) {
     try {
       const bcrypt = require('bcrypt');
-      const usuarioModel = new BaseModel('usuarios');
+      const usuarioModel = new BaseModel('usuarios', 'id_usuario');
       
       // Buscar usuário
       const usuario = await usuarioModel.findBy({ id_usuario: userId });

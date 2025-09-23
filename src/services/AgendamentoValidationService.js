@@ -2,8 +2,9 @@ const BaseModel = require('../models/BaseModel');
 
 class AgendamentoValidationService {
   constructor() {
-    this.configuracaoModel = new BaseModel('configuracoes');
-    this.agendamentoModel = new BaseModel('agendamentos');
+    // Tabela 'configuracoes' é opcional; fallsback para defaults se não existir
+    this.configuracaoModel = new BaseModel('configuracoes', 'id_configuracao');
+    this.agendamentoModel = new BaseModel('agendamentos', 'id_agendamento');
   }
 
   /**
@@ -34,6 +35,15 @@ class AgendamentoValidationService {
       }
 
       // Validar horário de funcionamento
+      console.log('🔍 Validação de horário:', {
+        horario_agendamento: horario,
+        horario_abertura: configuracoes.horario_abertura,
+        horario_fechamento: configuracoes.horario_fechamento,
+        start_at_original: start_at,
+        data_agendamento: dataAgendamento.toISOString(),
+        data_agendamento_local: dataAgendamento.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+      });
+      
       if (!this.validarHorarioFuncionamento(horario, configuracoes)) {
         return { 
           valid: false, 
@@ -96,8 +106,10 @@ class AgendamentoValidationService {
       // Gerar slots baseados no intervalo
       for (let hora = inicio; hora < fim; hora += intervalo) {
         const slotTime = this.formatTime(hora);
-        const slotDateTime = new Date(`${data}T${slotTime}:00`);
-        
+        // Construir data com timezone local do servidor (evita ISO com TZ diferente)
+        const [yy, mm, dd] = data.split('-').map(Number);
+        const slotDateTime = new Date(yy, mm - 1, dd, Math.floor(hora / 60), hora % 60, 0, 0);
+
         // Verificar se slot não está no passado
         if (slotDateTime > new Date()) {
           // Verificar se slot está disponível
@@ -124,9 +136,27 @@ class AgendamentoValidationService {
    */
   async getConfiguracoesUsuario(userId) {
     try {
-      const configs = await this.configuracaoModel.findBy({ id_usuario: userId });
+      // Checar existência da tabela configuracoes no Postgres
+      const pool = require('../config/database');
+      let hasTable = true;
+      try {
+        const t = await pool.query("SELECT to_regclass('public.configuracoes') as exists");
+        hasTable = !!t.rows?.[0]?.exists;
+      } catch {
+        hasTable = false;
+      }
+
+      const configs = hasTable ? await this.configuracaoModel.findBy({ id_usuario: userId }) : [];
       if (!configs || configs.length === 0) {
-        return null;
+        // Fallback: configurações padrão quando não houver registro
+        const defaultConfig = {
+          id_usuario: userId,
+          dias_funcionamento: ['segunda','terca','quarta','quinta','sexta','sabado'],
+          horario_abertura: '08:00',
+          horario_fechamento: '18:00',
+          intervalo_agendamento: 30
+        };
+        return defaultConfig;
       }
 
       const config = configs[0];
@@ -139,10 +169,23 @@ class AgendamentoValidationService {
         }
       }
 
-      return config;
+      // Garantir defaults mínimos
+      return {
+        dias_funcionamento: ['segunda','terca','quarta','quinta','sexta','sabado'],
+        horario_abertura: '08:00',
+        horario_fechamento: '18:00',
+        intervalo_agendamento: 30,
+        ...config
+      };
     } catch (error) {
       console.error('Erro ao buscar configurações:', error);
-      return null;
+      // Em caso de erro, retornar defaults para não quebrar o fluxo
+      return {
+        dias_funcionamento: ['segunda','terca','quarta','quinta','sexta','sabado'],
+        horario_abertura: '08:00',
+        horario_fechamento: '18:00',
+        intervalo_agendamento: 30
+      };
     }
   }
 
@@ -161,7 +204,8 @@ class AgendamentoValidationService {
     const inicio = this.parseTime(configuracoes.horario_abertura);
     const fim = this.parseTime(configuracoes.horario_fechamento);
     
-    return horarioAgendamento >= inicio && horarioAgendamento < fim;
+    // Incluir o horário de fechamento (18:00) como válido
+    return horarioAgendamento >= inicio && horarioAgendamento <= fim;
   }
 
   /**
@@ -170,7 +214,13 @@ class AgendamentoValidationService {
   validarIntervalo(horario, intervalo) {
     const [hora, minuto] = horario.split(':').map(Number);
     const totalMinutos = hora * 60 + minuto;
-    return totalMinutos % intervalo === 0;
+    
+    // Usar o intervalo configurado pelo usuário
+    const isValid = totalMinutos % intervalo === 0;
+    
+    console.log(`🔍 Validação de intervalo: ${horario} (${totalMinutos} min) % ${intervalo} = ${totalMinutos % intervalo} -> ${isValid ? 'VÁLIDO' : 'INVÁLIDO'}`);
+    
+    return isValid;
   }
 
   /**
@@ -239,7 +289,14 @@ class AgendamentoValidationService {
   }
 
   formatarHorario(date) {
-    return date.toTimeString().substring(0, 5);
+    // Converter para timezone do Brasil (America/Sao_Paulo) para validação
+    const options = { 
+      timeZone: 'America/Sao_Paulo',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    };
+    return date.toLocaleTimeString('pt-BR', options);
   }
 
   parseTime(timeString) {

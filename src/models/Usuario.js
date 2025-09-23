@@ -40,6 +40,23 @@ class Usuario extends BaseModel {
     return result[0] || null;
   }
 
+  /**
+   * Buscar usuários por tenant
+   */
+  async findByTenant(tenantId, schema = null) {
+    let tablePrefix = '';
+    if (schema) {
+      const isSQLite = process.env.USE_SQLITE === 'true' || process.env.DB_TYPE === 'sqlite';
+      tablePrefix = isSQLite ? `${schema}_` : `${schema}.`;
+    }
+
+    let query = `SELECT * FROM ${tablePrefix}usuarios WHERE id_tenant = $1 ORDER BY nome`;
+    const values = [tenantId];
+
+    const result = await this.query(query, values);
+    return result || [];
+  }
+
   async findWithServices(id, tenantId = null, schema = null) {
     let tablePrefix = '';
     if (schema) {

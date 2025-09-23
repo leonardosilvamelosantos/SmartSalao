@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * Script de Inicialização SQLite
- * Versão simplificada para desenvolvimento rápido
+ * Script de Inicialização SQLite - LEGADO
+ * ⚠️  DEPRECATED: Este script é apenas para referência histórica
+ * ⚠️  O sistema agora usa PostgreSQL exclusivamente
+ * ⚠️  Use scripts/setup-postgresql.js para configuração atual
+ * 
+ * Versão simplificada para desenvolvimento rápido (SQLite)
+ * Mantido apenas para referência e migração de dados
  */
 
 const { pool } = require('../src/config/database-sqlite');

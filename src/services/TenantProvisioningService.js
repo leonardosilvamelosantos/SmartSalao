@@ -26,22 +26,27 @@ class TenantProvisioningService {
       const limites = this.getPlanLimits(data.plan); // JSON string
       const configuracoes = this.getDefaultConfig(); // JSON string
 
-      await pool.query(
+      // Detectar tipo de banco e usar função de data apropriada
+      const isPostgreSQL = process.env.NODE_ENV === 'production' || 
+                          process.env.DB_TYPE === 'postgresql' || 
+                          process.env.USE_POSTGRESQL === 'true' ||
+                          process.env.USE_SQLITE === 'false';
+      const nowFunction = isPostgreSQL ? 'NOW()' : "datetime('now')";
+      
+      const tenantResult = await pool.query(
         `INSERT INTO tenants (nome, email, telefone, documento, schema_name, plano, status, limites, configuracoes, data_criacao, data_atualizacao)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, ${nowFunction}, ${nowFunction})
+         RETURNING id_tenant, nome, email, telefone, schema_name, plano, status, limites, configuracoes, data_criacao`,
         [data.name, data.email, data.phone, data.document || null, schemaName, data.plan, 'ativo', limites, configuracoes]
       );
 
-      const sel = await pool.query(
-        'SELECT id_tenant, nome, email, telefone, schema_name, plano, status, limites, configuracoes, data_criacao FROM tenants ORDER BY id_tenant DESC LIMIT 1'
-      );
-      const tenant = sel.rows[0];
+      const tenant = tenantResult.rows[0];
 
       // Criar usuário admin básico vinculado ao tenant (tabela usuarios)
       try {
         await pool.query(
           `INSERT INTO usuarios (id_tenant, nome, whatsapp, timezone)
-           VALUES (?, ?, ?, ?)`,
+           VALUES ($1, $2, $3, $4)`,
           [tenant.id_tenant, data.name, (data.phone || '').replace('+', ''), CONFIG.DEFAULT_TIMEZONE]
         );
       } catch (e) {
@@ -97,7 +102,7 @@ class TenantProvisioningService {
     // Verificar domínio (derivado do nome) único
     const dominio = this.normalizeDomain(name);
     const existing = await pool.query(
-      'SELECT id_tenant FROM tenants WHERE schema_name = ?',
+      'SELECT id_tenant FROM tenants WHERE schema_name = $1 LIMIT 1',
       [dominio]
     );
     if (existing.rows.length > 0) {
@@ -137,7 +142,7 @@ class TenantProvisioningService {
 
     while (true) {
       const existing = await pool.query(
-        'SELECT id_tenant FROM tenants WHERE schema_name = ?',
+        'SELECT id_tenant FROM tenants WHERE schema_name = $1 LIMIT 1',
         [schemaName]
       );
 
@@ -170,45 +175,45 @@ class TenantProvisioningService {
       // Usuários do tenant
       `CREATE TABLE ${schemaName}.usuarios (
         id_usuario SERIAL PRIMARY KEY,
-        nome VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        senha VARCHAR(255) NOT NULL,
-        tipo VARCHAR(50) DEFAULT 'barbeiro',
+        nome TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        senha TEXT NOT NULL,
+        tipo TEXT DEFAULT 'barbeiro',
         ativo BOOLEAN DEFAULT true,
-        timezone VARCHAR(50) DEFAULT '${CONFIG.DEFAULT_TIMEZONE}',
-        criado_em TIMESTAMPTZ DEFAULT NOW()
+        timezone TEXT DEFAULT '${CONFIG.DEFAULT_TIMEZONE}',
+        criado_em TIMESTAMP DEFAULT NOW()
       )`,
 
       // Serviços
       `CREATE TABLE ${schemaName}.servicos (
         id_servico SERIAL PRIMARY KEY,
         id_usuario INTEGER REFERENCES ${schemaName}.usuarios(id_usuario),
-        nome_servico VARCHAR(255) NOT NULL,
+        nome_servico TEXT NOT NULL,
         duracao_min INTEGER NOT NULL,
         valor DECIMAL(10,2) NOT NULL,
         ativo BOOLEAN DEFAULT true,
-        criado_em TIMESTAMPTZ DEFAULT NOW()
+        criado_em TIMESTAMP DEFAULT NOW()
       )`,
 
       // Clientes
       `CREATE TABLE ${schemaName}.clientes (
         id_cliente SERIAL PRIMARY KEY,
         id_usuario INTEGER REFERENCES ${schemaName}.usuarios(id_usuario),
-        nome VARCHAR(255) NOT NULL,
+        nome TEXT NOT NULL,
         whatsapp VARCHAR(20) UNIQUE,
-        email VARCHAR(255),
-        criado_em TIMESTAMPTZ DEFAULT NOW()
+        email TEXT,
+        criado_em TIMESTAMP DEFAULT NOW()
       )`,
 
       // Slots de horário
       `CREATE TABLE ${schemaName}.slots (
         id_slot SERIAL PRIMARY KEY,
         id_usuario INTEGER REFERENCES ${schemaName}.usuarios(id_usuario),
-        start_at TIMESTAMPTZ NOT NULL,
-        end_at TIMESTAMPTZ NOT NULL,
-        status VARCHAR(20) DEFAULT 'free',
+        start_at TIMESTAMP NOT NULL,
+        end_at TIMESTAMP NOT NULL,
+        status TEXT DEFAULT 'free',
         id_agendamento INTEGER,
-        criado_em TIMESTAMPTZ DEFAULT NOW()
+        criado_em TIMESTAMP DEFAULT NOW()
       )`,
 
       // Agendamentos
@@ -217,12 +222,12 @@ class TenantProvisioningService {
         id_usuario INTEGER REFERENCES ${schemaName}.usuarios(id_usuario),
         id_servico INTEGER REFERENCES ${schemaName}.servicos(id_servico),
         id_cliente INTEGER REFERENCES ${schemaName}.clientes(id_cliente),
-        start_at TIMESTAMPTZ NOT NULL,
-        end_at TIMESTAMPTZ NOT NULL,
-        status VARCHAR(20) DEFAULT 'confirmed',
+        start_at TIMESTAMP NOT NULL,
+        end_at TIMESTAMP NOT NULL,
+        status TEXT DEFAULT 'confirmed',
         valor_total DECIMAL(10,2),
         observacoes TEXT,
-        criado_em TIMESTAMPTZ DEFAULT NOW()
+        criado_em TIMESTAMP DEFAULT NOW()
       )`,
 
       // Configurações específicas do tenant
@@ -230,8 +235,8 @@ class TenantProvisioningService {
         id_config SERIAL PRIMARY KEY,
         chave VARCHAR(100) UNIQUE NOT NULL,
         valor JSONB,
-        criado_em TIMESTAMPTZ DEFAULT NOW(),
-        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+        criado_em TIMESTAMP DEFAULT NOW(),
+        atualizado_em TIMESTAMP DEFAULT NOW()
       )`
     ];
 
@@ -417,7 +422,7 @@ class TenantProvisioningService {
 
       // Buscar informações do tenant
       const tenantResult = await client.query(
-        'SELECT schema_name FROM tenants WHERE id_tenant = $1',
+        'SELECT schema_name FROM tenants WHERE id_tenant = $1 LIMIT 1',
         [tenantId]
       );
 

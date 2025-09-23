@@ -18,7 +18,7 @@ router.get('/webhook', (req, res) => {
   }
 });
 
-// POST /api/whatsapp/webhook - Receber mensagens do WhatsApp (Evolution API)
+// POST /api/whatsapp/webhook - Receber mensagens do WhatsApp (Baileys)
 router.post('/webhook', async (req, res) => {
   try {
     const WhatsappController = require('../controllers/WhatsappController');

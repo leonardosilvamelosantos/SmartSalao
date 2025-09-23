@@ -131,7 +131,7 @@ class NotificationService {
    */
   async sendRemindersByTimeframe(targetTime, templateType, hoursAhead) {
     try {
-      // SQLite: usar tabelas padrão
+      // PostgreSQL: usar tabelas padrão
       const bookings = await Agendamento.query(`
         SELECT
           a.*,
@@ -146,12 +146,12 @@ class NotificationService {
         JOIN servicos s ON a.id_servico = s.id_servico
         JOIN usuarios u ON a.id_usuario = u.id_usuario
         WHERE a.status = 'confirmed'
-        AND a.start_at >= ?
-        AND a.start_at < ?
+        AND a.start_at >= $1
+        AND a.start_at < $2
         AND NOT EXISTS (
           SELECT 1 FROM notificacoes n
           WHERE n.id_agendamento = a.id_agendamento
-          AND n.tipo = ?
+          AND n.tipo = $3
           AND n.enviada = true
         )
       `, [
@@ -200,8 +200,8 @@ class NotificationService {
     try {
       await Agendamento.query(`
         INSERT INTO notificacoes (id_agendamento, tipo, enviada, message_id, enviada_em)
-        VALUES (?, ?, ?, ?, ?)
-      `, [bookingId, type, success ? 1 : 0, messageId, new Date()]);
+        VALUES ($1, $2, $3, $4, $5)
+      `, [bookingId, type, success, messageId, new Date()]);
     } catch (error) {
       console.warn('Erro ao registrar notificação:', error);
     }
@@ -223,13 +223,13 @@ class NotificationService {
           COUNT(CASE WHEN enviada = false THEN 1 END) as falhas
         FROM notificacoes n
         JOIN agendamentos a ON n.id_agendamento = a.id_agendamento
-        WHERE n.enviada_em >= ?
+        WHERE n.enviada_em >= $1
       `;
 
       const params = [startDate];
 
       if (userId) {
-        query += ' AND a.id_usuario = ?';
+        query += ' AND a.id_usuario = $2';
         params.push(userId);
       }
 
@@ -294,7 +294,7 @@ class NotificationService {
       // Salvar configurações de lembretes no banco
       await Usuario.query(`
         UPDATE usuarios
-        SET config_notificacoes = $1, updated_at = now()
+        SET config_notificacoes = $1, updated_at = NOW()
         WHERE id_usuario = $2
       `, [JSON.stringify(settings), userId]);
 

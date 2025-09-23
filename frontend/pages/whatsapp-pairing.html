@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp - Código de Pareamento</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dark-mode.css">
+    <style>
+        .pairing-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .pairing-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .pairing-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .pairing-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .connection-method {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        .method-option {
+            padding: 1rem 2rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-color);
+        }
+
+        .method-option.active {
+            border-color: var(--primary-color);
+            background: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        .method-option:hover {
+            border-color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            background: var(--bg-color);
+            color: var(--text-primary);
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .phone-format {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-container {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .result-success {
+            background: var(--success-light);
+            border: 2px solid var(--success-color);
+            color: var(--success-dark);
+        }
+
+        .result-error {
+            background: var(--error-light);
+            border: 2px solid var(--error-color);
+            color: var(--error-dark);
+        }
+
+        .pairing-code {
+            font-size: 2rem;
+            font-weight: bold;
+            letter-spacing: 0.5rem;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--bg-color);
+            border-radius: 8px;
+            border: 2px dashed var(--primary-color);
+        }
+
+        .qr-code-container {
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .qr-code-container img {
+            max-width: 300px;
+            border-radius: 8px;
+        }
+
+        .instructions {
+            background: var(--info-light);
+            border: 2px solid var(--info-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .instructions h3 {
+            color: var(--info-dark);
+            margin-bottom: 1rem;
+        }
+
+        .instructions ol {
+            text-align: left;
+            color: var(--text-primary);
+        }
+
+        .instructions li {
+            margin-bottom: 0.5rem;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-connected {
+            background: var(--success-color);
+        }
+
+        .status-disconnected {
+            background: var(--error-color);
+        }
+
+        .status-connecting {
+            background: var(--warning-color);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .spinner {
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="pairing-container">
+            <div class="pairing-header">
+                <h1>🔐 WhatsApp - Código de Pareamento</h1>
+                <p>Conecte seu WhatsApp usando QR Code ou Código de Pareamento</p>
+            </div>
+
+            <div class="connection-method">
+                <div class="method-option active" data-method="qr">
+                    <strong>📱 QR Code</strong>
+                    <br>
+                    <small>Escaneie com seu celular</small>
+                </div>
+                <div class="method-option" data-method="pairing">
+                    <strong>🔢 Código de Pareamento</strong>
+                    <br>
+                    <small>Digite o código no WhatsApp</small>
+                </div>
+            </div>
+
+            <form id="connectionForm">
+                <div class="form-group" id="phoneGroup" style="display: none;">
+                    <label for="phoneNumber">Número de Telefone</label>
+                    <input 
+                        type="tel" 
+                        id="phoneNumber" 
+                        placeholder="5511999999999"
+                        pattern="[0-9]{10,15}"
+                        required
+                    >
+                    <div class="phone-format">
+                        Formato: Apenas números (ex: 5511999999999 para Brasil)
+                    </div>
+                </div>
+
+                <button type="submit" class="btn" id="connectBtn">
+                    Conectar WhatsApp
+                </button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Conectando...</p>
+            </div>
+
+            <div id="resultContainer" class="result-container" style="display: none;">
+                <div id="resultContent"></div>
+            </div>
+
+            <div class="instructions" id="instructions" style="display: none;">
+                <h3>📋 Instruções</h3>
+                <ol id="instructionList"></ol>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/theme.js"></script>
+    <script>
+        class WhatsAppPairing {
+            constructor() {
+                this.currentMethod = 'qr';
+                this.currentTenantId = null;
+                this.checkInterval = null;
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.loadTenantInfo();
+            }
+
+            setupEventListeners() {
+                // Método de conexão
+                document.querySelectorAll('.method-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        this.setConnectionMethod(e.currentTarget.dataset.method);
+                    });
+                });
+
+                // Formulário
+                document.getElementById('connectionForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.connectWhatsApp();
+                });
+
+                // Formatação do telefone
+                document.getElementById('phoneNumber').addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/\D/g, '');
+                });
+            }
+
+            setConnectionMethod(method) {
+                this.currentMethod = method;
+                
+                // Atualizar UI
+                document.querySelectorAll('.method-option').forEach(option => {
+                    option.classList.remove('active');
+                });
+                document.querySelector(`[data-method="${method}"]`).classList.add('active');
+
+                // Mostrar/ocultar campo de telefone
+                const phoneGroup = document.getElementById('phoneGroup');
+                if (method === 'pairing') {
+                    phoneGroup.style.display = 'block';
+                } else {
+                    phoneGroup.style.display = 'none';
+                }
+            }
+
+            async loadTenantInfo() {
+                try {
+                    // Aqui você pode carregar informações do tenant atual
+                    // Por enquanto, vamos usar um ID fixo para teste
+                    this.currentTenantId = '1';
+                } catch (error) {
+                    console.error('Erro ao carregar informações do tenant:', error);
+                }
+            }
+
+            async connectWhatsApp() {
+                const connectBtn = document.getElementById('connectBtn');
+                const loading = document.getElementById('loading');
+                const resultContainer = document.getElementById('resultContainer');
+                const instructions = document.getElementById('instructions');
+
+                // Mostrar loading
+                connectBtn.disabled = true;
+                loading.style.display = 'block';
+                resultContainer.style.display = 'none';
+                instructions.style.display = 'none';
+
+                try {
+                    let result;
+                    
+                    if (this.currentMethod === 'qr') {
+                        result = await this.connectWithQR();
+                    } else {
+                        const phoneNumber = document.getElementById('phoneNumber').value;
+                        if (!phoneNumber) {
+                            throw new Error('Número de telefone é obrigatório');
+                        }
+                        result = await this.connectWithPairing(phoneNumber);
+                    }
+
+                    this.showResult(result);
+                    this.startStatusCheck();
+
+                } catch (error) {
+                    this.showError(error.message);
+                } finally {
+                    connectBtn.disabled = false;
+                    loading.style.display = 'none';
+                }
+            }
+
+            async connectWithQR() {
+                const response = await fetch(`/api/whatsapp-v2/instances/${this.currentTenantId}/connect`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        connectionMethod: 'qr'
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.message || 'Erro ao conectar com QR Code');
+                }
+
+                return result;
+            }
+
+            async connectWithPairing(phoneNumber) {
+                // Primeiro conectar a instância
+                const connectResponse = await fetch(`/api/whatsapp-v2/instances/${this.currentTenantId}/connect`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        phoneNumber,
+                        connectionMethod: 'pairing'
+                    })
+                });
+
+                const connectResult = await connectResponse.json();
+                
+                if (!connectResult.success) {
+                    throw new Error(connectResult.message || 'Erro ao conectar instância');
+                }
+
+                // Solicitar código de pareamento
+                const pairingResponse = await fetch(`/api/whatsapp-v2/instances/${this.currentTenantId}/pairing-code`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        phoneNumber
+                    })
+                });
+
+                const pairingResult = await pairingResponse.json();
+                
+                if (!pairingResult.success) {
+                    throw new Error(pairingResult.message || 'Erro ao gerar código de pareamento');
+                }
+
+                return pairingResult;
+            }
+
+            showResult(result) {
+                const resultContainer = document.getElementById('resultContainer');
+                const resultContent = document.getElementById('resultContent');
+                const instructions = document.getElementById('instructions');
+                const instructionList = document.getElementById('instructionList');
+
+                resultContainer.className = 'result-container result-success';
+                resultContainer.style.display = 'block';
+
+                if (this.currentMethod === 'qr' && result.qrCode) {
+                    resultContent.innerHTML = `
+                        <h3>📱 QR Code Gerado</h3>
+                        <div class="qr-code-container">
+                            <img src="${result.qrCode.data}" alt="QR Code">
+                        </div>
+                        <p>Escaneie este QR Code com seu WhatsApp</p>
+                    `;
+
+                    instructionList.innerHTML = `
+                        <li>Abra o WhatsApp no seu celular</li>
+                        <li>Toque em <strong>Menu</strong> (três pontos) → <strong>Dispositivos conectados</strong></li>
+                        <li>Toque em <strong>Conectar um dispositivo</strong></li>
+                        <li>Escaneie o QR Code acima</li>
+                    `;
+                } else if (this.currentMethod === 'pairing' && result.pairingCode) {
+                    resultContent.innerHTML = `
+                        <h3>🔢 Código de Pareamento</h3>
+                        <div class="pairing-code">${result.pairingCode.code}</div>
+                        <p>Digite este código no seu WhatsApp</p>
+                        <p><small>⏰ Válido por 2 minutos</small></p>
+                    `;
+
+                    instructionList.innerHTML = `
+                        <li>Abra o WhatsApp no seu celular</li>
+                        <li>Toque em <strong>Menu</strong> (três pontos) → <strong>Dispositivos conectados</strong></li>
+                        <li>Toque em <strong>Conectar um dispositivo</strong></li>
+                        <li>Toque em <strong>Conectar com número de telefone</strong></li>
+                        <li>Digite o código: <strong>${result.pairingCode.code}</strong></li>
+                    `;
+                }
+
+                instructions.style.display = 'block';
+            }
+
+            showError(message) {
+                const resultContainer = document.getElementById('resultContainer');
+                const resultContent = document.getElementById('resultContent');
+
+                resultContainer.className = 'result-container result-error';
+                resultContainer.style.display = 'block';
+
+                resultContent.innerHTML = `
+                    <h3>❌ Erro</h3>
+                    <p>${message}</p>
+                `;
+            }
+
+            startStatusCheck() {
+                if (this.checkInterval) {
+                    clearInterval(this.checkInterval);
+                }
+
+                this.checkInterval = setInterval(async () => {
+                    try {
+                        const response = await fetch(`/api/whatsapp-v2/instances/${this.currentTenantId}/status`, {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            }
+                        });
+
+                        const status = await response.json();
+                        
+                        if (status.success && status.isConnected) {
+                            this.showConnectedStatus();
+                            clearInterval(this.checkInterval);
+                        }
+                    } catch (error) {
+                        console.error('Erro ao verificar status:', error);
+                    }
+                }, 2000);
+            }
+
+            showConnectedStatus() {
+                const resultContainer = document.getElementById('resultContainer');
+                const resultContent = document.getElementById('resultContent');
+
+                resultContainer.className = 'result-container result-success';
+                resultContainer.style.display = 'block';
+
+                resultContent.innerHTML = `
+                    <h3>✅ Conectado com Sucesso!</h3>
+                    <p>Seu WhatsApp está conectado e pronto para uso.</p>
+                    <p><span class="status-indicator status-connected"></span>Status: Conectado</p>
+                `;
+            }
+        }
+
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', () => {
+            new WhatsAppPairing();
+        });
+    </script>
+</body>
+</html>

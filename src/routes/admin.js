@@ -14,24 +14,56 @@ const jwt = require('jsonwebtoken');
 const AuthService = require('../services/AuthService');
 const CacheService = require('../services/CacheService');
 
+/**
+ * Determina se um usuário pode criar tenant baseado no seu nível de admin
+ * @param {Object} user - Usuário logado
+ * @param {string} adminLevel - Nível de admin do novo usuário
+ * @param {string} tipo - Tipo do usuário (admin/barbeiro)
+ * @returns {boolean} - Se pode criar tenant
+ */
+function canUserCreateTenant(user, adminLevel, tipo) {
+  // System admin (você) sempre pode criar tenant para qualquer usuário
+  if (user.role === 'system_admin') {
+    return true;
+  }
+
+  // Se for admin, verificar nível de admin
+  if (tipo === 'admin') {
+    // Apenas admins de empresa (escolhidos a dedo) podem criar tenant
+    if (adminLevel === 'empresa') {
+      return true;
+    }
+    // Outros admins (admin_level 'local' ou não especificado) não podem criar tenant
+    return false;
+  }
+
+  // Para usuários barbeiro, apenas system_admin pode criar tenant
+  // (isso mantém o controle restritivo)
+  return false;
+}
+
 // ====================
 // RATE LIMITING PARA ADMIN
 // ====================
 
-const adminRateLimit = rateLimit({
-  windowMs: 60 * 1000, // 1 minuto
-  max: 60, // 60 requisições por minuto para admin
-  message: {
-    success: false,
-    error: {
-      code: 'RATE_LIMIT_EXCEEDED',
-      message: 'Muitas requisições administrativas. Aguarde um momento.'
+// Rate limiting para admin - Desabilitado em desenvolvimento
+const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'dev';
+const adminRateLimit = isDevelopment ? 
+  (req, res, next) => next() : // Middleware vazio em desenvolvimento
+  rateLimit({
+    windowMs: 60 * 1000, // 1 minuto
+    max: 60, // 60 requisições por minuto para admin
+    message: {
+      success: false,
+      error: {
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: 'Muitas requisições administrativas. Aguarde um momento.'
+      },
+      timestamp: new Date().toISOString()
     },
-    timestamp: new Date().toISOString()
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-});
+    standardHeaders: true,
+    legacyHeaders: false
+  });
 
 // ====================
 // MIDDLEWARE DE AUTENTICAÇÃO ADMIN
@@ -62,10 +94,32 @@ const requireSystemAdminOnly = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Autenticação necessária' } });
   }
-  if (req.user.role === 'system_admin' || req.user.permissions?.system === true) {
+  
+  // Debug: mostrar informações do usuário
+  console.log('🔍 Usuário logado:', {
+    id: req.user.id,
+    role: req.user.role,
+    tipo: req.user.tipo,
+    permissions: req.user.permissions,
+    email: req.user.email
+  });
+  
+  // Verificar se é admin do sistema ou admin local
+  if (req.user.role === 'system_admin' || 
+      req.user.role === 'admin' || 
+      req.user.tipo === 'admin' || 
+      req.user.permissions?.system === true ||
+      req.user.permissions?.admin === true) {
     return next();
   }
-  return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Apenas administradores do sistema' } });
+  
+  return res.status(403).json({ 
+    success: false, 
+    error: { 
+      code: 'FORBIDDEN', 
+      message: 'Apenas administradores do sistema. Role atual: ' + req.user.role + ', Tipo: ' + req.user.tipo 
+    } 
+  });
 };
 
 // Utilitário: registrar auditoria
@@ -73,15 +127,126 @@ async function logAudit(req, { acao, entidade, id_entidade, dados = {}, status =
   try {
     const idTenant = req.user?.tenant_id || null;
     const idAdmin = req.user?.id || null;
-    await pool.query(
-      `INSERT INTO audit_logs (id_tenant, id_usuario_admin, acao, entidade, id_entidade, dados, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
-      [idTenant, idAdmin, acao, entidade || null, id_entidade || null, JSON.stringify(dados), status]
-    );
+    // Gravar auditoria apenas se tabela existir
+    try {
+      const chk = await pool.query("SELECT to_regclass('public.audit_logs') as exists");
+      if (chk.rows?.[0]?.exists) {
+        await pool.query(
+          `INSERT INTO audit_logs (id_tenant, id_usuario_admin, acao, entidade, id_entidade, dados, status, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+          [idTenant, idAdmin, acao, entidade || null, id_entidade || null, JSON.stringify(dados), status]
+        );
+      }
+    } catch (e) {
+      // Ignorar se tabela não existir
+    }
   } catch (e) {
     console.error('Erro ao registrar auditoria:', e.message);
   }
 }
+
+// ====================
+// GESTÃO DE TENANTS E USUÁRIOS
+// ====================
+
+/**
+ * GET /api/admin/tenants-with-users
+ * Listar todos os tenants com seus usuários vinculados
+ */
+router.get('/tenants-with-users', authenticateToken, requireSystemAdminOnly, adminRateLimit, async (req, res) => {
+  try {
+    const { search = '', page = 1, limit = 20 } = req.query;
+    
+    // Buscar todos os tenants
+    const tenantsQuery = `
+      SELECT 
+        t.id_tenant,
+        t.nome as tenant_nome,
+        t.email as tenant_email,
+        t.telefone as tenant_telefone,
+        t.plano,
+        t.status as tenant_status,
+        t.data_criacao as tenant_created_at,
+        COUNT(u.id_usuario) as total_usuarios,
+        COUNT(CASE WHEN u.ativo = true THEN 1 END) as usuarios_ativos,
+        COUNT(CASE WHEN u.tipo = 'admin' THEN 1 END) as admins_count,
+        COUNT(CASE WHEN u.tipo = 'barbeiro' THEN 1 END) as barbeiros_count
+      FROM tenants t
+      LEFT JOIN usuarios u ON t.id_tenant = u.id_tenant
+      WHERE 1=1
+      ${search ? 'AND (t.nome ILIKE $1 OR t.email ILIKE $1)' : ''}
+      GROUP BY t.id_tenant, t.nome, t.email, t.telefone, t.plano, t.status, t.data_criacao
+      ORDER BY t.data_criacao DESC
+      LIMIT $${search ? '2' : '1'} OFFSET $${search ? '3' : '2'}
+    `;
+    
+    const params = search ? [`%${search}%`, parseInt(limit), (parseInt(page) - 1) * parseInt(limit)] : [parseInt(limit), (parseInt(page) - 1) * parseInt(limit)];
+    const tenantsResult = await pool.query(tenantsQuery, params);
+    
+    // Para cada tenant, buscar seus usuários
+    const tenantsWithUsers = await Promise.all(
+      tenantsResult.rows.map(async (tenant) => {
+        const usersQuery = `
+          SELECT 
+            id_usuario,
+            nome,
+            email,
+            whatsapp,
+            tipo,
+            ativo,
+            created_at
+          FROM usuarios 
+          WHERE id_tenant = $1
+          ORDER BY created_at DESC
+        `;
+        
+        const usersResult = await pool.query(usersQuery, [tenant.id_tenant]);
+        
+        return {
+          ...tenant,
+          usuarios: usersResult.rows
+        };
+      })
+    );
+    
+    // Contar total de tenants para paginação
+    const countQuery = `
+      SELECT COUNT(DISTINCT t.id_tenant) as total
+      FROM tenants t
+      WHERE 1=1
+      ${search ? 'AND (t.nome ILIKE $1 OR t.email ILIKE $1)' : ''}
+    `;
+    const countParams = search ? [`%${search}%`] : [];
+    const countResult = await pool.query(countQuery, countParams);
+    const total = parseInt(countResult.rows[0].total || 0);
+    
+    await logAudit(req, { 
+      acao: 'ADMIN_LIST_TENANTS_WITH_USERS', 
+      entidade: 'tenants', 
+      dados: { search, page: parseInt(page), limit: parseInt(limit) } 
+    });
+    
+    return res.json({ 
+      success: true, 
+      data: tenantsWithUsers, 
+      pagination: { 
+        page: parseInt(page), 
+        limit: parseInt(limit), 
+        total 
+      } 
+    });
+    
+  } catch (error) {
+    console.error('Erro ao listar tenants com usuários:', error);
+    await logAudit(req, { 
+      acao: 'ADMIN_LIST_TENANTS_WITH_USERS', 
+      entidade: 'tenants', 
+      dados: { error: error.message }, 
+      status: 'error' 
+    });
+    return res.status(500).json({ success: false, message: 'Erro interno do servidor' });
+  }
+});
 
 // ====================
 // DASHBOARD PRINCIPAL
@@ -156,27 +321,63 @@ router.post('/users', authenticateToken, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Acesso negado' });
     }
 
-    const { nome, email, senha, tipo, whatsapp, telefone, id_tenant } = req.body || {};
+    const { nome, email, senha, tipo, whatsapp, telefone, id_tenant, create_tenant, admin_level } = req.body || {};
     if (!nome || !email || !senha) {
       return res.status(400).json({ success: false, message: 'Nome, email e senha são obrigatórios' });
     }
 
     // Verificar email único
-    const exists = await pool.query('SELECT 1 FROM usuarios WHERE email = ?', [email]);
+    const exists = await pool.query('SELECT 1 FROM usuarios WHERE email = $1', [email]);
     if (exists.rows && exists.rows.length > 0) {
       return res.status(409).json({ success: false, message: 'Email já cadastrado' });
     }
 
     const senha_hash = await bcrypt.hash(senha, parseInt(process.env.BCRYPT_ROUNDS) || 12);
     const phone = whatsapp || telefone || null;
-    const tenantId = id_tenant || req.user?.tenant_id || 1;
+    let tenantId = id_tenant || req.user?.tenant_id || 1;
+
+    // Determinar se pode criar tenant baseado no nível de admin
+    const canCreateTenant = canUserCreateTenant(req.user, admin_level, tipo);
+    
+    // Se create_tenant for true e o usuário pode criar tenant, criar um novo tenant
+    if (create_tenant && canCreateTenant && !id_tenant) {
+      try {
+        const TenantProvisioningService = require('../services/TenantProvisioningService');
+        const provisioningService = new TenantProvisioningService();
+        
+        // Criar tenant com dados do usuário
+        const tenantData = {
+          name: nome,
+          email: email,
+          phone: phone || '+5511999999999',
+          plan: 'basico'
+        };
+
+        console.log(`🚀 Criando tenant automaticamente para usuário: ${nome} (${admin_level || 'admin'})`);
+        const tenantResult = await provisioningService.provisionTenant(tenantData);
+        tenantId = tenantResult.tenant.id_tenant;
+        
+        console.log(`✅ Tenant ${tenantId} criado automaticamente para usuário ${nome}`);
+      } catch (tenantError) {
+        console.error('Erro ao criar tenant automaticamente:', tenantError);
+        // Continuar com tenant padrão se falhar
+        tenantId = 1;
+      }
+    }
+
+    // Determinar admin_level para inserção
+    let finalAdminLevel = null;
+    if (tipo === 'admin') {
+      finalAdminLevel = admin_level || 'local';
+    }
+
     await pool.query(
-      'INSERT INTO usuarios (id_tenant, nome, email, whatsapp, senha_hash, tipo, ativo, timezone) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
+      'INSERT INTO usuarios (id_tenant, nome, email, whatsapp, senha_hash, tipo, ativo, timezone) VALUES ($1, $2, $3, $4, $5, $6, true, $7)',
       [tenantId, nome, email, phone, senha_hash, (tipo === 'admin' ? 'admin' : 'barbeiro'), 'America/Sao_Paulo']
     );
 
-    const sel = await pool.query('SELECT id_usuario, id_tenant, nome, email, whatsapp, tipo, ativo, created_at FROM usuarios WHERE email = ?', [email]);
-    await logAudit(req, { acao: 'ADMIN_CREATE_USER', entidade: 'usuarios', id_entidade: sel.rows?.[0]?.id_usuario, dados: { email, id_tenant: tenantId } });
+    const sel = await pool.query('SELECT id_usuario, id_tenant, nome, email, whatsapp, tipo, ativo, created_at FROM usuarios WHERE email = $1', [email]);
+    await logAudit(req, { acao: 'ADMIN_CREATE_USER', entidade: 'usuarios', id_entidade: sel.rows?.[0]?.id_usuario, dados: { email, id_tenant: tenantId, tenant_created: create_tenant } });
     return res.status(201).json({ success: true, data: sel.rows[0] });
 
   } catch (error) {
@@ -194,11 +395,11 @@ router.get('/users', authenticateToken, requireSystemAdminOnly, adminRateLimit, 
     const params = [];
     let where = '1=1';
 
-    if (tenant) { where += ' AND id_tenant = ?'; params.push(parseInt(tenant)); }
-    if (status !== undefined) { where += ' AND ativo = ?'; params.push(parseInt(status) ? 1 : 0); }
-    if (role) { where += ' AND tipo = ?'; params.push(role); }
+    if (tenant) { where += ' AND id_tenant = $' + (params.length + 1); params.push(parseInt(tenant)); }
+    if (status !== undefined) { where += ' AND ativo = $' + (params.length + 1); params.push(status ? true : false); }
+    if (role) { where += ' AND tipo = $' + (params.length + 1); params.push(role); }
     if (search) {
-      where += ' AND (nome LIKE ? OR email LIKE ?)';
+      where += ' AND (nome ILIKE $' + (params.length + 1) + ' OR email ILIKE $' + (params.length + 2) + ')';
       params.push(`%${search}%`, `%${search}%`);
     }
 
@@ -209,7 +410,7 @@ router.get('/users', authenticateToken, requireSystemAdminOnly, adminRateLimit, 
     const rowsSql = `SELECT id_usuario, id_tenant, nome, email, tipo, ativo, created_at
                      FROM usuarios WHERE ${where}
                      ORDER BY created_at DESC
-                     LIMIT ? OFFSET ?`;
+                     LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     const pageNum = parseInt(page); const lim = parseInt(limit);
     const rowsRes = await pool.query(rowsSql, [...params, lim, (pageNum - 1) * lim]);
 
@@ -232,20 +433,20 @@ router.patch('/users/:id', authenticateToken, requireSystemAdminOnly, adminRateL
     const { nome, tipo, ativo } = req.body || {};
     // Montar SET dinâmico
     const sets = []; const params = [];
-    if (nome !== undefined) { sets.push('nome = ?'); params.push(nome); }
-    if (tipo !== undefined) { sets.push('tipo = ?'); params.push(tipo); }
-    if (ativo !== undefined) { sets.push('ativo = ?'); params.push(ativo ? 1 : 0); }
-    sets.push("updated_at = datetime('now')");
+    if (nome !== undefined) { sets.push('nome = $' + (params.length + 1)); params.push(nome); }
+    if (tipo !== undefined) { sets.push('tipo = $' + (params.length + 1)); params.push(tipo); }
+    if (ativo !== undefined) { sets.push('ativo = $' + (params.length + 1)); params.push(ativo); }
+    sets.push("updated_at = NOW()");
     if (sets.length === 1) { // apenas updated_at
       return res.status(400).json({ success: false, message: 'Nenhuma alteração informada' });
     }
     params.push(id);
-    const sql = `UPDATE usuarios SET ${sets.join(', ')} WHERE id_usuario = ?`;
+    const sql = `UPDATE usuarios SET ${sets.join(', ')} WHERE id_usuario = $${params.length}`;
     const upd = await pool.query(sql, params);
-    if (upd.changes === 0) {
+    if (upd.rowCount === 0) {
       return res.status(404).json({ success: false, message: 'Usuário não encontrado' });
     }
-    const sel = await pool.query('SELECT id_usuario, id_tenant, nome, email, tipo, ativo, created_at, updated_at FROM usuarios WHERE id_usuario = ?', [id]);
+    const sel = await pool.query('SELECT id_usuario, id_tenant, nome, email, tipo, ativo, created_at, updated_at FROM usuarios WHERE id_usuario = $1', [id]);
     await logAudit(req, { acao: 'ADMIN_PATCH_USER', entidade: 'usuarios', id_entidade: parseInt(id), dados: { nome, tipo, ativo } });
     return res.json({ success: true, data: sel.rows?.[0] });
   } catch (e) {
@@ -262,13 +463,13 @@ router.delete('/users/:id', authenticateToken, requireSystemAdminOnly, adminRate
   try {
     const { id } = req.params;
     // Verificar vínculos
-    const s = await pool.query('SELECT COUNT(*) as c FROM servicos WHERE id_usuario = ?', [id]);
-    const a = await pool.query('SELECT COUNT(*) as c FROM agendamentos WHERE id_usuario = ?', [id]);
+    const s = await pool.query('SELECT COUNT(*) as c FROM servicos WHERE id_usuario = $1', [id]);
+    const a = await pool.query('SELECT COUNT(*) as c FROM agendamentos WHERE id_usuario = $1', [id]);
     if (parseInt(s.rows?.[0]?.c || 0) > 0 || parseInt(a.rows?.[0]?.c || 0) > 0) {
       return res.status(400).json({ success: false, message: 'Usuário possui vínculos (serviços/agendamentos) e não pode ser excluído' });
     }
-    const del = await pool.query('DELETE FROM usuarios WHERE id_usuario = ?', [id]);
-    if (del.changes === 0) {
+    const del = await pool.query('DELETE FROM usuarios WHERE id_usuario = $1', [id]);
+    if (del.rowCount === 0) {
       return res.status(404).json({ success: false, message: 'Usuário não encontrado' });
     }
     await logAudit(req, { acao: 'ADMIN_DELETE_USER', entidade: 'usuarios', id_entidade: parseInt(id) });
@@ -292,8 +493,8 @@ router.post('/users/:id/reset-password', authenticateToken, requireSystemAdminOn
     }
     const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
     const senha_hash = await bcrypt.hash(newPassword, rounds);
-    const upd = await pool.query("UPDATE usuarios SET senha_hash = ?, updated_at = datetime('now') WHERE id_usuario = ?", [senha_hash, id]);
-    if (upd.changes === 0) {
+    const upd = await pool.query("UPDATE usuarios SET senha_hash = $1, updated_at = NOW() WHERE id_usuario = $2", [senha_hash, id]);
+    if (upd.rowCount === 0) {
       return res.status(404).json({ success: false, message: 'Usuário não encontrado' });
     }
     await logAudit(req, { acao: 'ADMIN_RESET_PASSWORD', entidade: 'usuarios', id_entidade: parseInt(id) });
@@ -311,7 +512,7 @@ router.post('/users/:id/reset-password', authenticateToken, requireSystemAdminOn
 router.post('/impersonate/:id', authenticateToken, requireSystemAdminOnly, adminRateLimit, async (req, res) => {
   try {
     const { id } = req.params;
-    const userRes = await pool.query('SELECT id_usuario, id_tenant, nome, email, tipo, ativo FROM usuarios WHERE id_usuario = ?', [id]);
+    const userRes = await pool.query('SELECT id_usuario, id_tenant, nome, email, tipo, ativo FROM usuarios WHERE id_usuario = $1', [id]);
     if (!userRes.rows || userRes.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Usuário não encontrado' });
     }
@@ -362,19 +563,19 @@ router.get('/audit-logs', authenticateToken, requireSystemAdminOnly, adminRateLi
     const { search = '', action, tenant, user, page = 1, limit = 50, since, until } = req.query;
     const params = [];
     let where = '1=1';
-    if (tenant) { where += ' AND id_tenant = ?'; params.push(parseInt(tenant)); }
-    if (user) { where += ' AND id_usuario_admin = ?'; params.push(parseInt(user)); }
-    if (action) { where += ' AND acao = ?'; params.push(action); }
-    if (since) { where += ' AND created_at >= ?'; params.push(since); }
-    if (until) { where += ' AND created_at <= ?'; params.push(until); }
-    if (search) { where += ' AND (dados LIKE ? OR entidade LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
+    if (tenant) { where += ' AND id_tenant = $' + (params.length + 1); params.push(parseInt(tenant)); }
+    if (user) { where += ' AND id_usuario_admin = $' + (params.length + 1); params.push(parseInt(user)); }
+    if (action) { where += ' AND acao = $' + (params.length + 1); params.push(action); }
+    if (since) { where += ' AND created_at >= $' + (params.length + 1); params.push(since); }
+    if (until) { where += ' AND created_at <= $' + (params.length + 1); params.push(until); }
+    if (search) { where += ' AND (dados ILIKE $' + (params.length + 1) + ' OR entidade ILIKE $' + (params.length + 2) + ')'; params.push(`%${search}%`, `%${search}%`); }
 
     const countSql = `SELECT COUNT(*) as total FROM audit_logs WHERE ${where}`;
     const c = await pool.query(countSql, params);
     const total = parseInt(c.rows?.[0]?.total || 0);
 
     const pageNum = parseInt(page); const lim = parseInt(limit);
-    const rowsSql = `SELECT * FROM audit_logs WHERE ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    const rowsSql = `SELECT * FROM audit_logs WHERE ${where} ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     const r = await pool.query(rowsSql, [...params, lim, (pageNum - 1) * lim]);
     return res.json({ success: true, data: r.rows, pagination: { page: pageNum, limit: lim, total } });
   } catch (e) {

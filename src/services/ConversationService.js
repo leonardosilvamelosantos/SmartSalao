@@ -374,21 +374,26 @@ class ConversationService {
   }
 
   /**
-   * Enviar resposta via WhatsApp (placeholder - implementar com Evolution API)
+   * Enviar resposta via WhatsApp (Baileys)
    */
   async sendResponse(to, message, businessNumber) {
     try {
       console.log(`📤 Enviando resposta para ${to}: ${message.substring(0, 50)}...`);
 
-      // Aqui você implementaria a chamada para o Evolution API
-      // const WhatsappService = require('./WhatsappService');
-      // await WhatsappService.sendTextMessage(to, message);
+      // Usar o controlador WhatsApp que agora usa Baileys
+      const WhatsappController = require('../controllers/WhatsappController');
+      const result = await WhatsappController.sendMessageViaBaileys(to, message, businessNumber);
 
-      // Por enquanto, só log
-      console.log(`✅ Resposta enviada para ${to}`);
+      if (result.success) {
+        console.log(`✅ Resposta enviada via Baileys para ${to}`);
+      } else {
+        console.error(`❌ Erro ao enviar resposta via Baileys: ${result.error}`);
+      }
 
+      return result;
     } catch (error) {
       console.error('Erro ao enviar resposta:', error);
+      return { success: false, error: error.message };
     }
   }
 

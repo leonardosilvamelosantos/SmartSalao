@@ -26,21 +26,24 @@ const rateLimit = require('express-rate-limit');
 //   }
 // });
 
-// Rate limiting mais restritivo para operações de escrita
-const writeRateLimit = rateLimit({
-  windowMs: 60 * 1000, // 1 minuto
-  max: 5, // 5 operações de escrita por minuto
-  message: {
-    success: false,
-    error: {
-      code: 'RATE_LIMIT_EXCEEDED',
-      message: 'Muitas operações de escrita. Aguarde um minuto.'
+// Rate limiting mais restritivo para operações de escrita - Desabilitado em desenvolvimento
+const isDevelopment = true; // Sempre desabilitar rate limiting em desenvolvimento
+const writeRateLimit = isDevelopment ? 
+  (req, res, next) => next() : // Middleware vazio em desenvolvimento
+  rateLimit({
+    windowMs: 60 * 1000, // 1 minuto
+    max: 5, // 5 operações de escrita por minuto
+    message: {
+      success: false,
+      error: {
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: 'Muitas operações de escrita. Aguarde um minuto.'
+      },
+      timestamp: new Date().toISOString()
     },
-    timestamp: new Date().toISOString()
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-});
+    standardHeaders: true,
+    legacyHeaders: false
+  });
 
 // ====================
 // VALIDAÇÃO DE PARÂMETROS

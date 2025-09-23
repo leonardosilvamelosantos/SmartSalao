@@ -1,7 +1,10 @@
 const AuthService = require('../services/AuthService');
+const SecurityAlertService = require('../services/SecurityAlertService');
+const pool = require('../config/database');
 
-// Instanciar o serviço de autenticação
+// Instanciar os serviços
 const authService = new AuthService();
+const securityAlert = new SecurityAlertService();
 
 /**
  * Middleware de autenticação JWT
@@ -11,7 +14,15 @@ const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
+    // Log reduzido para evitar spam
+    if (req.url.includes('/api/dashboard') || req.url.includes('/api/agendamentos')) {
+      // Só logar para rotas críticas
+    } else {
+      console.log(`🔐 Auth middleware - URL: ${req.method} ${req.url}`);
+    }
+
     if (!token) {
+      console.log(`❌ Token não fornecido`);
       return res.status(401).json({
         success: false,
         message: 'Token de acesso não fornecido'
@@ -20,9 +31,11 @@ const authenticateToken = async (req, res, next) => {
 
     // Verificar token
     const decoded = await authService.verifyToken(token);
+    // Log reduzido - só mostrar em caso de erro
 
     // Verificar se é um token de acesso
     if (decoded.type !== 'access') {
+      console.log(`❌ Tipo de token inválido:`, decoded.type);
       return res.status(401).json({
         success: false,
         message: 'Tipo de token inválido'
@@ -31,8 +44,8 @@ const authenticateToken = async (req, res, next) => {
 
     // Adicionar dados do usuário na requisição
     req.user = {
-      id: decoded.id,
-      tenant_id: decoded.tenant_id,
+      id: decoded.userId || decoded.id,
+      tenant_id: decoded.tenantId || decoded.tenant_id,
       schema: decoded.schema,
       plan: decoded.plan,
       limits: decoded.limits,
@@ -43,10 +56,15 @@ const authenticateToken = async (req, res, next) => {
       permissions: decoded.permissions
     };
 
+    // Log reduzido - só mostrar para rotas importantes
+    if (!req.url.includes('/api/dashboard') && !req.url.includes('/api/agendamentos')) {
+      console.log(`✅ Usuário autenticado:`, req.user);
+    }
+
 
     // Se não há tenant específico na rota, usar o do token
-    if (!req.tenantId && decoded.tenant_id) {
-      req.tenantId = decoded.tenant_id;
+    if (!req.tenantId && (decoded.tenantId || decoded.tenant_id)) {
+      req.tenantId = decoded.tenantId || decoded.tenant_id;
     }
 
     next();
@@ -85,10 +103,37 @@ const checkPermission = (resource, action) => {
         });
       }
 
-      // Para desenvolvimento, sempre permitir
-      const hasPermission = true;
+      // Verificar se usuário pertence ao tenant
+      if (!tenantId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tenant ID não fornecido'
+        });
+      }
 
+      const userTenant = await pool.query(
+        'SELECT id_tenant FROM usuarios WHERE id_usuario = ? AND id_tenant = ?',
+        [userId, tenantId]
+      );
+
+      if (userTenant.rows.length === 0) {
+        // Log de tentativa de acesso não autorizado
+        console.warn(`🚨 Tentativa de acesso não autorizado: User ${userId} tentando acessar tenant ${tenantId}`);
+        
+        // Registrar evento de segurança
+        await securityAlert.logUnauthorizedAccess(userId, tenantId, req.originalUrl, req.ip, req.get('User-Agent'));
+        
+        return res.status(403).json({
+          success: false,
+          message: 'Acesso negado - usuário não pertence ao tenant'
+        });
+      }
+
+      // Verificar permissões específicas se necessário
+      const hasPermission = await authService.checkPermission(req.user, `${resource}:${action}`);
+      
       if (!hasPermission) {
+        console.warn(`🚨 Permissão insuficiente: User ${userId} tentando ${action} em ${resource}`);
         return res.status(403).json({
           success: false,
           message: 'Acesso negado - permissão insuficiente'
@@ -121,13 +166,13 @@ const optionalAuth = async (req, res, next) => {
 
         if (decoded.type === 'access') {
           req.user = {
-            id: decoded.id,
+            id: decoded.userId || decoded.id,
             whatsapp: decoded.whatsapp,
-            tenantId: decoded.tenantId
+            tenantId: decoded.tenantId || decoded.tenant_id
           };
 
-          if (!req.tenantId && decoded.tenantId) {
-            req.tenantId = decoded.tenantId;
+          if (!req.tenantId && (decoded.tenantId || decoded.tenant_id)) {
+            req.tenantId = decoded.tenantId || decoded.tenant_id;
           }
         }
       } catch (error) {

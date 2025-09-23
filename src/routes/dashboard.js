@@ -3,61 +3,96 @@ const router = express.Router();
 const DashboardController = require('../controllers/DashboardController');
 const { authenticateToken } = require('../middleware/auth');
 
-/**
- * GET /api/dashboard - Métricas principais do dashboard
- */
-router.get('/', authenticateToken, DashboardController.getMainMetrics);
+const dashboardController = new DashboardController();
 
-/**
- * GET /api/dashboard/today - Métricas de hoje
- */
-router.get('/today', authenticateToken, DashboardController.getTodayMetrics);
+// Middleware de autenticação para todas as rotas
+router.use(authenticateToken);
 
-/**
- * GET /api/dashboard/week - Métricas da semana
- */
-router.get('/week', authenticateToken, DashboardController.getWeekMetrics);
+// GET /api/dashboard - Obter métricas do dashboard
+router.get('/', async (req, res) => {
+    await dashboardController.getMetrics(req, res);
+});
 
-/**
- * GET /api/dashboard/month - Métricas do mês
- */
-router.get('/month', authenticateToken, DashboardController.getMonthMetrics);
+// GET /api/dashboard/agendamentos - Obter agendamentos do dashboard
+router.get('/agendamentos', async (req, res) => {
+    try {
+        const tenantId = req.user?.tenant_id;
+        const { status = 'confirmed', limit = 5, sort = 'start_at' } = req.query;
 
-/**
- * GET /api/dashboard/trends - Tendências dos últimos 7 dias
- */
-router.get('/trends', authenticateToken, DashboardController.getTrends);
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Dados de usuário inválidos'
+            });
+        }
 
-/**
- * GET /api/dashboard/appointments-by-status - Agendamentos por status
- */
-router.get('/appointments-by-status', authenticateToken, DashboardController.getAppointmentsByStatus);
+        const agendamentos = await dashboardController.agendamentoService.listarAgendamentos({
+            tenant_id: tenantId,
+            status,
+            limit: parseInt(limit),
+            sort
+        });
 
-/**
- * GET /api/dashboard/revenue-by-service - Receita por serviço
- */
-router.get('/revenue-by-service', authenticateToken, DashboardController.getRevenueByService);
+        res.json({
+            success: true,
+            data: agendamentos
+        });
 
-/**
- * GET /api/dashboard/top-clients - Clientes mais frequentes
- */
-router.get('/top-clients', authenticateToken, DashboardController.getTopClients);
+    } catch (error) {
+        console.error('Erro ao obter agendamentos do dashboard:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno do servidor'
+        });
+    }
+});
 
-/**
- * GET /api/dashboard/report - Relatório detalhado por período
- * Query params: start_date, end_date
- */
-router.get('/report', authenticateToken, DashboardController.getDetailedReport);
+// GET /api/dashboard/grafico - Obter dados para gráfico
+router.get('/grafico', async (req, res) => {
+    try {
+        const tenantId = req.user?.tenant_id;
+        const { periodo = '7d' } = req.query;
 
-/**
- * POST /api/dashboard/clear-cache - Limpar cache do usuário
- */
-router.post('/clear-cache', authenticateToken, DashboardController.clearCache);
+        if (!tenantId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Dados de usuário inválidos'
+            });
+        }
 
-/**
- * GET /api/dashboard/export - Exportar dados para CSV
- * Query params: type (appointments|clients), start_date, end_date
- */
-router.get('/export', authenticateToken, DashboardController.exportToCSV);
+        // Calcular período baseado no parâmetro
+        const hoje = new Date();
+        let inicio;
+
+        switch (periodo) {
+            case '7d':
+                inicio = new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case '30d':
+                inicio = new Date(hoje.getTime() - 30 * 24 * 60 * 60 * 1000);
+                break;
+            case '90d':
+                inicio = new Date(hoje.getTime() - 90 * 24 * 60 * 60 * 1000);
+                break;
+            default:
+                inicio = new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000);
+        }
+
+        const userId = req.user?.id || req.user?.id_usuario;
+        const dadosGrafico = await dashboardController.getDadosGrafico(userId, inicio, hoje);
+
+        res.json({
+            success: true,
+            data: dadosGrafico
+        });
+
+    } catch (error) {
+        console.error('Erro ao obter dados do gráfico:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno do servidor'
+        });
+    }
+});
 
 module.exports = router;

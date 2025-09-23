@@ -30,11 +30,11 @@ else
     echo "❌ API: FALHA"
 fi
 
-# Evolution API
-if curl -s -f http://localhost:8080 > /dev/null 2>&1; then
-    echo "✅ Evolution API: OK"
+# WhatsApp Multi-Tenant
+if curl -s -f http://localhost:3000/api/bot/tenants > /dev/null 2>&1; then
+    echo "✅ WhatsApp Multi-Tenant: OK"
 else
-    echo "❌ Evolution API: FALHA"
+    echo "❌ WhatsApp Multi-Tenant: FALHA"
 fi
 
 # Banco de dados

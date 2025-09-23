@@ -1,7 +1,7 @@
 const ConversationService = require('../services/ConversationService');
 
 /**
- * Controlador para integração WhatsApp via Evolution API
+ * Controlador para integração WhatsApp via Baileys (WhatsApp Web)
  */
 class WhatsappController {
   constructor() {
@@ -9,7 +9,7 @@ class WhatsappController {
   }
 
   /**
-   * Webhook para receber mensagens do Evolution API
+   * Webhook para receber mensagens do WhatsApp (Baileys)
    * POST /api/whatsapp/webhook
    */
   async receiveMessage(req, res) {
@@ -41,10 +41,10 @@ class WhatsappController {
       // Processar mensagem através do serviço de conversas
       const response = await this.conversationService.processMessage(from, message, businessNumber);
 
-      // Se tem resposta imediata, enviar
+      // Se tem resposta imediata, enviar via Baileys
       if (response && response.immediate) {
         try {
-          await this.sendMessage(from, response.message, businessNumber);
+          await this.sendMessageViaBaileys(from, response.message, businessNumber);
         } catch (sendError) {
           console.error('Erro ao enviar resposta imediata:', sendError);
         }
@@ -68,54 +68,49 @@ class WhatsappController {
   }
 
   /**
-   * Enviar mensagem via Evolution API
+   * Enviar mensagem via Baileys (WhatsApp Web)
    */
-  async sendMessage(to, message, from) {
+  async sendMessageViaBaileys(to, message, from) {
     try {
-      // Configurações do Evolution API
-      const evolutionConfig = {
-        baseUrl: process.env.EVOLUTION_API_URL || 'http://localhost:8080',
-        apiKey: process.env.EVOLUTION_API_KEY,
-        instanceName: process.env.EVOLUTION_INSTANCE_NAME || 'default'
-      };
+      // Importar o serviço multi-tenant do WhatsApp
+      const MultiTenantWhatsAppService = require('../whatsapp-bot/services/MultiTenantWhatsAppService');
+      
+      // Obter o tenant baseado no número de origem
+      const tenantId = this.extractTenantFromNumber(from);
+      
+      if (!tenantId) {
+        throw new Error('Tenant não encontrado para o número: ' + from);
+      }
 
-      // Payload para o Evolution API
-      const payload = {
-        number: to,
-        text: message,
-        delay: 1000 // Delay de 1 segundo entre mensagens
-      };
+      // Enviar mensagem via Baileys
+      const result = await MultiTenantWhatsAppService.sendMessage(tenantId, to, message);
 
-      // Headers de autenticação
-      const headers = {
-        'Content-Type': 'application/json',
-        'apikey': evolutionConfig.apiKey
-      };
-
-      // Fazer chamada para Evolution API
-      const axios = require('axios');
-      const response = await axios.post(
-        `${evolutionConfig.baseUrl}/message/sendText/${evolutionConfig.instanceName}`,
-        payload,
-        { headers }
-      );
-
-      console.log(`✅ Mensagem enviada para ${to}: ${response.data?.messageId || 'OK'}`);
+      console.log(`✅ Mensagem enviada via Baileys para ${to}: ${result.messageId || 'OK'}`);
 
       return {
         success: true,
-        messageId: response.data?.messageId,
-        data: response.data
+        messageId: result.messageId,
+        data: result
       };
 
     } catch (error) {
-      console.error(`❌ Erro ao enviar mensagem para ${to}:`, error.response?.data || error.message);
+      console.error(`❌ Erro ao enviar mensagem via Baileys para ${to}:`, error.message);
 
       return {
         success: false,
-        error: error.response?.data || error.message
+        error: error.message
       };
     }
+  }
+
+  /**
+   * Extrair tenant ID baseado no número de telefone
+   */
+  extractTenantFromNumber(phoneNumber) {
+    // Lógica para mapear número de telefone para tenant
+    // Por enquanto, retorna um tenant padrão
+    // Você pode implementar uma lógica mais sofisticada aqui
+    return 'default';
   }
 
   /**
@@ -134,26 +129,14 @@ class WhatsappController {
         });
       }
 
-      // Configurações do Evolution API
-      const evolutionConfig = {
-        baseUrl: process.env.EVOLUTION_API_URL || 'http://localhost:8080',
-        apiKey: process.env.EVOLUTION_API_KEY,
-        instanceName: process.env.EVOLUTION_INSTANCE_NAME || 'default'
-      };
-
-      // Verificar status da instância
-      const axios = require('axios');
-      const statusResponse = await axios.get(
-        `${evolutionConfig.baseUrl}/instance/connectionState/${evolutionConfig.instanceName}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': evolutionConfig.apiKey
-          }
-        }
-      );
-
-      const status = statusResponse.data;
+      // Importar o serviço multi-tenant do WhatsApp
+      const MultiTenantWhatsAppService = require('../whatsapp-bot/services/MultiTenantWhatsAppService');
+      
+      // Obter o tenant baseado no número de origem
+      const tenantId = this.extractTenantFromNumber(businessNumber);
+      
+      // Verificar status da conexão Baileys
+      const connectionStatus = await MultiTenantWhatsAppService.getConnectionStatus(tenantId);
 
       // Estatísticas das conversas
       const conversationStats = this.conversationService.getConversationStats();
@@ -162,9 +145,9 @@ class WhatsappController {
       res.json({
         success: true,
         whatsapp: {
-          connected: status.state === 'connected',
-          state: status.state,
-          instance: evolutionConfig.instanceName,
+          connected: connectionStatus.connected,
+          state: connectionStatus.state,
+          tenant: tenantId,
           businessNumber: businessNumber
         },
         conversations: conversationStats,
@@ -178,7 +161,7 @@ class WhatsappController {
       res.status(500).json({
         success: false,
         message: 'Erro ao verificar status',
-        error: error.response?.data || error.message,
+        error: error.message,
         whatsapp: {
           connected: false,
           state: 'unknown'
@@ -219,8 +202,8 @@ class WhatsappController {
         });
       }
 
-      // Enviar mensagem
-      const result = await this.sendMessage(to, message, fromNumber);
+      // Enviar mensagem via Baileys
+      const result = await this.sendMessageViaBaileys(to, message, fromNumber);
 
       res.json({
         success: result.success,

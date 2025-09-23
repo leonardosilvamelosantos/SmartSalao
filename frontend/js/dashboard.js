@@ -12,15 +12,16 @@ class DashboardManager {
         this.setupRealTimeUpdates();
         this.initChart();
         this.setupEventListeners();
+        this.addButtonFeedback();
     }
 
     // Inicializar gráfico
-    initChart() {
+    async initChart() {
         const ctx = document.getElementById('performanceChart');
         if (!ctx) return;
 
-        // Dados simulados para demonstração
-        const data = this.getChartData();
+        // Dados reais da API
+        const data = await this.getChartData();
 
         this.chart = new Chart(ctx, {
             type: 'line',
@@ -89,13 +90,27 @@ class DashboardManager {
     }
 
     // Dados do gráfico
-    getChartData() {
-        const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    async getChartData() {
+        try {
+            const response = await this.app.apiRequest('/api/dashboard/grafico?periodo=7d');
+            
+            if (response.success && response.data) {
+                return {
+                    labels: response.data.labels,
+                    agendamentos: response.data.agendamentos,
+                    receita: response.data.receitas
+                };
+            }
+        } catch (error) {
+            console.error('Erro ao carregar dados do gráfico:', error);
+        }
 
+        // Dados de fallback
+        const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
         return {
             labels: days,
-            agendamentos: [8, 12, 15, 10, 18, 14, 9],
-            receita: [320, 480, 600, 400, 720, 560, 360]
+            agendamentos: [0, 0, 0, 0, 0, 0, 0],
+            receita: [0, 0, 0, 0, 0, 0, 0]
         };
     }
 
@@ -111,6 +126,68 @@ class DashboardManager {
 
         // Botões de ação rápida
         this.setupQuickActions();
+
+        // Mobile menu functionality
+        this.setupMobileMenu();
+    }
+
+    // Configurar menu mobile
+    setupMobileMenu() {
+        const mobileToggle = document.getElementById('mobileMenuToggle');
+        const sidebarCollapse = document.getElementById('sidebarCollapse');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        if (mobileToggle && sidebarCollapse) {
+            // Usar Bootstrap collapse events
+            sidebarCollapse.addEventListener('show.bs.collapse', () => {
+                this.showMobileSidebar();
+            });
+
+            sidebarCollapse.addEventListener('hide.bs.collapse', () => {
+                this.hideMobileSidebar();
+            });
+        }
+
+        // Fechar sidebar ao clicar no overlay
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                this.closeMobileSidebar();
+            });
+        }
+
+        // Fechar sidebar ao redimensionar para desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 769) {
+                this.closeMobileSidebar();
+            }
+        });
+    }
+
+    // Mostrar sidebar mobile
+    showMobileSidebar() {
+        const overlay = document.getElementById('sidebarOverlay');
+        if (overlay) {
+            overlay.classList.add('show');
+        }
+    }
+
+    // Esconder sidebar mobile
+    hideMobileSidebar() {
+        const overlay = document.getElementById('sidebarOverlay');
+        if (overlay) {
+            overlay.classList.remove('show');
+        }
+    }
+
+    // Fechar sidebar mobile
+    closeMobileSidebar() {
+        const sidebarCollapse = document.getElementById('sidebarCollapse');
+        if (sidebarCollapse) {
+            const bsCollapse = new bootstrap.Collapse(sidebarCollapse, {
+                toggle: false
+            });
+            bsCollapse.hide();
+        }
     }
 
     // Configurar ações rápidas
@@ -139,6 +216,9 @@ class DashboardManager {
     // Carregar dados do dashboard
     async loadDashboardData() {
         try {
+            // Mostrar loading states
+            this.showLoadingStates();
+
             // Carregar métricas principais
             await this.loadMetrics();
 
@@ -151,6 +231,9 @@ class DashboardManager {
         } catch (error) {
             console.error('Erro ao carregar dados do dashboard:', error);
             this.showOfflineMode();
+        } finally {
+            // Esconder loading states
+            this.hideLoadingStates();
         }
     }
 
@@ -175,7 +258,7 @@ class DashboardManager {
     updateMetrics(data) {
         const elements = {
             'agendamentos-hoje': data.agendamentosHoje || data.appointments_today || 0,
-            'receita-hoje': `R$ ${(data.receitaHoje || data.revenue_today || 0).toFixed(2)}`,
+            'receita-hoje': `R$ ${(data.receitaHoje || data.revenue_today || 0).toFixed(2).replace('.', ',')}`,
             'clientes-ativos': data.clientesAtivos || data.total_clients || 0,
             'agendamentos-concluidos': data.agendamentosConcluidos || data.completed_today || 0
         };
@@ -192,6 +275,37 @@ class DashboardManager {
                 }
             }
         });
+
+        // Atualizar percentuais se disponíveis
+        if (data.percentuais) {
+            this.updatePercentuais(data.percentuais);
+        }
+    }
+
+    // Atualizar percentuais de crescimento
+    updatePercentuais(percentuais) {
+        const percentualElements = {
+            'agendamentos-percentual': percentuais.agendamentos,
+            'receita-percentual': percentuais.receita,
+            'clientes-percentual': percentuais.clientes,
+            'concluidos-percentual': percentuais.concluidos
+        };
+
+        Object.entries(percentualElements).forEach(([id, percentual]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                const isPositive = percentual >= 0;
+                const icon = isPositive ? 'bi-arrow-up' : 'bi-arrow-down';
+                const colorClass = isPositive ? 'success' : 'danger';
+                
+                element.innerHTML = `
+                    <i class="bi ${icon} me-1"></i>${Math.abs(percentual)}%
+                `;
+                
+                // Atualizar classes do badge
+                element.className = `badge bg-${colorClass}-100 text-${colorClass}-600`;
+            }
+        });
     }
 
     // Animação para mudança de valores
@@ -205,9 +319,12 @@ class DashboardManager {
     // Carregar próximos agendamentos
     async loadProximosAgendamentos() {
         try {
+            // Mostrar loading
+            this.showAgendamentosLoading();
+
             const response = await this.app.apiRequest('/api/agendamentos?status=confirmed&limit=5&sort=start_at');
 
-            if (response.success && response.data) {
+            if (response.success && response.data && response.data.length > 0) {
                 this.renderProximosAgendamentos(response.data);
             } else {
                 this.renderEmptyAgendamentos();
@@ -218,9 +335,59 @@ class DashboardManager {
         }
     }
 
+    // Mostrar loading states
+    showLoadingStates() {
+        const metricElements = ['agendamentos-hoje', 'receita-hoje', 'clientes-ativos', 'agendamentos-concluidos'];
+        metricElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                const skeleton = element.querySelector('.skeleton');
+                const valueText = element.querySelector('.value-text');
+                if (skeleton && valueText) {
+                    skeleton.style.display = 'block';
+                    valueText.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    // Esconder loading states
+    hideLoadingStates() {
+        const metricElements = ['agendamentos-hoje', 'receita-hoje', 'clientes-ativos', 'agendamentos-concluidos'];
+        metricElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                const skeleton = element.querySelector('.skeleton');
+                const valueText = element.querySelector('.value-text');
+                if (skeleton && valueText) {
+                    skeleton.style.display = 'none';
+                    valueText.style.display = 'block';
+                }
+            }
+        });
+    }
+
+    // Mostrar loading dos agendamentos
+    showAgendamentosLoading() {
+        const loading = document.getElementById('agendamentos-loading');
+        const empty = document.getElementById('agendamentos-empty');
+        const list = document.getElementById('agendamentos-list');
+        
+        if (loading) loading.style.display = 'block';
+        if (empty) empty.style.display = 'none';
+        if (list) list.style.display = 'none';
+    }
+
     // Renderizar próximos agendamentos
     renderProximosAgendamentos(agendamentos) {
-        const container = document.getElementById('proximos-agendamentos');
+        const loading = document.getElementById('agendamentos-loading');
+        const empty = document.getElementById('agendamentos-empty');
+        const list = document.getElementById('agendamentos-list');
+
+        // Esconder loading e empty states
+        if (loading) loading.style.display = 'none';
+        if (empty) empty.style.display = 'none';
+        if (list) list.style.display = 'block';
 
         if (!agendamentos || agendamentos.length === 0) {
             this.renderEmptyAgendamentos();
@@ -247,39 +414,57 @@ class DashboardManager {
             }
 
             return `
-                <div class="d-flex align-items-center p-3 border-bottom">
-                    <div class="flex-shrink-0">
-                        <i class="bi bi-calendar-event text-primary" style="font-size: 1.5rem;"></i>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <div class="d-flex justify-content-between align-items-start">
+                <div class="appointment-item p-3 mb-3 border rounded">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="d-flex align-items-center">
+                            <div class="appointment-avatar me-3">
+                                <i class="bi bi-person-circle text-primary" style="font-size: 2.5rem;"></i>
+                            </div>
                             <div>
                                 <h6 class="mb-1">${agendamento.cliente_nome || 'Cliente'}</h6>
-                                <p class="mb-1 text-muted">${agendamento.nome_servico || 'Serviço'}</p>
-                                <small class="text-muted">
-                                    ${dataHora.toLocaleDateString('pt-BR')} às ${dataHora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
-                                </small>
+                                <p class="mb-1 text-muted small">${agendamento.nome_servico || 'Serviço'}</p>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-clock me-1 text-muted"></i>
+                                    <small class="text-muted">
+                                        ${dataHora.toLocaleDateString('pt-BR')} às ${dataHora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
+                                    </small>
+                                </div>
                             </div>
-                            <span class="badge ${badgeClass}">${statusText}</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge ${badgeClass} mb-2">${statusText}</span>
+                            <div class="mt-2">
+                                <button class="btn btn-outline-primary btn-sm me-1" title="Editar" onclick="editarAgendamento(${agendamento.id})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-success btn-sm me-1" title="Concluir" onclick="concluirAgendamento(${agendamento.id})">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" title="Cancelar" onclick="cancelarAgendamento(${agendamento.id})">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
         }).join('');
 
-        container.innerHTML = html;
+        if (list) {
+            list.innerHTML = html;
+        }
     }
 
     // Renderizar estado vazio
     renderEmptyAgendamentos() {
-        const container = document.getElementById('proximos-agendamentos');
-        container.innerHTML = `
-            <div class="text-center text-muted py-4">
-                <i class="bi bi-calendar-x" style="font-size: 3rem;"></i>
-                <p class="mt-2 mb-1">Nenhum agendamento próximo</p>
-                <small>Seus próximos agendamentos aparecerão aqui</small>
-            </div>
-        `;
+        const loading = document.getElementById('agendamentos-loading');
+        const empty = document.getElementById('agendamentos-empty');
+        const list = document.getElementById('agendamentos-list');
+
+        // Esconder loading e list
+        if (loading) loading.style.display = 'none';
+        if (list) list.style.display = 'none';
+        if (empty) empty.style.display = 'block';
     }
 
     // Carregar gráfico de tendências
@@ -349,6 +534,37 @@ class DashboardManager {
         await this.loadDashboardData();
         this.app.showSuccess('Dados atualizados com sucesso!');
     }
+
+    // Adicionar micro-feedback aos botões
+    addButtonFeedback() {
+        // Botões de ação rápida
+        const buttons = ['btn-novo-agendamento', 'btn-novo-cliente', 'btn-novo-servico'];
+        
+        buttons.forEach(buttonId => {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.addEventListener('click', (e) => {
+                    this.setButtonLoading(button, true);
+                    
+                    // Simular delay para mostrar feedback
+                    setTimeout(() => {
+                        this.setButtonLoading(button, false);
+                    }, 1000);
+                });
+            }
+        });
+    }
+
+    // Definir estado de loading do botão
+    setButtonLoading(button, loading) {
+        if (loading) {
+            button.classList.add('loading');
+            button.disabled = true;
+        } else {
+            button.classList.remove('loading');
+            button.disabled = false;
+        }
+    }
 }
 
 // CSS adicional para animações
@@ -396,5 +612,12 @@ document.addEventListener('DOMContentLoaded', () => {
 function refreshDashboard() {
     if (window.dashboardManager) {
         window.dashboardManager.refresh();
+    }
+}
+
+// Função global para fechar sidebar mobile
+function closeMobileSidebar() {
+    if (window.dashboardManager) {
+        window.dashboardManager.closeMobileSidebar();
     }
 }

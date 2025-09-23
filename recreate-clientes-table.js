@@ -1,33 +1,29 @@
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('./data/agendamento_dev.db');
+const pool = require('./src/config/database');
 
-console.log('Recriando tabela clientes com todas as colunas...');
+console.log('Recriando tabela clientes (PostgreSQL)...');
 
-// Primeiro dropar a tabela existente
-db.run('DROP TABLE IF EXISTS clientes', (err) => {
-  if (err) {
-    console.error('Erro ao dropar tabela:', err);
-    return;
-  }
-
-  // Criar nova tabela com todas as colunas
-  const createTableSQL = `CREATE TABLE clientes (
-    id_cliente INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_usuario INTEGER,
-    nome TEXT,
-    email TEXT,
-    whatsapp TEXT NOT NULL,
-    observacoes TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`;
-
-  db.run(createTableSQL, (err) => {
-    if (err) {
-      console.error('Erro ao criar tabela:', err);
-    } else {
-      console.log('✅ Tabela clientes recriada com sucesso!');
+(async () => {
+  try {
+    await pool.query('DROP TABLE IF EXISTS clientes');
+    await pool.query(`
+      CREATE TABLE clientes (
+        id_cliente SERIAL PRIMARY KEY,
+        id_usuario INTEGER REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE,
+        nome TEXT,
+        email TEXT,
+        whatsapp TEXT NOT NULL,
+        observacoes TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('✅ Tabela clientes recriada com sucesso!');
+  } catch (err) {
+    console.error('Erro ao recriar tabela:', err);
+    process.exit(1);
+  } finally {
+    if (typeof pool.end === 'function') {
+      await pool.end();
     }
-    db.close();
-  });
-});
+  }
+})();

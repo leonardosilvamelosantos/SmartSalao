@@ -4,6 +4,53 @@ const Servico = require('../models/Servico');
  * Controlador para operações com serviços
  */
 class ServicoController {
+
+  /**
+   * Método estático para uso pelo bot WhatsApp - retorna todos os serviços sem paginação
+   * @returns {Promise<Array>} Lista de serviços
+   */
+  static async getAllForBot() {
+    try {
+      const pool = require('../config/database');
+
+      const query = `
+        SELECT s.*, u.nome as usuario_nome
+        FROM servicos s
+        LEFT JOIN usuarios u ON s.id_usuario = u.id_usuario
+        ORDER BY s.id_servico DESC
+      `;
+
+      const result = await pool.query(query);
+      return result.rows;
+    } catch (error) {
+      console.error('Erro ao obter serviços para bot:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Retorna serviços de um tenant específico (exclusivos daquela conta)
+   * @param {number|string} tenantId
+   * @returns {Promise<Array>} Lista de serviços do tenant
+   */
+  static async getForTenant(tenantId) {
+    try {
+      if (!tenantId) return [];
+      const pool = require('../config/database');
+      const query = `
+        SELECT s.*, u.nome as usuario_nome, u.id_tenant
+        FROM servicos s
+        INNER JOIN usuarios u ON s.id_usuario = u.id_usuario
+        WHERE u.id_tenant = ?
+        ORDER BY s.id_servico DESC
+      `;
+      const result = await pool.query(query, [tenantId]);
+      return result.rows;
+    } catch (error) {
+      console.error('Erro ao obter serviços por tenant:', error);
+      return [];
+    }
+  }
   /**
    * Listar serviços com paginação e filtros
    */
@@ -351,4 +398,4 @@ class ServicoController {
   }
 }
 
-module.exports = new ServicoController();
+module.exports = ServicoController;

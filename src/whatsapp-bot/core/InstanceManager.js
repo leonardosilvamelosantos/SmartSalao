@@ -1,0 +1,587 @@
+const WhatsAppInstance = require('./WhatsAppInstance');
+const SessionManager = require('./SessionManager');
+const ConnectionManager = require('./ConnectionManager');
+const path = require('path');
+const fs = require('fs');
+
+/**
+ * Gerenciador de Instâncias WhatsApp Multi-Tenant
+ * Baseado no Multi Zap, adaptado para SQLite e sistema de agendamentos
+ */
+class InstanceManager {
+  constructor() {
+    this.instances = new Map();
+    this.sessions = new Map();
+    this.maxInstances = 10; // Limite de instâncias simultâneas
+    this.cleanupInterval = null;
+    this.sessionManager = new SessionManager();
+    this.connectionManager = new ConnectionManager();
+    
+    // Iniciar limpeza automática
+    this.startCleanupInterval();
+    
+    // NÃO carregar instâncias automaticamente - apenas quando solicitado
+    // this.loadExistingInstances();
+  }
+
+  /**
+   * Criar nova instância para um tenant
+   * @param {string} tenantId - ID do tenant
+   * @param {Object} options - Opções de configuração
+   * @returns {Promise<Object>} - Resultado da criação
+   */
+  async createInstance(tenantId, options = {}) {
+    try {
+      // Verificar se já existe instância ativa
+      if (this.instances.has(tenantId)) {
+        const existing = this.instances.get(tenantId);
+        if (existing.isConnected) {
+          console.log(`✅ Instância já existe e está conectada para tenant: ${tenantId}`);
+          return { success: true, message: 'Instância já existe e está conectada' };
+        }
+        // Se está conectando, aguardar ou retornar erro
+        if (existing.isConnecting) {
+          console.log(`⏳ Instância já está conectando para tenant: ${tenantId}`);
+          return { success: false, error: 'Instância já está conectando' };
+        }
+        // Reutilizar instância existente desconectada
+        console.log(`🔄 Reutilizando instância existente para tenant: ${tenantId}`);
+        const result = await existing.connect();
+        if (result.success) {
+          // Registrar no ConnectionManager se não estiver
+          if (!this.connectionManager.connections.has(tenantId)) {
+            this.connectionManager.registerConnection(tenantId, existing);
+          }
+          return result;
+        } else {
+          console.log(`❌ Falha ao reconectar instância existente: ${result.error}`);
+          return result;
+        }
+      }
+
+      // Carregar instâncias existentes se necessário
+      await this.loadExistingInstances();
+      
+      // Verificar novamente se a instância foi carregada
+      if (this.instances.has(tenantId)) {
+        const existing = this.instances.get(tenantId);
+        console.log(`🔄 Instância carregada do disco para tenant: ${tenantId}`);
+        const result = await existing.connect();
+        if (result.success) {
+          // Registrar no ConnectionManager se não estiver
+          if (!this.connectionManager.connections.has(tenantId)) {
+            this.connectionManager.registerConnection(tenantId, existing);
+          }
+          return result;
+        } else {
+          console.log(`❌ Falha ao conectar instância carregada: ${result.error}`);
+          return result;
+        }
+      }
+
+      // Verificar limite de instâncias
+      if (this.instances.size >= this.maxInstances) {
+        return { success: false, error: 'Limite de instâncias atingido' };
+      }
+
+      console.log(`🔧 Criando nova instância para tenant: ${tenantId}`);
+      
+      const instance = new WhatsAppInstance(tenantId, options);
+      
+      // Configurar eventos da instância
+      this.setupInstanceEvents(instance);
+      
+      // Conectar instância
+      const result = await instance.connect();
+      
+      if (result.success) {
+        this.instances.set(tenantId, instance);
+        
+        // Registrar no ConnectionManager
+        this.connectionManager.registerConnection(tenantId, instance);
+        
+        this.sessions.set(tenantId, {
+          tenantId,
+          createdAt: new Date(),
+          lastActivity: new Date(),
+          status: 'connecting'
+        });
+
+        // Salvar no banco de dados
+        await this.sessionManager.saveInstance(tenantId, {
+          status: 'connecting',
+          createdAt: new Date(),
+          lastActivity: new Date()
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      console.error(`❌ Erro ao criar instância para tenant ${tenantId}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Configurar eventos da instância
+   * @param {WhatsAppInstance} instance - Instância WhatsApp
+   */
+  setupInstanceEvents(instance) {
+    instance.on('connected', () => {
+      const session = this.sessions.get(instance.tenantId);
+      if (session) {
+        session.status = 'connected';
+        session.lastActivity = new Date();
+      }
+      
+      // Atualizar no ConnectionManager
+      this.connectionManager.updateStatus(instance.tenantId, 'connected');
+      
+      console.log(`✅ Instância conectada: ${instance.tenantId}`);
+      
+      // Atualizar no banco
+      this.sessionManager.updateInstanceStatus(instance.tenantId, 'connected');
+    });
+
+    instance.on('disconnected', (data) => {
+      const session = this.sessions.get(instance.tenantId);
+      if (session) {
+        session.status = 'disconnected';
+        session.lastActivity = new Date();
+      }
+      
+      // Atualizar no ConnectionManager
+      this.connectionManager.updateStatus(instance.tenantId, 'disconnected', data);
+      
+      if (process.env.LOG_WA_STATUS === 'true') {
+        console.log(`🔌 Instância desconectada: ${instance.tenantId}`, data);
+      } else {
+        console.log(`🔌 Instância desconectada: ${instance.tenantId}`);
+      }
+      
+      // Atualizar no banco
+      this.sessionManager.updateInstanceStatus(instance.tenantId, 'disconnected');
+    });
+
+    instance.on('qr_generated', (qrData) => {
+      const session = this.sessions.get(instance.tenantId);
+      if (session) {
+        session.qrCode = qrData;
+        session.status = 'qr_ready';
+      }
+      if (process.env.LOG_WA_STATUS === 'true') {
+        console.log(`📱 QR Code gerado para tenant: ${instance.tenantId}`);
+      }
+      
+      // Salvar QR no banco
+      this.sessionManager.saveQRCode(instance.tenantId, qrData);
+    });
+
+    instance.on('qr_expired', () => {
+      if (process.env.LOG_WA_STATUS === 'true') {
+        console.log(`⏰ QR Code expirado para tenant: ${instance.tenantId}, gerando novo...`);
+      }
+      
+      // Limpar QR Code atual
+      const session = this.sessions.get(instance.tenantId);
+      if (session) {
+        session.qrCode = null;
+        session.status = 'disconnected';
+      }
+      
+      // Tentar reconectar para gerar novo QR Code
+      this.reconnectInstance(instance.tenantId);
+    });
+
+    instance.on('message', (messageData) => {
+      const session = this.sessions.get(instance.tenantId);
+      if (session) {
+        session.lastActivity = new Date();
+      }
+      
+      // Processar mensagem através do sistema de agendamentos
+      this.processMessage(instance.tenantId, messageData);
+      
+      // log reduzido
+      // console.log(`📨 Mensagem processada para tenant: ${instance.tenantId}`);
+    });
+
+    instance.on('error', (error) => {
+      console.error(`❌ Erro na instância ${instance.tenantId}:`, error.message);
+    });
+
+    instance.on('critical_error', (data) => {
+      console.error(`💥 Erro crítico na instância ${instance.tenantId}:`, data);
+      // Remover instância em caso de erro crítico
+      this.removeInstance(instance.tenantId);
+    });
+
+    instance.on('credentials_expired', (data) => {
+      console.log(`🔑 Credenciais expiradas para tenant ${instance.tenantId}. Instância disponível para reconexão via QR Code.`);
+      const session = this.sessions.get(instance.tenantId);
+      if (session) {
+        session.status = 'credentials_expired';
+        session.lastActivity = new Date();
+      }
+      
+      // Atualizar no banco
+      this.sessionManager.updateInstanceStatus(instance.tenantId, 'credentials_expired');
+    });
+  }
+
+  /**
+   * Processar mensagem recebida
+   * @param {string} tenantId - ID do tenant
+   * @param {Object} messageData - Dados da mensagem
+   */
+  async processMessage(tenantId, messageData) {
+    try {
+      // Importar o processador de mensagens existente
+      const BotProcessorService = require('../services/BotProcessorService');
+      
+      // Processar mensagem através do sistema existente, incluindo tenantId no payload
+      const response = await BotProcessorService.processMessage({ ...messageData, tenantId });
+      
+      if (response && response.to && response.message) {
+        // Enviar resposta se necessário
+        await this.sendMessage(tenantId, response.to, response.message);
+      }
+    } catch (error) {
+      console.error(`❌ Erro ao processar mensagem para tenant ${tenantId}:`, error.message);
+    }
+  }
+
+  /**
+   * Remover instância
+   * @param {string} tenantId - ID do tenant
+   * @returns {Promise<void>}
+   */
+  async removeInstance(tenantId) {
+    try {
+      const instance = this.instances.get(tenantId);
+      if (instance) {
+        await instance.disconnect();
+        this.instances.delete(tenantId);
+      }
+      
+      this.sessions.delete(tenantId);
+      
+      // Remover do banco
+      await this.sessionManager.removeInstance(tenantId);
+      
+      console.log(`🗑️ Instância removida para tenant: ${tenantId}`);
+    } catch (error) {
+      console.error(`❌ Erro ao remover instância do tenant ${tenantId}:`, error.message);
+    }
+  }
+
+  /**
+   * Obter instância
+   * @param {string} tenantId - ID do tenant
+   * @returns {WhatsAppInstance|null} - Instância ou null
+   */
+  getInstance(tenantId) {
+    return this.instances.get(tenantId);
+  }
+
+  /**
+   * Obter status de uma instância (otimizado)
+   * @param {string} tenantId - ID do tenant
+   * @returns {Object} - Status da instância
+   */
+  getInstanceStatus(tenantId) {
+    const instance = this.instances.get(tenantId);
+    const session = this.sessions.get(tenantId);
+    
+    if (!instance || !session) {
+      return { success: false, error: 'Instância não encontrada' };
+    }
+
+    // Retornar status básico sem logs desnecessários
+    return {
+      success: true,
+      tenantId: instance.tenantId,
+      isConnected: instance.isConnected,
+      qrCode: instance.qrCode,
+      phoneNumber: instance.phoneNumber,
+      connectionMethod: instance.options.connectionMethod,
+      lastActivity: instance.lastActivity,
+      retryCount: instance.retryCount,
+      connectionAttempts: instance.connectionAttempts,
+      connectionState: instance.sock?.ws?.readyState || 'disconnected',
+      isConnecting: instance.isConnecting,
+      user: instance.phoneNumber ? { name: 'Usuário WhatsApp', phone: instance.phoneNumber } : null,
+      session: session
+    };
+  }
+
+  /**
+   * Listar todas as instâncias
+   * @returns {Array} - Lista de instâncias
+   */
+  getAllInstances() {
+    const instances = [];
+    
+    for (const [tenantId, instance] of this.instances.entries()) {
+      const session = this.sessions.get(tenantId);
+      instances.push({
+        tenantId,
+        ...instance.getStatus(),
+        session: session
+      });
+    }
+    
+    return instances;
+  }
+
+  /**
+   * Reconectar instância para regenerar QR Code
+   * @param {string} tenantId
+   */
+  async reconnectInstance(tenantId) {
+    try {
+      const instance = this.instances.get(tenantId);
+      if (!instance) {
+        console.log(`⚠️ Instância ${tenantId} não encontrada para reconexão`);
+        return;
+      }
+
+      // Evitar múltiplas reconexões concorrentes
+      if (instance.isConnecting) {
+        console.log(`⏳ Instância ${tenantId} já está conectando, ignorando reconexão.`);
+        return;
+      }
+
+      console.log(`🔄 Reabrindo conexão para regenerar QR do tenant ${tenantId}`);
+      await instance.connect();
+    } catch (error) {
+      console.error(`❌ Erro ao reconectar instância ${tenantId}:`, error.message);
+    }
+  }
+
+  /**
+   * Enviar mensagem
+   * @param {string} tenantId - ID do tenant
+   * @param {string} to - Destinatário
+   * @param {string} message - Mensagem
+   * @returns {Promise<Object>} - Resultado do envio
+   */
+  async sendMessage(tenantId, to, message) {
+    try {
+      const instance = this.instances.get(tenantId);
+      if (!instance) {
+        return { success: false, error: 'Instância não encontrada' };
+      }
+
+      const result = await instance.sendMessage(to, message);
+      
+      // Log da mensagem no banco
+      if (result.success) {
+        await this.sessionManager.logMessage(tenantId, 'sent', to, message, 'text', result.messageId);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error(`❌ Erro ao enviar mensagem para tenant ${tenantId}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Enviar mídia
+   * @param {string} tenantId - ID do tenant
+   * @param {string} to - Destinatário
+   * @param {Object} media - Dados da mídia
+   * @param {string} caption - Legenda
+   * @returns {Promise<Object>} - Resultado do envio
+   */
+  async sendMediaMessage(tenantId, to, media, caption = '') {
+    try {
+      const instance = this.instances.get(tenantId);
+      if (!instance) {
+        return { success: false, error: 'Instância não encontrada' };
+      }
+
+      const result = await instance.sendMediaMessage(to, media, caption);
+      
+      // Log da mensagem no banco
+      if (result.success) {
+        await this.sessionManager.logMessage(tenantId, 'sent', to, caption || media.url, media.type, result.messageId);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error(`❌ Erro ao enviar mídia para tenant ${tenantId}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Solicitar código de pareamento
+   * @param {string} tenantId - ID do tenant
+   * @param {string} phoneNumber - Número de telefone
+   * @returns {Promise<Object>} - Resultado da solicitação
+   */
+  async requestPairingCode(tenantId, phoneNumber) {
+    try {
+      const instance = this.instances.get(tenantId);
+      if (!instance) {
+        return { success: false, error: 'Instância não encontrada' };
+      }
+
+      const result = await instance.requestPairingCode(phoneNumber);
+      
+      if (result.success) {
+        // Salvar código de pareamento no banco
+        await this.sessionManager.savePairingCode(tenantId, result.pairingCode);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error(`❌ Erro ao solicitar código de pareamento para tenant ${tenantId}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Obter código de pareamento
+   * @param {string} tenantId - ID do tenant
+   * @returns {Object|null} - Código de pareamento ou null
+   */
+  getPairingCode(tenantId) {
+    const instance = this.instances.get(tenantId);
+    if (!instance) {
+      return null;
+    }
+    return instance.getPairingCode();
+  }
+
+  /**
+   * Limpeza automática
+   */
+  startCleanupInterval() {
+    this.cleanupInterval = setInterval(() => {
+      this.cleanupInactiveInstances();
+    }, 300000); // 5 minutos
+  }
+
+  /**
+   * Limpar instâncias inativas
+   */
+  async cleanupInactiveInstances() {
+    try {
+      const now = new Date();
+      const maxInactiveTime = 30 * 60 * 1000; // 30 minutos
+
+      for (const [tenantId, session] of this.sessions.entries()) {
+        const timeSinceActivity = now - session.lastActivity;
+        
+        if (timeSinceActivity > maxInactiveTime) {
+          console.log(`🧹 Limpando instância inativa: ${tenantId}`);
+          await this.removeInstance(tenantId);
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Erro na limpeza automática:`, error.message);
+    }
+  }
+
+
+  /**
+   * Parar gerenciador
+   */
+  async stop() {
+    try {
+      if (this.cleanupInterval) {
+        clearInterval(this.cleanupInterval);
+      }
+
+      // Desconectar todas as instâncias
+      for (const [tenantId, instance] of this.instances.entries()) {
+        await instance.disconnect();
+      }
+
+      this.instances.clear();
+      this.sessions.clear();
+      
+      console.log(`🛑 Gerenciador de instâncias parado`);
+    } catch (error) {
+      console.error(`❌ Erro ao parar gerenciador:`, error.message);
+    }
+  }
+
+  /**
+   * Obter status das conexões do ConnectionManager
+   */
+  getConnectionsStatus() {
+    return this.connectionManager.getStatus();
+  }
+
+  /**
+   * Carregar instâncias existentes manualmente
+   */
+  async loadExistingInstances() {
+    try {
+      const sessionsDir = './data/whatsapp-auth';
+      
+      if (!fs.existsSync(sessionsDir)) {
+        console.log('📁 Diretório de sessões não encontrado');
+        return;
+      }
+
+      const sessionDirs = fs.readdirSync(sessionsDir, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name);
+
+      console.log(`🔍 Encontradas ${sessionDirs.length} sessões existentes:`, sessionDirs);
+
+      const validSessions = [];
+
+      for (const sessionDir of sessionDirs) {
+        const sessionPath = path.join(sessionsDir, sessionDir);
+        const credsPath = path.join(sessionPath, 'creds.json');
+        
+        // Verificar se tem credenciais válidas
+        if (fs.existsSync(credsPath)) {
+          try {
+            const creds = JSON.parse(fs.readFileSync(credsPath, 'utf8'));
+            
+            if (creds && creds.me && creds.me.id) {
+              console.log(`🔄 Carregando instância existente: ${sessionDir}`);
+              
+              // Criar instância sem conectar automaticamente
+              const instance = new WhatsAppInstance(sessionDir, { autoConnect: false });
+              
+              // Configurar eventos
+              this.setupInstanceEvents(instance);
+              
+              // Adicionar ao gerenciador
+              this.instances.set(sessionDir, instance);
+              this.sessions.set(sessionDir, {
+                tenantId: sessionDir,
+                createdAt: new Date(),
+                lastActivity: new Date(),
+                status: 'disconnected'
+              });
+              
+              validSessions.push(sessionDir);
+              console.log(`✅ Instância ${sessionDir} carregada (pronta para conectar)`);
+            }
+          } catch (error) {
+            console.error(`❌ Erro ao carregar sessão ${sessionDir}:`, error.message);
+          }
+        }
+      }
+
+      // Apenas carregar instâncias, NÃO conectar automaticamente
+      if (validSessions.length > 0) {
+        console.log(`📋 ${validSessions.length} instâncias carregadas (aguardando conexão manual)`);
+        console.log(`💡 Use createInstance() para conectar um tenant específico`);
+      }
+    } catch (error) {
+      console.error(`❌ Erro ao carregar instâncias existentes:`, error.message);
+    }
+  }
+}
+
+module.exports = InstanceManager;

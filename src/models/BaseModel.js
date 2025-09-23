@@ -1,9 +1,9 @@
 const path = require('path');
 
-// Forçar carregamento direto do SQLite para evitar problemas de cache
-const sqliteConfig = require(path.join(__dirname, '../config/database-sqlite'));
-const pool = sqliteConfig.pool;
-const isSQLiteRuntime = sqliteConfig.dbConfig && sqliteConfig.dbConfig.type === 'sqlite';
+// Usar configuração automática de banco
+const dbConfig = require('../config/database');
+const pool = dbConfig.pool;
+const isSQLiteRuntime = dbConfig.isSQLite;
 
 /**
  * Classe base para todos os modelos
@@ -90,9 +90,50 @@ class BaseModel {
   }
 
   /**
+   * Buscar registros por condições
+   */
+  async findBy(conditions, tenantId = null, schema = null) {
+    let tableName = this.tableName;
+    if (schema) {
+      const isSQLite = process.env.USE_SQLITE === 'true' || process.env.DB_TYPE === 'sqlite';
+      tableName = isSQLite ? `${schema}_${this.tableName}` : `${schema}.${this.tableName}`;
+    }
+    
+    const whereConditions = [];
+    const values = [];
+    let paramCount = 1;
+
+    // Adicionar isolamento de tenant se fornecido
+    if (tenantId && this.tableName !== 'tenants' && !schema) {
+      whereConditions.push(`id_tenant = $${paramCount}`);
+      values.push(tenantId);
+      paramCount++;
+    }
+
+    // Adicionar condições fornecidas
+    if (conditions) {
+      for (const [key, value] of Object.entries(conditions)) {
+        whereConditions.push(`${key} = $${paramCount}`);
+        values.push(value);
+        paramCount++;
+      }
+    }
+
+    let query = `SELECT * FROM ${tableName}`;
+    if (whereConditions.length > 0) {
+      query += ` WHERE ${whereConditions.join(' AND ')}`;
+    }
+
+    const result = await pool.query(query, values);
+    return result.rows;
+  }
+
+  /**
    * Buscar registro por ID
    */
   async findById(id, tenantId = null, schema = null) {
+    console.log(`🔍 BaseModel.findById: ${this.tableName} - ID: ${id}, tenantId: ${tenantId}, schema: ${schema}`);
+    
     let tableName = this.tableName;
     if (schema) {
       const isSQLite = process.env.USE_SQLITE === 'true' || process.env.DB_TYPE === 'sqlite';
@@ -106,7 +147,12 @@ class BaseModel {
       values.push(tenantId);
     }
 
+    console.log(`🔍 Query: ${query}`);
+    console.log(`🔍 Values:`, values);
+
     const result = await pool.query(query, values);
+    console.log(`🔍 Resultado:`, result.rows[0] || null);
+    
     return result.rows[0] || null;
   }
 
@@ -114,6 +160,9 @@ class BaseModel {
    * Criar novo registro
    */
   async create(data, tenantId = null, schema = null) {
+    // Log reduzido para evitar spam
+    // console.log('🔍 [DEBUG] BaseModel.create chamado para tabela:', this.tableName);
+    
     const dataWithTenant = { ...data };
     let tableName = this.tableName;
     if (schema) {
@@ -138,22 +187,30 @@ class BaseModel {
       VALUES (${placeholders.join(', ')})
     `;
 
-    // Executar INSERT
-    await pool.query(insertQuery, values);
-
-    // Para SQLite: obter o registro recém-inserido via last_insert_rowid()
+    // Fluxo por banco de dados: evitar INSERT duplo em PostgreSQL
     if (isSQLite) {
+      // Executar INSERT simples
+      // Log reduzido para evitar spam
+      // console.log('🔍 [DEBUG] Executando INSERT (SQLite) na tabela:', tableName);
+      await pool.query(insertQuery, values);
+      // Log reduzido
+      // console.log('🔍 [DEBUG] INSERT (SQLite) executado com sucesso');
+
+      // Obter o registro recém-inserido via last_insert_rowid()
       const selectInserted = `SELECT * FROM ${tableName} WHERE rowid = last_insert_rowid()`;
       const result = await pool.query(selectInserted);
       return (result && result.rows && result.rows[0]) ? result.rows[0] : { ...dataWithTenant };
     } else {
-      // Para PostgreSQL, usar RETURNING
+      // PostgreSQL: executar apenas UMA vez com RETURNING
       const query = `
         INSERT INTO ${tableName} (${columns.join(', ')})
         VALUES (${placeholders.join(', ')})
         RETURNING *
       `;
+      // Log reduzido
+      // console.log('🔍 [DEBUG] Executando query com RETURNING:', query);
       const result = await pool.query(query, values);
+      // console.log('🔍 [DEBUG] Resultado do RETURNING:', result.rows[0]);
       return result.rows[0];
     }
   }
@@ -162,6 +219,8 @@ class BaseModel {
    * Atualizar registro por ID
    */
   async update(id, data, tenantId = null, schema = null) {
+    console.log(`🔄 BaseModel.update: ${this.tableName} - ID: ${id}, data:`, data, `tenantId: ${tenantId}, schema: ${schema}`);
+    
     let tableName = this.tableName;
     if (schema) {
       const isSQLite = isSQLiteRuntime;
@@ -169,26 +228,50 @@ class BaseModel {
     }
     const columns = Object.keys(data);
     const values = Object.values(data);
-    const setClause = columns.map((col, index) => `${col} = $${index + 1}`).join(', ');
+    
+    // Usar placeholders compatíveis com SQLite
+    const isSQLite = isSQLiteRuntime;
+    const setClause = columns.map((col, index) => `${col} = ${isSQLite ? '?' : `$${index + 1}`}`).join(', ');
 
     let query = `
       UPDATE ${tableName}
       SET ${setClause}, updated_at = CURRENT_TIMESTAMP
-      WHERE ${this.primaryKey} = $${columns.length + 1}
+      WHERE ${this.primaryKey} = ${isSQLite ? '?' : `$${columns.length + 1}`}
     `;
 
     values.push(id);
 
     // Adicionar condição de tenant se fornecido
     if (tenantId && this.tableName !== 'tenants' && !schema) {
-      query += ` AND id_tenant = $${columns.length + 2}`;
+      query += ` AND id_tenant = ${isSQLite ? '?' : `$${columns.length + 2}`}`;
       values.push(tenantId);
     }
 
-    query += ` RETURNING *`;
-
+    console.log(`🔄 Query: ${query}`);
+    console.log(`🔄 Values:`, values);
+    
+    // Executar UPDATE
     const result = await pool.query(query, values);
-    return result.rows[0] || null;
+    console.log(`🔄 Resultado do UPDATE:`, result);
+
+    // Para SQLite, buscar o registro atualizado
+    if (isSQLite) {
+      const selectQuery = `SELECT * FROM ${tableName} WHERE ${this.primaryKey} = ?`;
+      const selectValues = [id];
+      
+      if (tenantId && this.tableName !== 'tenants' && !schema) {
+        selectQuery += ` AND id_tenant = ?`;
+        selectValues.push(tenantId);
+      }
+      
+      const result = await pool.query(selectQuery, selectValues);
+      return result.rows[0] || null;
+    } else {
+      // Para PostgreSQL, usar RETURNING
+      query += ` RETURNING *`;
+      const result = await pool.query(query, values);
+      return result.rows[0] || null;
+    }
   }
 
   /**
@@ -257,10 +340,60 @@ class BaseModel {
 
   /**
    * Buscar com query customizada
+   * IMPORTANTE: Sempre usar prepared statements para evitar SQL injection
    */
   async query(sql, values = []) {
-    const result = await pool.query(sql, values);
-    return result.rows;
+    try {
+      // Validar se a query contém apenas operações permitidas
+      this.validateQuery(sql);
+      
+      const result = await pool.query(sql, values);
+      return result.rows;
+    } catch (error) {
+      // Se for erro de validação de SQL injection, registrar alerta
+      if (error.message.includes('padrões suspeitos') || error.message.includes('SQL injection')) {
+        const SecurityAlertService = require('../services/SecurityAlertService');
+        const securityAlert = new SecurityAlertService();
+        
+        await securityAlert.logSQLInjectionAttempt(sql, 'unknown', 'unknown');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Validar query para prevenir SQL injection
+   */
+  validateQuery(sql) {
+    const upperSQL = sql.toUpperCase().trim();
+    
+    // Lista de operações permitidas
+    const allowedOperations = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'WITH'];
+    const hasAllowedOperation = allowedOperations.some(op => upperSQL.startsWith(op));
+    
+    if (!hasAllowedOperation) {
+      throw new Error('Operação SQL não permitida');
+    }
+    
+    // Verificar padrões suspeitos
+    const suspiciousPatterns = [
+      /UNION\s+SELECT/i,
+      /DROP\s+TABLE/i,
+      /TRUNCATE\s+TABLE/i,
+      /ALTER\s+TABLE/i,
+      /CREATE\s+TABLE/i,
+      /EXEC\s*\(/i,
+      /EXECUTE\s*\(/i,
+      /--/,
+      /\/\*/,
+      /\*\//
+    ];
+    
+    for (const pattern of suspiciousPatterns) {
+      if (pattern.test(sql)) {
+        throw new Error('Query contém padrões suspeitos que podem indicar SQL injection');
+      }
+    }
   }
 }
 

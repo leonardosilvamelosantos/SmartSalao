@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Joi = require('joi');
 const ServicoController = require('../controllers/ServicoController');
+const servicoController = new ServicoController();
 const { validateServico, validateId, validatePagination } = require('../middleware/validation');
 const { requireOwnership } = require('../middleware/auth');
 const { checkLimits } = require('../middleware/tenant');
@@ -27,7 +28,7 @@ router.get('/', validatePagination, async (req, res) => {
     req.query.id_usuario = userId;
   }
 
-  await ServicoController.index(req, res);
+  await servicoController.index(req, res);
 });
 
 /**
@@ -43,7 +44,7 @@ router.get('/:id', validateId, async (req, res) => {
     });
   }
 
-  await ServicoController.show(req, res);
+  await servicoController.show(req, res);
 });
 
 /**
@@ -59,7 +60,7 @@ router.get('/:id/detalhes', validateId, async (req, res) => {
     });
   }
 
-  await ServicoController.showWithUsuario(req, res);
+  await servicoController.showWithUsuario(req, res);
 });
 
 
@@ -84,51 +85,30 @@ router.post('/', checkLimits('servicos'), async (req, res) => {
 
     const pool = require('../config/database');
 
-    // Criar serviço
-    const insertResult = await pool.query(`
-      INSERT INTO servicos (id_tenant, id_usuario, nome_servico, duracao_min, valor, ativo)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `, [
-      idTenant,
+    // Verificar existência da coluna id_tenant
+    const col = await pool.query("SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='servicos' AND column_name='id_tenant'");
+    const hasTenantCol = col.rows.length > 0;
+
+    const cols = ['id_usuario', 'nome_servico', 'duracao_min', 'valor', 'ativo'];
+    const vals = [
       idUsuario,
       req.body.nome_servico,
       parseInt(req.body.duracao_min),
       parseFloat(req.body.valor),
-      req.body.ativo !== undefined ? (req.body.ativo ? 1 : 0) : 1
-    ]);
-
-    if (insertResult.changes === 0) {
-      return res.status(500).json({
-        success: false,
-        message: 'Falha ao criar serviço'
-      });
+      req.body.ativo !== undefined ? !!req.body.ativo : true
+    ];
+    if (hasTenantCol) {
+      cols.unshift('id_tenant');
+      vals.unshift(idTenant);
     }
-
-    // Retornar serviço criado
-    const serviceResult = await pool.query(`
-      SELECT * FROM servicos
-      WHERE id_usuario = ? AND nome_servico = ? AND (id_tenant IS ? OR id_tenant = ?)
-      ORDER BY id_servico DESC LIMIT 1
-    `, [idUsuario, req.body.nome_servico, null, idTenant]);
-
-    if (serviceResult.rows.length === 0) {
-      return res.status(201).json({
-        success: true,
-        message: 'Serviço criado com sucesso',
-        data: {
-          id_usuario: idUsuario,
-          nome_servico: req.body.nome_servico,
-          duracao_min: parseInt(req.body.duracao_min),
-          valor: parseFloat(req.body.valor),
-          ativo: req.body.ativo !== undefined ? req.body.ativo : true
-        }
-      });
-    }
+    const placeholders = vals.map((_, i) => `$${i + 1}`).join(', ');
+    const insertSql = `INSERT INTO servicos (${cols.join(', ')}) VALUES (${placeholders}) RETURNING *`;
+    const insertResult = await pool.query(insertSql, vals);
 
     res.status(201).json({
       success: true,
       message: 'Serviço criado com sucesso',
-      data: serviceResult.rows[0]
+      data: insertResult.rows[0]
     });
 
   } catch (err) {
@@ -162,7 +142,7 @@ router.put('/:id', validateId, requireOwnership('service'), async (req, res) => 
     });
   }
 
-  await ServicoController.update(req, res);
+  await servicoController.update(req, res);
 });
 
 
@@ -181,7 +161,7 @@ router.get('/usuario/:id_usuario/disponiveis', async (req, res) => {
     });
   }
 
-  await ServicoController.getAvailable(req, res);
+  await servicoController.getAvailable(req, res);
 });
 
 /**
@@ -199,7 +179,7 @@ router.get('/usuario/:id_usuario/populares', async (req, res) => {
     });
   }
 
-  await ServicoController.getPopular(req, res);
+  await servicoController.getPopular(req, res);
 });
 
 /**
@@ -216,7 +196,7 @@ router.get('/usuario/:id_usuario/estatisticas', async (req, res) => {
     });
   }
 
-  await ServicoController.getWithStats(req, res);
+  await servicoController.getWithStats(req, res);
 });
 
 /**
@@ -242,10 +222,14 @@ router.put('/:id', async (req, res) => {
     const pool = require('../config/database');
 
     // Verificar se o serviço existe e pertence ao usuário
-    const checkService = await pool.query(
-      'SELECT id_servico FROM servicos WHERE id_servico = ? AND id_usuario = ? AND (id_tenant IS ? OR id_tenant = ?)',
-      [id, idUsuario, null, idTenant]
-    );
+    // Verificar existência da coluna id_tenant
+    const col = await pool.query("SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='servicos' AND column_name='id_tenant'");
+    const hasTenantCol = col.rows.length > 0;
+    const checkSql = hasTenantCol ?
+      'SELECT id_servico FROM servicos WHERE id_servico = $1 AND id_usuario = $2 AND (id_tenant = $3 OR id_tenant IS NULL)' :
+      'SELECT id_servico FROM servicos WHERE id_servico = $1 AND id_usuario = $2';
+    const checkParams = hasTenantCol ? [id, idUsuario, idTenant] : [id, idUsuario];
+    const checkService = await pool.query(checkSql, checkParams);
 
     if (checkService.rows.length === 0) {
       return res.status(404).json({
@@ -255,19 +239,26 @@ router.put('/:id', async (req, res) => {
     }
 
     // Atualizar serviço
-    const updateResult = await pool.query(
-      'UPDATE servicos SET nome_servico = ?, duracao_min = ?, valor = ?, ativo = ? WHERE id_servico = ? AND id_usuario = ? AND (id_tenant IS ? OR id_tenant = ?)',
-      [
-        req.body.nome_servico,
-        parseInt(req.body.duracao_min),
-        parseFloat(req.body.valor),
-        req.body.ativo !== undefined ? (req.body.ativo ? 1 : 0) : 1,
-        id,
-        idUsuario,
-        null,
-        idTenant
-      ]
-    );
+    const updateSql = hasTenantCol ?
+      'UPDATE servicos SET nome_servico = $1, duracao_min = $2, valor = $3, ativo = $4 WHERE id_servico = $5 AND id_usuario = $6 AND (id_tenant = $7 OR id_tenant IS NULL) RETURNING *' :
+      'UPDATE servicos SET nome_servico = $1, duracao_min = $2, valor = $3, ativo = $4 WHERE id_servico = $5 AND id_usuario = $6 RETURNING *';
+    const updateParams = hasTenantCol ? [
+      req.body.nome_servico,
+      parseInt(req.body.duracao_min),
+      parseFloat(req.body.valor),
+      req.body.ativo !== undefined ? !!req.body.ativo : true,
+      id,
+      idUsuario,
+      idTenant
+    ] : [
+      req.body.nome_servico,
+      parseInt(req.body.duracao_min),
+      parseFloat(req.body.valor),
+      req.body.ativo !== undefined ? !!req.body.ativo : true,
+      id,
+      idUsuario
+    ];
+    const updateResult = await pool.query(updateSql, updateParams);
 
     if (updateResult.changes === 0) {
       return res.status(500).json({
@@ -277,10 +268,7 @@ router.put('/:id', async (req, res) => {
     }
 
     // Retornar serviço atualizado
-    const updatedService = await pool.query(
-      'SELECT * FROM servicos WHERE id_servico = ? AND id_usuario = ? AND (id_tenant IS ? OR id_tenant = ?)',
-      [id, idUsuario, null, idTenant]
-    );
+    const updatedService = updateResult;
 
     res.json({
       success: true,
@@ -309,10 +297,13 @@ router.delete('/:id', async (req, res) => {
     const idTenant = req.user?.tenant_id || req.tenant?.id || null;
 
     // Validar se há agendamentos vinculados ao serviço
-    const agRes = await pool.query(
-      "SELECT COUNT(*) as c FROM agendamentos WHERE id_servico = ? AND (id_tenant IS ? OR id_tenant = ?)",
-      [id, null, idTenant]
-    );
+    // Verificar existência da coluna id_tenant em agendamentos
+    const colA = await pool.query("SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='agendamentos' AND column_name='id_tenant'");
+    const hasTenantAg = colA.rows.length > 0;
+    const agSql = hasTenantAg ?
+      'SELECT COUNT(*) as c FROM agendamentos WHERE id_servico = $1 AND (id_tenant = $2 OR id_tenant IS NULL)' :
+      'SELECT COUNT(*) as c FROM agendamentos WHERE id_servico = $1';
+    const agRes = await pool.query(agSql, hasTenantAg ? [id, idTenant] : [id]);
     if (parseInt(agRes.rows?.[0]?.c || 0) > 0) {
       return res.status(400).json({
         success: false,
@@ -321,10 +312,10 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Tentar deletar o serviço diretamente
-    const deleteResult = await pool.query(
-      'DELETE FROM servicos WHERE id_servico = ? AND id_usuario = ? AND (id_tenant IS ? OR id_tenant = ?)',
-      [id, idUsuario, null, idTenant]
-    );
+    const delSql = hasTenantCol ?
+      'DELETE FROM servicos WHERE id_servico = $1 AND id_usuario = $2 AND (id_tenant = $3 OR id_tenant IS NULL)' :
+      'DELETE FROM servicos WHERE id_servico = $1 AND id_usuario = $2';
+    const deleteResult = await pool.query(delSql, hasTenantCol ? [id, idUsuario, idTenant] : [id, idUsuario]);
 
     if (deleteResult.changes === 0) {
       return res.status(404).json({
@@ -360,10 +351,12 @@ router.patch('/:id/status', async (req, res) => {
     const pool = require('../config/database');
 
     // Verificar se o serviço existe e pertence ao usuário
-    const checkService = await pool.query(
-      'SELECT id_servico, ativo FROM servicos WHERE id_servico = ? AND id_usuario = ? AND (id_tenant IS ? OR id_tenant = ?)',
-      [id, idUsuario, null, idTenant]
-    );
+    const col = await pool.query("SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='servicos' AND column_name='id_tenant'");
+    const hasTenantCol = col.rows.length > 0;
+    const checkSql = hasTenantCol ?
+      'SELECT id_servico, ativo FROM servicos WHERE id_servico = $1 AND id_usuario = $2 AND (id_tenant = $3 OR id_tenant IS NULL)' :
+      'SELECT id_servico, ativo FROM servicos WHERE id_servico = $1 AND id_usuario = $2';
+    const checkService = await pool.query(checkSql, hasTenantCol ? [id, idUsuario, idTenant] : [id, idUsuario]);
 
     if (checkService.rows.length === 0) {
       return res.status(404).json({
@@ -376,10 +369,10 @@ router.patch('/:id/status', async (req, res) => {
     const newStatus = currentStatus ? 0 : 1;
 
     // Atualizar status
-    const updateResult = await pool.query(
-      'UPDATE servicos SET ativo = ? WHERE id_servico = ? AND id_usuario = ? AND (id_tenant IS ? OR id_tenant = ?)',
-      [newStatus, id, idUsuario, null, idTenant]
-    );
+    const updSql = hasTenantCol ?
+      'UPDATE servicos SET ativo = $1 WHERE id_servico = $2 AND id_usuario = $3 AND (id_tenant = $4 OR id_tenant IS NULL)' :
+      'UPDATE servicos SET ativo = $1 WHERE id_servico = $2 AND id_usuario = $3';
+    const updateResult = await pool.query(updSql, hasTenantCol ? [newStatus ? true : false, id, idUsuario, idTenant] : [newStatus ? true : false, id, idUsuario]);
 
     if (updateResult.changes === 0) {
       return res.status(500).json({

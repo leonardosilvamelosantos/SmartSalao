@@ -4,7 +4,9 @@
  */
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const pool = require('../config/database');
+const db = require('../config/database');
+const pool = db.pool || db;
+const isSQLite = !!db.isSQLite;
 const { CONFIG, ERROR_CODES } = require('../constants');
 
 class AuthService {
@@ -20,20 +22,15 @@ class AuthService {
    */
   async authenticate(email, password, tenantId = null) {
     try {
-      console.log('🔐 Iniciando autenticação para:', email);
-
-      // SQLite MVP: autenticar na tabela usuarios por email
+      // PostgreSQL: autenticar na tabela usuarios por email
       const userQuery = `
         SELECT id_usuario, nome, email, senha_hash, tipo, ativo, id_tenant
         FROM usuarios
-        WHERE email = ? AND ativo = 1
+        WHERE email = $1 AND ativo = true
+        LIMIT 1
       `;
 
-      console.log('🔍 Executando query:', userQuery);
-      console.log('📊 Parâmetros:', [email]);
-
       const result = await pool.query(userQuery, [email]);
-      console.log('✅ Auth query result:', result.rows.length, 'users found');
 
       if (result.rows.length === 0) {
         throw new Error('Usuário não encontrado ou inativo');
@@ -136,7 +133,7 @@ class AuthService {
   async checkPlanLimits(tenantId, resourceType, quantity = 1) {
     try {
       // Obter limites do tenant
-      const limitsQuery = `SELECT plano, limites FROM tenants WHERE id_tenant = ?`;
+      const limitsQuery = `SELECT plano, limites FROM tenants WHERE id_tenant = $1 LIMIT 1`;
       const limitsRes = await pool.query(limitsQuery, [tenantId]);
 
       if (!limitsRes.rows || limitsRes.rows.length === 0) return true; // sem registro, não bloqueia
@@ -148,13 +145,13 @@ class AuthService {
       // Contadores por tipo
       let currentCount = 0;
       if (resourceType === 'usuarios') {
-        const r = await pool.query('SELECT COUNT(*) as c FROM usuarios WHERE id_tenant = ?', [tenantId]);
+        const r = await pool.query('SELECT COUNT(*) as c FROM usuarios WHERE id_tenant = $1', [tenantId]);
         currentCount = parseInt(r.rows[0].c || 0);
       } else if (resourceType === 'servicos') {
-        const r = await pool.query('SELECT COUNT(*) as c FROM servicos s JOIN usuarios u ON s.id_usuario = u.id_usuario WHERE u.id_tenant = ?', [tenantId]);
+        const r = await pool.query('SELECT COUNT(*) as c FROM servicos s JOIN usuarios u ON s.id_usuario = u.id_usuario WHERE u.id_tenant = $1', [tenantId]);
         currentCount = parseInt(r.rows[0].c || 0);
       } else if (resourceType === 'agendamentos_mes') {
-        const r = await pool.query("SELECT COUNT(*) as c FROM agendamentos a JOIN usuarios u ON a.id_usuario = u.id_usuario WHERE u.id_tenant = ? AND strftime('%Y-%m', a.start_at) = strftime('%Y-%m', 'now')", [tenantId]);
+        const r = await pool.query("SELECT COUNT(*) as c FROM agendamentos a JOIN usuarios u ON a.id_usuario = u.id_usuario WHERE u.id_tenant = $1 AND DATE_TRUNC('month', a.start_at) = DATE_TRUNC('month', NOW())", [tenantId]);
         currentCount = parseInt(r.rows[0].c || 0);
       } else if (resourceType === 'api_requests_dia') {
         // Se tiver tabela de usage no futuro, contar a partir dela; por ora, não bloquear
@@ -216,7 +213,7 @@ class AuthService {
   async updateLastLogin(userId) {
     try {
       await pool.query(
-        `UPDATE usuarios SET updated_at = datetime('now') WHERE id_usuario = ?`,
+        `UPDATE usuarios SET updated_at = NOW() WHERE id_usuario = $1`,
         [userId]
       );
     } catch (error) {

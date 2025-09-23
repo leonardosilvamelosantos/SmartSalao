@@ -4,6 +4,42 @@ const Cliente = require('../models/Cliente');
  * Controlador para operações com clientes
  */
 class ClienteController {
+
+  /**
+   * Método estático para uso pelo bot WhatsApp - cria cliente sem autenticação
+   * @param {Object} clienteData - Dados do cliente
+   * @returns {Promise<Object>} Cliente criado
+   */
+  static async createForBot(clienteData) {
+    try {
+      const Cliente = require('../models/Cliente');
+
+      // Verificar se já existe um cliente com esse telefone
+      const existingCliente = await Cliente.findByTelefone(clienteData.telefone || clienteData.phone);
+      if (existingCliente) {
+        return existingCliente;
+      }
+
+      // Criar novo cliente
+      const novoCliente = {
+        nome: clienteData.nome || clienteData.name,
+        telefone: clienteData.telefone || clienteData.phone,
+        email: clienteData.email || null,
+        whatsapp: clienteData.whatsapp || clienteData.phone,
+        tenant_id: clienteData.tenant_id || 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const clienteId = await Cliente.create(novoCliente);
+      const clienteCriado = await Cliente.findById(clienteId);
+
+      return clienteCriado;
+    } catch (error) {
+      console.error('Erro ao criar cliente para bot:', error);
+      throw error;
+    }
+  }
   /**
    * Listar clientes com paginação e filtros
    */
@@ -32,10 +68,16 @@ class ClienteController {
       const clientes = await Cliente.findByUsuario(userId, options);
       // Evitar COUNT com string interpolada e incompatibilidades de placeholder
       const pool = require('../config/database');
-      const countRes = await pool.query(
-        'SELECT COUNT(*) as total FROM clientes WHERE id_usuario = ? AND (id_tenant = ? OR id_tenant IS NULL)',
-        [userId, tenantId]
-      );
+      // Compatível com bases sem coluna id_tenant
+      let countSql = 'SELECT COUNT(*) as total FROM clientes WHERE id_usuario = $1';
+      const countParams = [userId];
+      // Verificar existência da coluna id_tenant
+      const col = await pool.query("SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='clientes' AND column_name='id_tenant'");
+      if (col.rows.length > 0 && tenantId) {
+        countSql += ' AND (id_tenant = $2 OR id_tenant IS NULL)';
+        countParams.push(tenantId);
+      }
+      const countRes = await pool.query(countSql, countParams);
       const total = parseInt(countRes.rows[0].total || 0);
 
       res.json({
@@ -55,6 +97,106 @@ class ClienteController {
         success: false,
         message: 'Erro interno do servidor'
       });
+    }
+  }
+
+  /**
+   * Exportar clientes do usuário logado (JSON)
+   */
+  async export(req, res) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Usuário não autenticado' });
+      }
+
+      const clientes = await Cliente.findByUsuario(userId, { limit: null, offset: null });
+
+      // Mapear campos essenciais
+      const data = clientes.map(c => ({
+        nome: c.nome || '',
+        whatsapp: c.whatsapp || '',
+        email: c.email || ''
+      }));
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="clientes-${new Date().toISOString().split('T')[0]}.json"`);
+      return res.status(200).send(JSON.stringify({ success: true, data }, null, 2));
+    } catch (error) {
+      console.error('Erro ao exportar clientes:', error);
+      return res.status(500).json({ success: false, message: 'Erro interno do servidor' });
+    }
+  }
+
+  /**
+   * Importar clientes em massa (JSON)
+   */
+  async import(req, res) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Usuário não autenticado' });
+      }
+
+      const payload = req.body;
+      const lista = Array.isArray(payload) ? payload : payload?.data;
+      if (!Array.isArray(lista)) {
+        return res.status(400).json({ success: false, message: 'Formato inválido. Envie um array de clientes ou { data: [...] }' });
+      }
+
+      let inseridos = 0;
+      let atualizados = 0;
+      let ignorados = 0;
+      const resultados = [];
+
+      for (const item of lista) {
+        const nome = (item.nome || item.name || '').toString().trim();
+        const whatsapp = (item.whatsapp || item.phone || '').toString().trim();
+        const email = (item.email || '').toString().trim();
+
+        if (!whatsapp) {
+          ignorados++;
+          resultados.push({ status: 'ignored', reason: 'whatsapp ausente', item });
+          continue;
+        }
+
+        // Verificar existente por whatsapp
+        const existente = await Cliente.findByWhatsapp(userId, whatsapp);
+        if (existente) {
+          // Atualizar campos simples se vierem preenchidos
+          const update = {};
+          if (nome && !existente.nome) update.nome = nome;
+          if (email && !existente.email) update.email = email;
+          if (Object.keys(update).length > 0) {
+            await Cliente.update(existente.id_cliente, update);
+            atualizados++;
+            resultados.push({ status: 'updated', id_cliente: existente.id_cliente, whatsapp });
+          } else {
+            ignorados++;
+            resultados.push({ status: 'skipped', id_cliente: existente.id_cliente, whatsapp });
+          }
+          continue;
+        }
+
+        // Criar novo
+        const novo = await Cliente.create({
+          id_usuario: userId,
+          nome: nome || null,
+          whatsapp,
+          email: email || null
+        });
+        inseridos++;
+        resultados.push({ status: 'inserted', id_cliente: novo.id_cliente || novo.id, whatsapp });
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: 'Importação concluída',
+        data: { inseridos, atualizados, ignorados, total: lista.length, resultados }
+      });
+    } catch (error) {
+      console.error('Erro ao importar clientes:', error);
+      return res.status(500).json({ success: false, message: 'Erro interno do servidor' });
     }
   }
 
@@ -118,6 +260,7 @@ class ClienteController {
     try {
       const clienteData = req.body;
       const userId = req.user?.id;
+      const tenantId = req.user?.tenant_id;
 
       if (!userId) {
         return res.status(401).json({
@@ -139,14 +282,21 @@ class ClienteController {
       clienteData.id_usuario = userId;
       clienteData.id_tenant = tenantId;
 
-      // Inserção direta para evitar inconsistências do BaseModel com SQLite
+      // Inserção dinâmica compatível com bases com/sem coluna id_tenant
       const pool = require('../config/database');
-      await pool.query(
-        'INSERT INTO clientes (id_tenant, id_usuario, nome, whatsapp, email, observacoes) VALUES (?, ?, ?, ?, ?, ?)',
-        [clienteData.id_tenant, clienteData.id_usuario, clienteData.nome || null, clienteData.whatsapp, clienteData.email || null, clienteData.observacoes || null]
-      );
-      const sel = await pool.query('SELECT * FROM clientes WHERE id_usuario = ? AND whatsapp = ? AND (id_tenant IS ? OR id_tenant = ?) ORDER BY id_cliente DESC LIMIT 1', [userId, clienteData.whatsapp, null, tenantId]);
-      const cliente = sel.rows[0];
+      const col = await pool.query("SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='clientes' AND column_name='id_tenant'");
+      const hasTenantCol = col.rows.length > 0;
+
+      const cols = ['id_usuario', 'nome', 'whatsapp', 'email'];
+      const vals = [clienteData.id_usuario, clienteData.nome || null, clienteData.whatsapp, clienteData.email || null];
+      if (hasTenantCol) {
+        cols.unshift('id_tenant');
+        vals.unshift(clienteData.id_tenant || tenantId || null);
+      }
+      const placeholders = vals.map((_, i) => `$${i + 1}`).join(', ');
+      const insertSql = `INSERT INTO clientes (${cols.join(', ')}) VALUES (${placeholders}) RETURNING *`;
+      const insertRes = await pool.query(insertSql, vals);
+      const cliente = insertRes.rows[0];
 
       res.status(201).json({
         success: true,
@@ -379,7 +529,9 @@ class ClienteController {
       };
 
       const clientes = await Cliente.findWithStats(userId, options);
-      const total = await Cliente.count(`id_usuario = ${userId}`, null, req.tenant?.schema);
+      const pool = require('../config/database');
+      const countRes = await pool.query('SELECT COUNT(*) as total FROM clientes WHERE id_usuario = $1', [userId]);
+      const total = parseInt(countRes.rows[0].total || 0);
 
       res.json({
         success: true,

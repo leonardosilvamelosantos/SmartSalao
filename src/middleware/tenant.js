@@ -76,6 +76,12 @@ class TenantMiddleware {
   checkLimits = (resourceType) => {
     return async (req, res, next) => {
       try {
+        // Em desenvolvimento, pular verificação de limites
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔓 [DEV] Verificação de limites desabilitada para ${resourceType}`);
+          return next();
+        }
+
         if (!req.tenant) {
           return res.status(500).json({
             success: false,
@@ -253,14 +259,18 @@ class TenantMiddleware {
 
     return async (req, res, next) => {
       try {
+        // Verificar se está em desenvolvimento
+        const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'dev';
+        if (isDevelopment) {
+          console.log(`🔓 [DEV] Rate limiting desabilitado para ${req.originalUrl}`);
+          return next();
+        }
+
         if (!req.tenant) {
           return next();
         }
 
         const tenantId = req.tenant.id;
-        if (process.env.NODE_ENV === 'development') {
-          return next();
-        }
         const routeKey = (req.baseUrl || req.originalUrl || '').split('?')[0];
         const key = `ratelimit:${tenantId}:${req.ip}:${routeKey}`;
 
@@ -320,11 +330,12 @@ class TenantMiddleware {
 
       // Para SQLite, não precisamos validar schemas da mesma forma
       // Apenas verificar se as tabelas do tenant existem
+      // Usar prepared statement para evitar SQL injection
       const tableCheck = await pool.query(`
         SELECT name FROM sqlite_master
-        WHERE type='table' AND name LIKE '${schema}_%'
+        WHERE type='table' AND name LIKE ?
         LIMIT 1
-      `);
+      `, [`${schema}_%`]);
 
       if (tableCheck.rows.length === 0) {
         console.log(`Tabelas do tenant ${id} não encontradas, podem ser criadas sob demanda`);

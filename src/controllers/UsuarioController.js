@@ -21,27 +21,30 @@ class UsuarioController {
         whereValues: [currentUserId]
       };
 
-      let usuarios;
+      const pool = require('../config/database');
+      const schema = null; // sem schemas em usuarios
 
-      const schema = null; // SQLite atual sem schemas/tenant em usuarios
-
+      // Listagem direta para evitar incompatibilidade de placeholders do BaseModel
+      let listSql = 'SELECT * FROM usuarios WHERE id_usuario = $1';
+      const listParams = [currentUserId];
       if (search) {
-        options.where = `id_usuario = $1 AND (nome LIKE $2 OR whatsapp LIKE $2)`;
-        options.whereValues = [currentUserId, `%${search}%`];
+        listSql += ' AND (nome ILIKE $2 OR whatsapp ILIKE $2)';
+        listParams.push(`%${search}%`);
       }
+      listSql += ' ORDER BY id_usuario DESC LIMIT $' + (listParams.length + 1) + ' OFFSET $' + (listParams.length + 2);
+      listParams.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
+      const listRes = await pool.query(listSql, listParams);
+      const usuarios = listRes.rows;
 
-      usuarios = await Usuario.findAll({
-        ...options,
-        schema
-      });
-
-      // Total com mesmo critério
-      let countWhere = `id_usuario = ${currentUserId}`;
+      // Total com mesmo critério (parametrizado)
+      let countSql = 'SELECT COUNT(*) as total FROM usuarios WHERE id_usuario = $1';
+      const countParams = [currentUserId];
       if (search) {
-        const s = (search || '').replace(/'/g, "''");
-        countWhere += ` AND (nome LIKE '%${s}%' OR whatsapp LIKE '%${s}%')`;
+        countSql += ' AND (nome ILIKE $2 OR whatsapp ILIKE $2)';
+        countParams.push(`%${search}%`);
       }
-      const total = await Usuario.count(countWhere, null, schema);
+      const countRes = await pool.query(countSql, countParams);
+      const total = parseInt(countRes.rows[0].total || 0);
 
       res.json({
         success: true,

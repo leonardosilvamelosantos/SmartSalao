@@ -188,11 +188,11 @@ npm run test-example  # Exemplo guiado automatizado
 npm run test-whatsapp # Teste da integração WhatsApp
 ```
 
-## 📱 Integração WhatsApp com Evolution API
+## 📱 Integração WhatsApp com Baileys (WhatsApp Web)
 
-### Controle Inteligente de Conversas
+### Sistema Multi-Tenant WhatsApp
 
-O sistema integra com **Evolution API** para WhatsApp, com controle avançado de conversas que lida perfeitamente com múltiplas mensagens:
+O sistema integra com **Baileys** (WhatsApp Web) para WhatsApp, com controle avançado de conversas e suporte multi-tenant:
 
 #### ✅ Funcionalidades de Conversa:
 - 🤖 **Estados Conversacionais**: Fluxo estruturado mantendo contexto
@@ -200,6 +200,7 @@ O sistema integra com **Evolution API** para WhatsApp, com controle avançado de
 - 🗣️ **Detecção de Intenções**: Saudações, comandos, contexto
 - 🔄 **Agrupamento**: Mensagens similares processadas juntas
 - ⏱️ **Timeouts**: Limpeza automática de conversas antigas
+- 🏢 **Multi-Tenant**: Suporte a múltiplos negócios simultâneos
 
 #### 🎯 Cenários Suportados:
 - **Saudações múltiplas**: "Oi", "tudo bem?", "boa tarde"
@@ -207,15 +208,16 @@ O sistema integra com **Evolution API** para WhatsApp, com controle avançado de
 - **Mensagens repetidas**: Agrupamento inteligente
 - **Clientes novos**: Cadastro automático
 - **Erros graciosos**: Tratamento de mensagens inválidas
+- **Múltiplos tenants**: Cada negócio com sua própria instância
 
 ### Configuração da Integração:
-1. **Instalar Evolution API**: `docker run -d atendai/evolution-api`
-2. **Configurar webhook**: `/api/whatsapp/webhook`
-3. **Conectar WhatsApp**: QR Code no painel
-4. **Testar**: `npm run test-whatsapp`
+1. **Configurar variáveis**: Ver `WHATSAPP_ENV_EXAMPLE.md`
+2. **Iniciar sistema**: `START_WHATSAPP_BOT=true npm start`
+3. **Conectar WhatsApp**: QR Code no painel multi-tenant
+4. **Gerenciar tenants**: Interface web em `/frontend/pages/whatsapp`
 
 ### Guia Completo:
-Veja `WHATSAPP_INTEGRATION_GUIDE.md` para configuração detalhada.
+Veja `WHATSAPP_ENV_EXAMPLE.md` e `WHATSAPP_SETUP_GUIDE.md` para configuração detalhada.
 
 ---
 

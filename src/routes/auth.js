@@ -15,28 +15,19 @@ const authService = new AuthService();
  */
 router.post('/login', async (req, res) => {
   try {
-    console.log('🚀 Rota de login chamada');
-    console.log('📨 Raw body:', req.body);
-    console.log('📨 Headers:', req.headers);
-
     const { whatsapp, email, password, tenantId } = req.body;
-    console.log('📨 Dados processados:', { whatsapp, email, password: password ? '[HIDDEN]' : null, tenantId });
 
     // Aceita tanto whatsapp quanto email para login
     const loginField = whatsapp || email;
-    console.log('🔑 Campo de login:', loginField);
 
     if (!loginField || !password) {
-      console.log('❌ Campos obrigatórios faltando');
       return res.status(400).json({
         success: false,
         message: 'Email/WhatsApp e senha são obrigatórios'
       });
     }
 
-    console.log('🔐 Chamando authService.authenticate...');
     const result = await authService.authenticate(loginField, password, tenantId);
-    console.log('✅ Autenticação bem-sucedida');
 
     res.json({
       success: true,
@@ -45,8 +36,7 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Erro no login:', error);
-    console.error('Stack:', error.stack);
+    console.error('Erro no login:', error);
 
     if (
       error.message.includes('não encontrado') ||

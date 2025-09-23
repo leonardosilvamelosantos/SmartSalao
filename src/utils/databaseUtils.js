@@ -1,8 +1,8 @@
 /**
- * Utilitários de Banco de Dados - Elimina Duplicação de Queries e Transações
+ * Utilitários de Banco de Dados - PostgreSQL Exclusivo
  * Principios: DRY, Single Responsibility, Abstraction
  */
-const pool = require('../config/database');
+const pool = require('../config/postgresql');
 const { DB_CONFIG } = require('../constants');
 
 /**
@@ -27,8 +27,8 @@ class TransactionManager {
    * Aplica lock pessimista por barbeiro
    */
   async acquireBarberLock(barberId) {
-    // SQLite: usar lock por arquivo (simplificado)
-    // Em produção com PostgreSQL seria: SELECT pg_advisory_xact_lock($1)
+    // PostgreSQL: usar advisory lock para garantir exclusividade
+    await this.client.query('SELECT pg_advisory_xact_lock($1)', [barberId]);
     console.log(`🔒 Lock adquirido para barbeiro ${barberId}`);
   }
 

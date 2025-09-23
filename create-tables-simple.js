@@ -1,52 +1,56 @@
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('./data/agendamento_dev.db');
+const pool = require('./src/config/database');
 
-console.log('Criando tabelas...');
+console.log('Criando tabelas no PostgreSQL...');
 
-// Criar tabelas uma por uma
-const tables = [
-  `CREATE TABLE IF NOT EXISTS usuarios (
-    id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
-    whatsapp TEXT,
-    timezone TEXT DEFAULT 'America/Sao_Paulo',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`,
+(async () => {
+  try {
+    // usuarios
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id_usuario SERIAL PRIMARY KEY,
+        nome TEXT NOT NULL,
+        whatsapp TEXT,
+        timezone TEXT DEFAULT 'America/Sao_Paulo',
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
 
-  `CREATE TABLE IF NOT EXISTS clientes (
-    id_cliente INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_usuario INTEGER,
-    nome TEXT,
-    whatsapp TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`,
+    // clientes
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS clientes (
+        id_cliente SERIAL PRIMARY KEY,
+        id_usuario INTEGER REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE,
+        nome TEXT,
+        whatsapp TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
 
-  `CREATE TABLE IF NOT EXISTS servicos (
-    id_servico INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_usuario INTEGER,
-    nome_servico TEXT NOT NULL,
-    duracao_min INTEGER NOT NULL,
-    valor REAL NOT NULL,
-    descricao TEXT,
-    ativo INTEGER DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`
-];
+    // servicos
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS servicos (
+        id_servico SERIAL PRIMARY KEY,
+        id_usuario INTEGER REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE,
+        nome_servico TEXT NOT NULL,
+        duracao_min INTEGER NOT NULL,
+        valor NUMERIC(10,2) NOT NULL,
+        descricao TEXT,
+        ativo BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
 
-let completed = 0;
-tables.forEach((sql, index) => {
-  db.run(sql, (err) => {
-    if (err) {
-      console.error(`Erro na tabela ${index + 1}:`, err);
-    } else {
-      console.log(`✅ Tabela ${index + 1} criada`);
+    console.log('🎉 Todas as tabelas criadas com sucesso no PostgreSQL!');
+    if (typeof pool.end === 'function') {
+      await pool.end();
     }
-    completed++;
-    if (completed === tables.length) {
-      console.log('🎉 Todas as tabelas criadas!');
-      db.close();
+  } catch (err) {
+    console.error('Erro ao criar tabelas:', err);
+    if (typeof pool.end === 'function') {
+      await pool.end();
     }
-  });
-});
+    process.exit(1);
+  }
+})();

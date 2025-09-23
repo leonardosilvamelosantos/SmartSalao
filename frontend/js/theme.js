@@ -1,19 +1,21 @@
-// Sistema de Temas Dark/Light - Sistema Barbeiros
+// Sistema de Temas Dark/Light - Sistema Barbeiros (Otimizado)
 
 class ThemeManager {
     constructor() {
         this.themeToggle = document.getElementById('theme-toggle');
         this.currentTheme = this.getSavedTheme() || 'light';
+        this.isTransitioning = false;
+        this.debounceTimer = null;
         this.init();
     }
 
     init() {
-        // Aplicar tema salvo
-        this.applyTheme(this.currentTheme);
+        // Aplicar tema salvo sem transição inicial
+        this.applyTheme(this.currentTheme, false);
 
-        // Event listener para o botão de toggle
+        // Event listener para o botão de toggle com debounce
         if (this.themeToggle) {
-            this.themeToggle.addEventListener('click', () => this.toggleTheme());
+            this.themeToggle.addEventListener('click', () => this.debouncedToggleTheme());
         }
 
         // Atualizar ícone do botão
@@ -28,13 +30,38 @@ class ThemeManager {
         localStorage.setItem('barbeiros-theme', theme);
     }
 
-    applyTheme(theme) {
+    applyTheme(theme, withTransition = true) {
+        if (this.isTransitioning) return;
+        
         const body = document.body;
-
-        if (theme === 'dark') {
-            body.classList.add('dark-mode');
+        
+        // Otimização: usar requestAnimationFrame para mudanças suaves
+        if (withTransition) {
+            this.isTransitioning = true;
+            
+            // Adicionar classe de transição
+            body.classList.add('theme-transitioning');
+            
+            requestAnimationFrame(() => {
+                if (theme === 'dark') {
+                    body.classList.add('dark-mode');
+                } else {
+                    body.classList.remove('dark-mode');
+                }
+                
+                // Remover classe de transição após a animação
+                setTimeout(() => {
+                    body.classList.remove('theme-transitioning');
+                    this.isTransitioning = false;
+                }, 300);
+            });
         } else {
-            body.classList.remove('dark-mode');
+            // Aplicação imediata sem transição (para carregamento inicial)
+            if (theme === 'dark') {
+                body.classList.add('dark-mode');
+            } else {
+                body.classList.remove('dark-mode');
+            }
         }
 
         this.currentTheme = theme;
@@ -42,7 +69,20 @@ class ThemeManager {
         this.updateToggleIcon();
     }
 
+    debouncedToggleTheme() {
+        // Debounce para evitar cliques múltiplos
+        if (this.debounceTimer) {
+            clearTimeout(this.debounceTimer);
+        }
+        
+        this.debounceTimer = setTimeout(() => {
+            this.toggleTheme();
+        }, 100);
+    }
+
     toggleTheme() {
+        if (this.isTransitioning) return;
+        
         const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
         this.applyTheme(newTheme);
 
@@ -67,13 +107,15 @@ class ThemeManager {
     animateToggleButton() {
         if (!this.themeToggle) return;
 
-        // Adicionar classe de animação
-        this.themeToggle.classList.add('theme-toggle-animate');
-
-        // Remover classe após animação
-        setTimeout(() => {
-            this.themeToggle.classList.remove('theme-toggle-animate');
-        }, 300);
+        // Usar requestAnimationFrame para animação suave
+        requestAnimationFrame(() => {
+            this.themeToggle.classList.add('theme-toggle-animate');
+            
+            // Remover classe após animação
+            setTimeout(() => {
+                this.themeToggle.classList.remove('theme-toggle-animate');
+            }, 300);
+        });
     }
 
     // Método para verificar se está em dark mode
@@ -118,26 +160,70 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// CSS adicional para animações (pode ser movido para o main.css se preferir)
+// CSS otimizado para performance de temas
 const style = document.createElement('style');
 style.textContent = `
+    /* Otimizações de performance para mudanças de tema */
+    :root {
+        /* Variáveis CSS para transições mais eficientes */
+        --theme-transition-duration: 0.2s;
+        --theme-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Classe para controlar transições durante mudança de tema */
+    .theme-transitioning * {
+        transition: background-color var(--theme-transition-duration) var(--theme-transition-timing),
+                   color var(--theme-transition-duration) var(--theme-transition-timing),
+                   border-color var(--theme-transition-duration) var(--theme-transition-timing),
+                   box-shadow var(--theme-transition-duration) var(--theme-transition-timing) !important;
+    }
+
+    /* Desabilitar transições para elementos que não precisam */
+    .theme-transitioning img,
+    .theme-transitioning svg,
+    .theme-transitioning canvas,
+    .theme-transitioning video {
+        transition: none !important;
+    }
+
+    /* Animação do botão de toggle otimizada */
     .theme-toggle-animate {
-        animation: themeTogglePulse 0.3s ease-in-out;
+        animation: themeTogglePulse 0.3s var(--theme-transition-timing);
+        will-change: transform;
     }
 
     @keyframes themeTogglePulse {
         0% { transform: scale(1); }
-        50% { transform: scale(1.1); }
+        50% { transform: scale(1.05); }
         100% { transform: scale(1); }
     }
 
-    /* Transições suaves para mudanças de tema */
-    body {
-        transition: background-color 0.3s ease, color 0.3s ease;
+    /* Otimizações para elementos que mudam frequentemente */
+    .navbar,
+    .sidebar,
+    .card,
+    .modal-content,
+    .btn,
+    .form-control {
+        will-change: background-color, color, border-color;
     }
 
-    .sidebar, .card, .navbar, .modal-content {
-        transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    /* Reduzir reflow/repaint durante transições */
+    .theme-transitioning {
+        contain: layout style paint;
+    }
+
+    /* Transições mais suaves para elementos específicos */
+    body {
+        transition: background-color var(--theme-transition-duration) var(--theme-transition-timing);
+    }
+
+    /* Otimização para elementos com muitas propriedades */
+    .metric-card,
+    .appointment-item,
+    .table {
+        transition: background-color var(--theme-transition-duration) var(--theme-transition-timing),
+                   border-color var(--theme-transition-duration) var(--theme-transition-timing);
     }
 `;
 document.head.appendChild(style);

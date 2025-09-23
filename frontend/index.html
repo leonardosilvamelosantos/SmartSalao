@@ -13,26 +13,40 @@
     <!-- CSS Personalizado -->
     <link href="css/main.css" rel="stylesheet">
     <link href="css/dark-mode.css" rel="stylesheet">
+    <link href="css/animated-cards.css" rel="stylesheet">
 </head>
 <body>
     <!-- Header -->
     <header class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="#">
-                <i class="bi bi-scissors me-2"></i>
-                <span class="fw-bold">Sistema Barbeiros</span>
+            <!-- Mobile menu button -->
+            <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarCollapse" aria-controls="sidebarCollapse" aria-expanded="false" aria-label="Toggle navigation" id="mobileMenuToggle">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <a class="navbar-brand d-flex align-items-center" href="#" style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--primary-600);">
+                <i class="bi bi-scissors me-2" style="color: var(--primary-500);"></i>
+                <span class="fw-bold d-none d-sm-inline" id="establishment-name">SmartSalao</span>
+                <span class="fw-bold d-sm-none" id="establishment-name-mobile">SmartSalao</span>
             </a>
 
-            <!-- Theme Toggle -->
-            <div class="d-flex align-items-center">
-                <button id="theme-toggle" class="btn btn-outline-light me-3" type="button">
+            <!-- Theme Toggle & Auto-Agendamento Toggle -->
+            <div class="d-flex align-items-center gap-2">
+                <!-- Auto-Agendamento ON/OFF (estilo iPhone) -->
+                <div class="d-flex align-items-center me-2">
+                    <label for="autoConfirmTopSwitch" class="me-2 mb-0 small d-none d-sm-inline text-white-50">Auto-agendamento</label>
+                    <div class="form-check form-switch m-0">
+                        <input class="form-check-input" type="checkbox" id="autoConfirmTopSwitch" aria-label="Auto-agendamento WhatsApp">
+                    </div>
+                </div>
+                <button id="theme-toggle" class="btn btn-ghost me-2 me-lg-3" type="button">
                     <i class="bi bi-sun-fill"></i>
                 </button>
 
                 <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <button class="btn btn-ghost dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle me-2"></i>
-                        <span id="user-name">Barbeiro Teste</span>
+                        <span id="user-name" class="d-none d-sm-inline">Barbeiro Teste</span>
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#" onclick="logout()">
@@ -48,66 +62,145 @@
         </div>
     </header>
 
+    <!-- Mobile Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
             <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block sidebar">
-                <div class="sidebar-sticky">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link active" href="#" onclick="showPage('dashboard')">
-                                <i class="bi bi-house-door me-2"></i>
-                                Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" onclick="showPage('servicos')">
-                                <i class="bi bi-wrench me-2"></i>
-                                Serviços
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" onclick="showPage('clientes')">
-                                <i class="bi bi-people me-2"></i>
-                                Clientes
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" onclick="showPage('agenda')">
-                                <i class="bi bi-calendar-event me-2"></i>
-                                Agenda
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" onclick="showPage('usuarios')">
-                                <i class="bi bi-person-gear me-2"></i>
-                                Usuários
-                            </a>
-                        </li>
-                        <li>
-                            <a class="nav-link" href="#" onclick="showPage('configuracoes')">
-                                <i class="bi bi-gear me-2"></i>
-                                Configurações
-                            </a>
-                        </li>
-                        <li class="nav-item mt-3">
-                            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                                <span>Ações Rápidas</span>
-                            </h6>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" onclick="novoAgendamento()">
-                                <i class="bi bi-plus-circle me-2"></i>
-                                Novo Agendamento
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" onclick="novoCliente()">
-                                <i class="bi bi-person-plus me-2"></i>
-                                Novo Cliente
-                            </a>
-                        </li>
-                    </ul>
+                <!-- Mobile Sidebar (Collapsible) -->
+                <div class="collapse d-lg-none" id="sidebarCollapse">
+                    <div class="sidebar-sticky">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link active" href="#" onclick="showPage('dashboard'); closeMobileSidebar();">
+                                    <i class="bi bi-house-door me-2"></i>
+                                    Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('servicos'); closeMobileSidebar();">
+                                    <i class="bi bi-wrench me-2"></i>
+                                    Serviços
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('clientes'); closeMobileSidebar();">
+                                    <i class="bi bi-people me-2"></i>
+                                    Clientes
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('agenda'); closeMobileSidebar();">
+                                    <i class="bi bi-calendar-event me-2"></i>
+                                    Agenda
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('usuarios'); closeMobileSidebar();">
+                                    <i class="bi bi-person-gear me-2"></i>
+                                    Usuários
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('configuracoes'); closeMobileSidebar();">
+                                    <i class="bi bi-gear me-2"></i>
+                                    Configurações
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('whatsapp'); closeMobileSidebar();">
+                                    <i class="fab fa-whatsapp me-2"></i>
+                                    WhatsApp Bot
+                                </a>
+                            </li>
+                            <li class="nav-item mt-3">
+                                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                                    <span>Ações Rápidas</span>
+                                </h6>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="novoAgendamento(); closeMobileSidebar();">
+                                    <i class="bi bi-plus-circle me-2"></i>
+                                    Novo Agendamento
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="novoCliente(); closeMobileSidebar();">
+                                    <i class="bi bi-person-plus me-2"></i>
+                                    Novo Cliente
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Desktop Sidebar (Always Visible) -->
+                <div class="d-none d-lg-block">
+                    <div class="sidebar-sticky">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link active" href="#" onclick="showPage('dashboard')">
+                                    <i class="bi bi-house-door me-2"></i>
+                                    Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('servicos')">
+                                    <i class="bi bi-wrench me-2"></i>
+                                    Serviços
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('clientes')">
+                                    <i class="bi bi-people me-2"></i>
+                                    Clientes
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('agenda')">
+                                    <i class="bi bi-calendar-event me-2"></i>
+                                    Agenda
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('usuarios')">
+                                    <i class="bi bi-person-gear me-2"></i>
+                                    Usuários
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('configuracoes')">
+                                    <i class="bi bi-gear me-2"></i>
+                                    Configurações
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('whatsapp')">
+                                    <i class="fab fa-whatsapp me-2"></i>
+                                    WhatsApp Bot
+                                </a>
+                            </li>
+                            <li class="nav-item mt-3">
+                                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                                    <span>Ações Rápidas</span>
+                                </h6>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="novoAgendamento()">
+                                    <i class="bi bi-plus-circle me-2"></i>
+                                    Novo Agendamento
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="novoCliente()">
+                                    <i class="bi bi-person-plus me-2"></i>
+                                    Novo Cliente
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </nav>
 
@@ -115,27 +208,27 @@
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
                 <div id="main-content" class="content-wrapper">
                     <!-- Dashboard Content -->
-                    <div id="dashboard-page" class="page active">
+                    <div id="dashboard-page" class="page active fade-in">
                         <div class="page-header">
                             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center">
                                 <div class="page-title-section">
-                                    <h1 class="h2 mb-1">
-                                        <i class="bi bi-house-door me-2 text-primary"></i>
+                                    <h1 class="h2 mb-1" style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--text-primary);">
+                                        <i class="bi bi-house-door me-2" style="color: var(--primary-500);"></i>
                                         Dashboard
                                     </h1>
-                                    <p class="text-muted mb-0 small">Visão geral do seu negócio hoje</p>
+                                    <p class="mb-0" style="color: var(--text-secondary); font-size: var(--text-base);">Visão geral do seu negócio hoje</p>
                                 </div>
                                 <div class="page-actions">
                                     <div class="btn-toolbar mb-2 mb-md-0">
                                         <div class="btn-group me-2">
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Compartilhar">
+                                            <button type="button" class="btn btn-sm btn-secondary" title="Compartilhar">
                                                 <i class="bi bi-share me-1"></i>Compartilhar
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Exportar">
+                                            <button type="button" class="btn btn-sm btn-secondary" title="Exportar">
                                                 <i class="bi bi-download me-1"></i>Exportar
                                             </button>
                                         </div>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" title="Selecionar período">
+                                        <button type="button" class="btn btn-sm btn-ghost dropdown-toggle" title="Selecionar período">
                                             <i class="bi bi-calendar3 me-1"></i>Esta semana
                                         </button>
                                     </div>
@@ -143,148 +236,8 @@
                             </div>
                         </div>
 
-                        <!-- Cards de Métricas Melhorados -->
-                        <div class="row mb-4">
-                            <div class="col-lg-3 col-md-6 mb-4">
-                                <div class="card metric-card border-0 shadow-sm h-100">
-                                    <div class="card-body text-center p-4">
-                                        <div class="metric-icon mb-3">
-                                            <i class="bi bi-calendar-check text-primary" style="font-size: 3rem;"></i>
-                                        </div>
-                                        <h2 class="metric-value mb-2" id="agendamentos-hoje">0</h2>
-                                        <h6 class="metric-label text-muted mb-2">Agendamentos Hoje</h6>
-                                        <div class="metric-trend">
-                                            <span class="badge bg-success-subtle text-success">
-                                                <i class="bi bi-arrow-up me-1"></i>+12%
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-6 mb-4">
-                                <div class="card metric-card border-0 shadow-sm h-100">
-                                    <div class="card-body text-center p-4">
-                                        <div class="metric-icon mb-3">
-                                            <i class="bi bi-currency-dollar text-success" style="font-size: 3rem;"></i>
-                                        </div>
-                                        <h2 class="metric-value mb-2" id="receita-hoje">R$ 0,00</h2>
-                                        <h6 class="metric-label text-muted mb-2">Receita Hoje</h6>
-                                        <div class="metric-trend">
-                                            <span class="badge bg-success-subtle text-success">
-                                                <i class="bi bi-arrow-up me-1"></i>+8%
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-6 mb-4">
-                                <div class="card metric-card border-0 shadow-sm h-100">
-                                    <div class="card-body text-center p-4">
-                                        <div class="metric-icon mb-3">
-                                            <i class="bi bi-people text-info" style="font-size: 3rem;"></i>
-                                        </div>
-                                        <h2 class="metric-value mb-2" id="clientes-ativos">0</h2>
-                                        <h6 class="metric-label text-muted mb-2">Clientes Ativos</h6>
-                                        <div class="metric-trend">
-                                            <span class="badge bg-info-subtle text-info">
-                                                <i class="bi bi-dash me-1"></i>0%
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-6 mb-4">
-                                <div class="card metric-card border-0 shadow-sm h-100">
-                                    <div class="card-body text-center p-4">
-                                        <div class="metric-icon mb-3">
-                                            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
-                                        </div>
-                                        <h2 class="metric-value mb-2" id="agendamentos-concluidos">0</h2>
-                                        <h6 class="metric-label text-muted mb-2">Concluídos Hoje</h6>
-                                        <div class="metric-trend">
-                                            <span class="badge bg-success-subtle text-success">
-                                                <i class="bi bi-arrow-up me-1"></i>+15%
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Gráfico de Performance Semanal -->
-                        <div class="row mb-4">
-                            <div class="col-lg-8 mb-4">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-header bg-white border-0 py-3">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <h5 class="mb-0">
-                                                <i class="bi bi-graph-up me-2 text-primary"></i>
-                                                Performance da Semana
-                                            </h5>
-                                            <div class="dropdown">
-                                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                    <i class="bi bi-calendar-week me-1"></i>Esta Semana
-                                                </button>
-                                                <ul class="dropdown-menu">
-                                                    <li><a class="dropdown-item" href="#">Esta Semana</a></li>
-                                                    <li><a class="dropdown-item" href="#">Última Semana</a></li>
-                                                    <li><a class="dropdown-item" href="#">Este Mês</a></li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <canvas id="performanceChart" height="200"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Avisos e Alertas -->
-                            <div class="col-lg-4 mb-4">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-header bg-white border-0 py-3">
-                                        <h5 class="mb-0">
-                                            <i class="bi bi-bell me-2 text-warning"></i>
-                                            Avisos Importantes
-                                        </h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="avisos-list">
-                                            <div class="alert alert-info border-0 mb-3">
-                                                <div class="d-flex">
-                                                    <i class="bi bi-info-circle me-2"></i>
-                                                    <div>
-                                                        <small class="fw-semibold">Horário de Funcionamento</small>
-                                                        <div class="text-muted small">Próximo fechamento: 18:00</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="alert alert-warning border-0 mb-3">
-                                                <div class="d-flex">
-                                                    <i class="bi bi-exclamation-triangle me-2"></i>
-                                                    <div>
-                                                        <small class="fw-semibold">Cliente VIP</small>
-                                                        <div class="text-muted small">João Silva - 15:30</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="alert alert-success border-0 mb-0">
-                                                <div class="d-flex">
-                                                    <i class="bi bi-check-circle me-2"></i>
-                                                    <div>
-                                                        <small class="fw-semibold">Meta do Dia</small>
-                                                        <div class="text-muted small">85% alcançado</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Próximos Agendamentos e Ações Rápidas -->
-                        <div class="row">
+                        <div class="row mb-4">
                             <div class="col-lg-8 mb-4">
                                 <div class="card border-0 shadow-sm">
                                     <div class="card-header bg-white border-0 py-3">
@@ -300,73 +253,31 @@
                                     </div>
                                     <div class="card-body">
                                         <div id="proximos-agendamentos">
-                                            <!-- Agendamentos serão carregados dinamicamente -->
-                                            <div class="appointment-item p-3 mb-3 border rounded">
-                                                <div class="d-flex justify-content-between align-items-start">
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="appointment-avatar me-3">
-                                                            <i class="bi bi-person-circle text-primary" style="font-size: 2.5rem;"></i>
-                                                        </div>
-                                                        <div>
-                                                            <h6 class="mb-1">João Cliente Teste</h6>
-                                                            <p class="mb-1 text-muted small">Corte Masculino</p>
-                                                            <div class="d-flex align-items-center">
-                                                                <i class="bi bi-clock me-1 text-muted"></i>
-                                                                <small class="text-muted">Hoje às 15:30</small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="text-end">
-                                                        <span class="badge bg-success mb-2">Confirmado</span>
-                                                        <div class="mt-2">
-                                                            <button class="btn btn-outline-primary btn-sm me-1" title="Editar">
-                                                                <i class="bi bi-pencil"></i>
-                                                            </button>
-                                                            <button class="btn btn-outline-success btn-sm me-1" title="Concluir">
-                                                                <i class="bi bi-check-circle"></i>
-                                                            </button>
-                                                            <button class="btn btn-outline-danger btn-sm" title="Cancelar">
-                                                                <i class="bi bi-x-circle"></i>
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                            <!-- Loading State -->
+                                            <div id="agendamentos-loading" class="text-center py-4" style="display: none;">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Carregando...</span>
                                                 </div>
+                                                <p class="mt-2 text-muted">Carregando agendamentos...</p>
                                             </div>
-
-                                            <div class="appointment-item p-3 mb-3 border rounded">
-                                                <div class="d-flex justify-content-between align-items-start">
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="appointment-avatar me-3">
-                                                            <i class="bi bi-person-circle text-info" style="font-size: 2.5rem;"></i>
-                                                        </div>
-                                                        <div>
-                                                            <h6 class="mb-1">Maria Santos</h6>
-                                                            <p class="mb-1 text-muted small">Corte Feminino + Sombrancelha</p>
-                                                            <div class="d-flex align-items-center">
-                                                                <i class="bi bi-clock me-1 text-muted"></i>
-                                                                <small class="text-muted">Amanhã às 10:00</small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="text-end">
-                                                        <span class="badge bg-warning mb-2">Pendente</span>
-                                                        <div class="mt-2">
-                                                            <button class="btn btn-outline-primary btn-sm me-1" title="Editar">
-                                                                <i class="bi bi-pencil"></i>
-                                                            </button>
-                                                            <button class="btn btn-outline-success btn-sm me-1" title="Confirmar">
-                                                                <i class="bi bi-check-circle"></i>
-                                                            </button>
-                                                            <button class="btn btn-outline-danger btn-sm" title="Cancelar">
-                                                                <i class="bi bi-x-circle"></i>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                            
+                                            <!-- Empty State -->
+                                            <div id="agendamentos-empty" class="empty-state" style="display: none;">
+                                                <i class="bi bi-calendar-x"></i>
+                                                <h5>Nenhum agendamento próximo</h5>
+                                                <p>Você não tem agendamentos confirmados para os próximos dias.</p>
+                                                <button class="btn btn-primary" onclick="novoAgendamento()">
+                                                    <i class="bi bi-calendar-plus me-2"></i>Criar Primeiro Agendamento
+                                                </button>
                                             </div>
-
+                                            
+                                            <!-- Agendamentos List -->
+                                            <div id="agendamentos-list">
+                                                <!-- Agendamentos serão carregados dinamicamente -->
+                                            </div>
+                                            
                                             <div class="text-center mt-3">
-                                                <button class="btn btn-outline-primary">
+                                                <button class="btn btn-outline-primary" onclick="showPage('agenda')">
                                                     <i class="bi bi-calendar-week me-1"></i>Ver Agenda Completa
                                                 </button>
                                             </div>
@@ -386,47 +297,40 @@
                                     </div>
                                     <div class="card-body">
                                         <div class="d-grid gap-3">
-                                            <button class="btn btn-primary btn-lg d-flex align-items-center justify-content-center py-3" onclick="novoAgendamento()">
+                                            <!-- CTA Principal - Novo Agendamento -->
+                                            <button class="btn btn-primary btn-lg d-flex align-items-center justify-content-center py-4" onclick="novoAgendamento()" id="btn-novo-agendamento">
                                                 <div class="text-center">
-                                                    <i class="bi bi-calendar-plus d-block" style="font-size: 1.5rem;"></i>
-                                                    <span class="fw-semibold">Novo Agendamento</span>
+                                                    <i class="bi bi-calendar-plus d-block mb-2" style="font-size: 2rem;"></i>
+                                                    <span class="fw-bold d-block">Novo Agendamento</span>
+                                                    <small class="opacity-75">Criar agendamento rápido</small>
                                                 </div>
                                             </button>
-                                            <button class="btn btn-success btn-lg d-flex align-items-center justify-content-center py-3" onclick="novoCliente()">
-                                                <div class="text-center">
-                                                    <i class="bi bi-person-plus-fill d-block" style="font-size: 1.5rem;"></i>
-                                                    <span class="fw-semibold">Novo Cliente</span>
+                                            
+                                            <!-- CTAs Secundários -->
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <button class="btn btn-outline-primary w-100 py-3" onclick="novoCliente()" id="btn-novo-cliente">
+                                                        <i class="bi bi-person-plus d-block mb-1" style="font-size: 1.2rem;"></i>
+                                                        <small>Novo Cliente</small>
+                                                    </button>
                                                 </div>
-                                            </button>
-                                            <button class="btn btn-info btn-lg d-flex align-items-center justify-content-center py-3" onclick="novoServico()">
-                                                <div class="text-center">
-                                                    <i class="bi bi-wrench-adjustable d-block" style="font-size: 1.5rem;"></i>
-                                                    <span class="fw-semibold">Novo Serviço</span>
+                                                <div class="col-6">
+                                                    <button class="btn btn-outline-success w-100 py-3" onclick="novoServico()" id="btn-novo-servico">
+                                                        <i class="bi bi-plus-circle d-block mb-1" style="font-size: 1.2rem;"></i>
+                                                        <small>Novo Serviço</small>
+                                                    </button>
                                                 </div>
-                                            </button>
-                                        </div>
-
-                                        <!-- Estatísticas Rápidas -->
-                                        <div class="mt-4 pt-3 border-top">
-                                            <h6 class="text-muted mb-3">Resumo do Dia</h6>
-                                            <div class="row g-2 text-center">
-                                                <div class="col-4">
-                                                    <div class="p-2 bg-light rounded">
-                                                        <div class="fw-bold text-primary">8</div>
-                                                        <small class="text-muted">Total</small>
-                                                    </div>
-                                                </div>
-                                                <div class="col-4">
-                                                    <div class="p-2 bg-success-subtle rounded">
-                                                        <div class="fw-bold text-success">5</div>
-                                                        <small class="text-muted">Feitos</small>
-                                                    </div>
-                                                </div>
-                                                <div class="col-4">
-                                                    <div class="p-2 bg-warning-subtle rounded">
-                                                        <div class="fw-bold text-warning">3</div>
-                                                        <small class="text-muted">Restam</small>
-                                                    </div>
+                                            </div>
+                                            
+                                            <!-- Ações Adicionais -->
+                                            <div class="border-top pt-3">
+                                                <div class="d-grid gap-2">
+                                                    <button class="btn btn-outline-secondary btn-sm" onclick="showPage('agenda')">
+                                                        <i class="bi bi-calendar-week me-2"></i>Ver Agenda
+                                                    </button>
+                                                    <button class="btn btn-outline-secondary btn-sm" onclick="showPage('clientes')">
+                                                        <i class="bi bi-people me-2"></i>Gerenciar Clientes
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -434,26 +338,173 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Cards de Métricas Melhorados -->
+                        <div class="row mb-4">
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="metric-card">
+                                    <div class="metric-icon success">
+                                        <i class="bi bi-calendar-check"></i>
+                                    </div>
+                                    <div class="metric-label">Agendamentos Hoje</div>
+                                    <div class="metric-value" id="agendamentos-hoje">
+                                        <span class="skeleton skeleton-value" style="display: none;"></span>
+                                        <span class="value-text">0</span>
+                                    </div>
+                                    <div class="metric-trend mt-2">
+                                        <span id="agendamentos-percentual" class="badge" style="background: var(--success-100); color: var(--success-600);">
+                                            <i class="bi bi-arrow-up me-1"></i>+12%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="metric-card">
+                                    <div class="metric-icon success">
+                                        <i class="bi bi-currency-dollar"></i>
+                                    </div>
+                                    <div class="metric-label">Receita Hoje</div>
+                                    <div class="metric-value" id="receita-hoje">
+                                        <span class="skeleton skeleton-value" style="display: none;"></span>
+                                        <span class="value-text">R$ 0,00</span>
+                                    </div>
+                                    <div class="metric-trend mt-2">
+                                        <span id="receita-percentual" class="badge" style="background: var(--success-100); color: var(--success-600);">
+                                            <i class="bi bi-arrow-up me-1"></i>+8%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="metric-card">
+                                    <div class="metric-icon primary">
+                                        <i class="bi bi-people"></i>
+                                    </div>
+                                    <div class="metric-label">Clientes Ativos</div>
+                                    <div class="metric-value" id="clientes-ativos">
+                                        <span class="skeleton skeleton-value" style="display: none;"></span>
+                                        <span class="value-text">0</span>
+                                    </div>
+                                    <div class="metric-trend mt-2">
+                                        <span id="clientes-percentual" class="badge" style="background: var(--gray-100); color: var(--gray-600);">
+                                            <i class="bi bi-dash me-1"></i>0%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="metric-card">
+                                    <div class="metric-icon success">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                    </div>
+                                    <div class="metric-label">Concluídos Hoje</div>
+                                    <div class="metric-value" id="agendamentos-concluidos">
+                                        <span class="skeleton skeleton-value" style="display: none;"></span>
+                                        <span class="value-text">0</span>
+                                    </div>
+                                    <div class="metric-trend mt-2">
+                                        <span id="concluidos-percentual" class="badge" style="background: var(--success-100); color: var(--success-600);">
+                                            <i class="bi bi-arrow-up me-1"></i>+15%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico de Performance Semanal Melhorado -->
+                        <div class="row mb-4">
+                            <div class="col-lg-8 mb-4">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-white border-0 py-4">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h5 class="mb-1" style="font-weight: var(--font-semibold); color: var(--text-primary);">
+                                                    <i class="bi bi-graph-up me-2 text-primary"></i>
+                                                    Performance da Semana
+                                                </h5>
+                                                <p class="mb-0 text-muted small">Acompanhe o crescimento do seu negócio</p>
+                                            </div>
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                    <i class="bi bi-calendar-week me-1"></i>Esta Semana
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="#">Esta Semana</a></li>
+                                                    <li><a class="dropdown-item" href="#">Última Semana</a></li>
+                                                    <li><a class="dropdown-item" href="#">Este Mês</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <div style="position: relative; height: 300px;">
+                                            <canvas id="performanceChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Avisos e Alertas -->
+                            <div class="col-lg-4 mb-4">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-bell me-2 text-warning"></i>
+                                                Avisos Importantes
+                                            </h5>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-secondary" onclick="notificationSystem.updateNotifications()" title="Atualizar">
+                                                    <i class="bi bi-arrow-clockwise"></i>
+                                                </button>
+                                                <button class="btn btn-outline-secondary" onclick="notificationSystem.clearAll()" title="Limpar">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div id="avisos-list" class="p-3">
+                                            <!-- Loading State -->
+                                            <div id="avisos-loading" class="text-center py-4">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Carregando avisos...</span>
+                                                </div>
+                                                <p class="mt-2 text-muted small">Carregando avisos...</p>
+                                            </div>
+                                            
+                                            <!-- Empty State -->
+                                            <div id="avisos-empty" class="text-center py-4" style="display: none;">
+                                                <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                                                <p class="mt-2 text-muted small">Nenhum aviso importante</p>
+                                                <small class="text-muted">Tudo funcionando perfeitamente!</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- Página de Serviços Melhorada -->
-                    <div id="servicos-page" class="page" style="display: none;">
+                    <div id="servicos-page" class="page fade-in" style="display: none;">
                         <div class="page-header">
                             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center">
                                 <div class="page-title-section">
-                                    <h1 class="h2 mb-1">
-                                        <i class="bi bi-wrench-adjustable me-2 text-primary"></i>
+                                    <h1 class="h2 mb-1" style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--text-primary);">
+                                        <i class="bi bi-wrench-adjustable me-2" style="color: var(--primary-500);"></i>
                                         Serviços
                                     </h1>
-                                    <p class="text-muted mb-0 small">Gerencie os serviços oferecidos pela sua barbearia</p>
+                                    <p class="mb-0" style="color: var(--text-secondary); font-size: var(--text-base);">Gerencie os serviços oferecidos pela sua barbearia</p>
                                 </div>
                                 <div class="page-actions">
                                     <div class="btn-toolbar mb-2 mb-md-0">
                                         <div class="btn-group me-2">
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Exportar" onclick="exportarServicos()">
+                                            <button type="button" class="btn btn-sm btn-secondary" title="Exportar" onclick="exportarServicos()">
                                                 <i class="bi bi-download me-1"></i>Exportar
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Importar" onclick="importarServicos()">
+                                            <button type="button" class="btn btn-sm btn-secondary" title="Importar" onclick="importarServicos()">
                                                 <i class="bi bi-upload me-1"></i>Importar
                                             </button>
                                         </div>
@@ -644,12 +695,49 @@
                     </div>
 
                     <div id="clientes-page" class="page" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
-                            <h1 class="h2">Clientes</h1>
-                            <button class="btn btn-primary" onclick="novoCliente()">
-                                <i class="bi bi-person-plus me-2"></i>Novo Cliente
-                            </button>
+                        <!-- Header responsivo -->
+                        <div class="page-header">
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center pt-3 pb-2 mb-3 border-bottom">
+                                <h1 class="h2 mb-3 mb-md-0">Clientes</h1>
+                                
+                                <!-- Botões de ação responsivos -->
+                                <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto">
+                                    <!-- Botões secundários em dropdown em mobile -->
+                                    <div class="dropdown d-md-none mb-2">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#" onclick="exportarClientes()">
+                                                <i class="bi bi-download me-2"></i>Exportar
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="importarClientes()">
+                                                <i class="bi bi-upload me-2"></i>Importar
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <!-- Botões visíveis em desktop -->
+                                    <div class="btn-group d-none d-md-flex">
+                                        <button class="btn btn-outline-secondary" onclick="exportarClientes()">
+                                            <i class="bi bi-download me-2"></i>Exportar
+                                        </button>
+                                        <button class="btn btn-outline-secondary" onclick="importarClientes()">
+                                            <i class="bi bi-upload me-2"></i>Importar
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Botão principal sempre visível -->
+                                    <button class="btn btn-primary" onclick="novoCliente()">
+                                        <i class="bi bi-person-plus me-2"></i>
+                                        <span class="d-none d-sm-inline">Novo Cliente</span>
+                                        <span class="d-sm-none">Novo</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
+                        
+                        <!-- Conteúdo da página -->
                         <div id="clientes-content">
                             <div class="text-center">
                                 <i class="bi bi-arrow-clockwise" style="font-size: 3rem;"></i>
@@ -659,12 +747,116 @@
                     </div>
 
                     <div id="agenda-page" class="page" style="display: none;">
-                        <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
-                            <h1 class="h2">Agenda</h1>
-                            <button class="btn btn-primary" onclick="novoAgendamento()">
-                                <i class="bi bi-calendar-plus me-2"></i>Novo Agendamento
-                            </button>
+                        <!-- Header da Agenda -->
+                        <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-4 border-bottom">
+                            <div>
+                                <h1 class="h2 mb-1">📅 Agenda</h1>
+                                <p class="text-muted small mb-0">Gerencie seus agendamentos</p>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-primary" onclick="agendaPage.filtrar()">
+                                    <i class="bi bi-funnel me-1"></i>Filtros
+                                </button>
+                                <button class="btn btn-primary" onclick="novoAgendamento()">
+                                    <i class="bi bi-calendar-plus me-2"></i>Novo Agendamento
+                                </button>
+                            </div>
                         </div>
+
+                        <!-- Filtros da Agenda -->
+                        <div id="agenda-filters" class="row mb-4" style="display: none;">
+                            <div class="col-md-3">
+                                <label class="form-label small">Data Inicial</label>
+                                <input type="date" class="form-control form-control-sm" id="filter-data-inicial">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Data Final</label>
+                                <input type="date" class="form-control form-control-sm" id="filter-data-final">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Status</label>
+                                <select class="form-select form-select-sm" id="filter-status">
+                                    <option value="">Todos</option>
+                                    <option value="confirmed">Confirmados</option>
+                                    <option value="pending">Pendentes</option>
+                                    <option value="cancelled">Cancelados</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button class="btn btn-outline-secondary btn-sm me-2" onclick="agendaPage.aplicarFiltros()">
+                                    <i class="bi bi-search me-1"></i>Filtrar
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="agendaPage.limparFiltros()">
+                                    <i class="bi bi-x-circle me-1"></i>Limpar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Estatísticas Rápidas -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card border-0 bg-primary text-white">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                <i class="bi bi-calendar-check fs-4"></i>
+                                            </div>
+                                            <div class="flex-grow-1 ms-3">
+                                                <div class="small">Hoje</div>
+                                                <div class="h5 mb-0" id="agenda-hoje">0</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-0 bg-success text-white">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                <i class="bi bi-check-circle fs-4"></i>
+                                            </div>
+                                            <div class="flex-grow-1 ms-3">
+                                                <div class="small">Confirmados</div>
+                                                <div class="h5 mb-0" id="agenda-confirmados">0</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-0 bg-warning text-white">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                <i class="bi bi-clock fs-4"></i>
+                                            </div>
+                                            <div class="flex-grow-1 ms-3">
+                                                <div class="small">Pendentes</div>
+                                                <div class="h5 mb-0" id="agenda-pendentes">0</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-0 bg-info text-white">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                <i class="bi bi-calendar-week fs-4"></i>
+                                            </div>
+                                            <div class="flex-grow-1 ms-3">
+                                                <div class="small">Esta Semana</div>
+                                                <div class="h5 mb-0" id="agenda-semana">0</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conteúdo da Agenda -->
                         <div id="agenda-content">
                             <div class="text-center">
                                 <i class="bi bi-calendar-week" style="font-size: 3rem;"></i>
@@ -696,18 +888,35 @@
                             <!-- Conteúdo das configurações será carregado aqui -->
                         </div>
                     </div>
+
+                    <!-- Página WhatsApp -->
+                    <div id="whatsapp-page" class="page" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">
+                                <i class="fab fa-whatsapp me-2 text-success"></i>
+                                WhatsApp Bot
+                            </h1>
+                        </div>
+                        <div id="whatsapp-content">
+                            <!-- Conteúdo da página WhatsApp será carregado aqui -->
+                            <div class="alert alert-info">
+                                <i class="fab fa-whatsapp me-2"></i>
+                                Carregando interface do WhatsApp...
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
     </div>
 
     <!-- Modal Genérico para Formulários -->
-    <div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="formModalTitle">Modal Title</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body" id="formModalBody">
                     <!-- Conteúdo do formulário será inserido aqui -->
@@ -723,12 +932,18 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- JavaScript Personalizado -->
+    <script src="js/clear-auth.js"></script>
+    <script src="js/security.js"></script>
+    <script src="js/core/api.js"></script>
+    <script src="js/animated-cards.js"></script>
     <script src="js/router.js"></script>
     <script src="js/pages/clientes.js"></script>
     <script src="js/pages/servicos.js"></script>
     <script src="js/pages/agenda.js"></script>
     <script src="js/pages/usuarios.js"></script>
     <script src="js/pages/configuracoes.js"></script>
+    <script src="js/pages/whatsapp.js"></script>
+    <script src="js/notifications.js"></script>
     <script src="js/main.js"></script>
     <script src="js/theme.js"></script>
     <script src="js/dashboard.js"></script>

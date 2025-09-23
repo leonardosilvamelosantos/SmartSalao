@@ -10,6 +10,16 @@ const { validateCliente, validateId, validatePagination } = require('../middlewa
 router.get('/', validatePagination, ClienteController.index);
 
 /**
+ * GET /api/clientes/export - Exportar clientes do usuário (JSON)
+ */
+router.get('/export', ClienteController.export);
+
+/**
+ * POST /api/clientes/import - Importar clientes em massa (JSON)
+ */
+router.post('/import', ClienteController.import);
+
+/**
  * GET /api/clientes/:id - Buscar cliente específico
  */
 router.get('/:id', validateId, ClienteController.show);

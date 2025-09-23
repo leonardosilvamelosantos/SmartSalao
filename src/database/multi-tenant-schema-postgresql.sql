@@ -5,13 +5,13 @@
 -- Tabela de tenants (contratos/usuários principais)
 CREATE TABLE IF NOT EXISTS tenants (
     id_tenant SERIAL PRIMARY KEY,
-    nome VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
+    nome TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
     telefone VARCHAR(20),
     documento VARCHAR(20), -- CPF/CNPJ
     schema_name VARCHAR(100) UNIQUE NOT NULL, -- Nome do schema isolado
-    plano VARCHAR(50) NOT NULL DEFAULT 'basico',
-    status VARCHAR(20) NOT NULL DEFAULT 'ativo',
+    plano TEXT NOT NULL DEFAULT 'basico',
+    status TEXT NOT NULL DEFAULT 'ativo',
     limites JSONB DEFAULT '{
         "agendamentos_mes": 100,
         "servicos": 10,
@@ -29,21 +29,21 @@ CREATE TABLE IF NOT EXISTS tenants (
             "sms": false
         }
     }'::jsonb,
-    data_criacao TIMESTAMPTZ DEFAULT NOW(),
-    data_atualizacao TIMESTAMPTZ DEFAULT NOW(),
-    data_expiracao TIMESTAMPTZ,
-    ultimo_acesso TIMESTAMPTZ
+    data_criacao TIMESTAMP DEFAULT NOW(),
+    data_atualizacao TIMESTAMP DEFAULT NOW(),
+    data_expiracao TIMESTAMP,
+    ultimo_acesso TIMESTAMP
 );
 
 -- Tabela de usuários por tenant (admin, funcionários, etc.)
 CREATE TABLE IF NOT EXISTS tenant_users (
     id_usuario SERIAL PRIMARY KEY,
     id_tenant INTEGER REFERENCES tenants(id_tenant) ON DELETE CASCADE,
-    nome VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    senha_hash VARCHAR(255) NOT NULL,
+    nome TEXT NOT NULL,
+    email TEXT NOT NULL,
+    senha_hash TEXT NOT NULL,
     telefone VARCHAR(20),
-    cargo VARCHAR(100) DEFAULT 'funcionario',
+    cargo TEXT DEFAULT 'funcionario',
     permissoes JSONB DEFAULT '{
         "admin": false,
         "agendamentos": true,
@@ -52,9 +52,9 @@ CREATE TABLE IF NOT EXISTS tenant_users (
         "relatorios": false,
         "configuracoes": false
     }'::jsonb,
-    status VARCHAR(20) NOT NULL DEFAULT 'ativo',
-    ultimo_login TIMESTAMPTZ,
-    data_criacao TIMESTAMPTZ DEFAULT NOW(),
+    status TEXT NOT NULL DEFAULT 'ativo',
+    ultimo_login TIMESTAMP,
+    data_criacao TIMESTAMP DEFAULT NOW(),
     UNIQUE(id_tenant, email)
 );
 
@@ -63,10 +63,10 @@ CREATE TABLE IF NOT EXISTS tenant_usage (
     id_usage SERIAL PRIMARY KEY,
     id_tenant INTEGER REFERENCES tenants(id_tenant) ON DELETE CASCADE,
     periodo DATE NOT NULL, -- YYYY-MM-01
-    tipo VARCHAR(50) NOT NULL, -- agendamentos, api_requests, armazenamento
+    tipo TEXT NOT NULL, -- agendamentos, api_requests, armazenamento
     quantidade INTEGER NOT NULL DEFAULT 0,
     limite INTEGER NOT NULL DEFAULT 0,
-    data_atualizacao TIMESTAMPTZ DEFAULT NOW(),
+    data_atualizacao TIMESTAMP DEFAULT NOW(),
     UNIQUE(id_tenant, periodo, tipo)
 );
 
@@ -76,14 +76,14 @@ CREATE TABLE IF NOT EXISTS tenant_billing (
     id_tenant INTEGER REFERENCES tenants(id_tenant) ON DELETE CASCADE,
     periodo_inicio DATE NOT NULL,
     periodo_fim DATE NOT NULL,
-    plano VARCHAR(50) NOT NULL,
+    plano TEXT NOT NULL,
     valor DECIMAL(10,2) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'pendente',
+    status TEXT NOT NULL DEFAULT 'pendente',
     data_vencimento DATE NOT NULL,
-    data_pagamento TIMESTAMPTZ,
-    forma_pagamento VARCHAR(50),
+    data_pagamento TIMESTAMP,
+    forma_pagamento TEXT,
     notas TEXT,
-    data_criacao TIMESTAMPTZ DEFAULT NOW()
+    data_criacao TIMESTAMP DEFAULT NOW()
 );
 
 -- Logs de auditoria
@@ -91,14 +91,14 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     id_log SERIAL PRIMARY KEY,
     id_tenant INTEGER REFERENCES tenants(id_tenant),
     id_usuario INTEGER REFERENCES tenant_users(id_usuario),
-    acao VARCHAR(100) NOT NULL,
-    tabela VARCHAR(100),
+    acao TEXT NOT NULL,
+    tabela TEXT,
     registro_id INTEGER,
     dados_antigos JSONB,
     dados_novos JSONB,
     ip_address INET,
     user_agent TEXT,
-    data_evento TIMESTAMPTZ DEFAULT NOW()
+    data_evento TIMESTAMP DEFAULT NOW()
 );
 
 -- ==========================================
@@ -129,41 +129,41 @@ BEGIN
     EXECUTE '
         CREATE TABLE IF NOT EXISTS ' || quote_ident(schema_name) || '.usuarios (
             id_usuario SERIAL PRIMARY KEY,
-            nome VARCHAR(255) NOT NULL,
-            email VARCHAR(255) UNIQUE NOT NULL,
-            senha VARCHAR(255) NOT NULL,
-            tipo VARCHAR(50) DEFAULT ''barbeiro'',
+            nome TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            senha TEXT NOT NULL,
+            tipo TEXT DEFAULT ''barbeiro'',
             ativo BOOLEAN DEFAULT true,
-            criado_em TIMESTAMPTZ DEFAULT NOW()
+            criado_em TIMESTAMP DEFAULT NOW()
         );
 
         CREATE TABLE IF NOT EXISTS ' || quote_ident(schema_name) || '.servicos (
             id_servico SERIAL PRIMARY KEY,
             id_usuario INTEGER REFERENCES ' || quote_ident(schema_name) || '.usuarios(id_usuario),
-            nome_servico VARCHAR(255) NOT NULL,
+            nome_servico TEXT NOT NULL,
             duracao_min INTEGER NOT NULL,
             valor DECIMAL(10,2) NOT NULL,
             ativo BOOLEAN DEFAULT true,
-            criado_em TIMESTAMPTZ DEFAULT NOW()
+            criado_em TIMESTAMP DEFAULT NOW()
         );
 
         CREATE TABLE IF NOT EXISTS ' || quote_ident(schema_name) || '.clientes (
             id_cliente SERIAL PRIMARY KEY,
             id_usuario INTEGER REFERENCES ' || quote_ident(schema_name) || '.usuarios(id_usuario),
-            nome VARCHAR(255) NOT NULL,
+            nome TEXT NOT NULL,
             whatsapp VARCHAR(20) UNIQUE,
-            email VARCHAR(255),
-            criado_em TIMESTAMPTZ DEFAULT NOW()
+            email TEXT,
+            criado_em TIMESTAMP DEFAULT NOW()
         );
 
         CREATE TABLE IF NOT EXISTS ' || quote_ident(schema_name) || '.slots (
             id_slot SERIAL PRIMARY KEY,
             id_usuario INTEGER REFERENCES ' || quote_ident(schema_name) || '.usuarios(id_usuario),
-            start_at TIMESTAMPTZ NOT NULL,
-            end_at TIMESTAMPTZ NOT NULL,
-            status VARCHAR(20) DEFAULT ''free'',
+            start_at TIMESTAMP NOT NULL,
+            end_at TIMESTAMP NOT NULL,
+            status TEXT DEFAULT ''free'',
             id_agendamento INTEGER,
-            criado_em TIMESTAMPTZ DEFAULT NOW()
+            criado_em TIMESTAMP DEFAULT NOW()
         );
 
         CREATE TABLE IF NOT EXISTS ' || quote_ident(schema_name) || '.agendamentos (
@@ -171,12 +171,12 @@ BEGIN
             id_usuario INTEGER REFERENCES ' || quote_ident(schema_name) || '.usuarios(id_usuario),
             id_servico INTEGER REFERENCES ' || quote_ident(schema_name) || '.servicos(id_servico),
             id_cliente INTEGER REFERENCES ' || quote_ident(schema_name) || '.clientes(id_cliente),
-            start_at TIMESTAMPTZ NOT NULL,
-            end_at TIMESTAMPTZ NOT NULL,
-            status VARCHAR(20) DEFAULT ''pending'',
+            start_at TIMESTAMP NOT NULL,
+            end_at TIMESTAMP NOT NULL,
+            status TEXT DEFAULT ''pending'',
             valor_total DECIMAL(10,2),
             observacoes TEXT,
-            criado_em TIMESTAMPTZ DEFAULT NOW()
+            criado_em TIMESTAMP DEFAULT NOW()
         );
     ';
 END;

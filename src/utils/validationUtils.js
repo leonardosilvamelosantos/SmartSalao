@@ -284,13 +284,106 @@ class SecurityValidation {
   }
 
   /**
-   * Valida SQL injection patterns
+   * Valida SQL injection patterns - versão mais robusta
    */
   static validateNoSQLInjection(input, fieldName) {
-    const sqlPatterns = /(\bUNION\b|\bSELECT\b|\bINSERT\b|\bUPDATE\b|\bDELETE\b|\bDROP\b)/i;
-    if (input && sqlPatterns.test(input)) {
-      throw ApiError.badRequest(`${fieldName} contém padrões não permitidos`);
+    if (!input || typeof input !== 'string') return;
+    
+    // Padrões mais abrangentes de SQL injection
+    const sqlPatterns = [
+      /(\bUNION\b|\bSELECT\b|\bINSERT\b|\bUPDATE\b|\bDELETE\b|\bDROP\b)/i,
+      /(\bEXEC\b|\bEXECUTE\b|\bSP_\w+)/i,
+      /(\bOR\b|\bAND\b)\s+\d+\s*=\s*\d+/i,
+      /(\bOR\b|\bAND\b)\s+['"]\s*=\s*['"]/i,
+      /(\bOR\b|\bAND\b)\s+1\s*=\s*1/i,
+      /(\bOR\b|\bAND\b)\s+true/i,
+      /(\bOR\b|\bAND\b)\s+false/i,
+      /--|\/\*|\*\//,
+      /(\bBENCHMARK\b|\bSLEEP\b|\bWAITFOR\b)/i,
+      /(\bINFORMATION_SCHEMA\b|\bSYS\b)/i
+    ];
+    
+    for (const pattern of sqlPatterns) {
+      if (pattern.test(input)) {
+        throw ApiError.badRequest(`${fieldName} contém padrões suspeitos de SQL injection`);
+      }
     }
+  }
+
+  /**
+   * Validação robusta de entrada para campos de texto
+   */
+  static validateTextInput(input, fieldName, options = {}) {
+    const {
+      maxLength = 255,
+      minLength = 1,
+      allowSpecialChars = false,
+      required = true
+    } = options;
+
+    if (required && (!input || input.trim().length === 0)) {
+      throw ApiError.badRequest(`${fieldName} é obrigatório`);
+    }
+
+    if (!input) return;
+
+    const trimmedInput = input.trim();
+    
+    if (trimmedInput.length < minLength) {
+      throw ApiError.badRequest(`${fieldName} deve ter pelo menos ${minLength} caracteres`);
+    }
+
+    if (trimmedInput.length > maxLength) {
+      throw ApiError.badRequest(`${fieldName} excede o tamanho máximo de ${maxLength} caracteres`);
+    }
+
+    if (!allowSpecialChars) {
+      const specialChars = /[<>'"&]/;
+      if (specialChars.test(trimmedInput)) {
+        throw ApiError.badRequest(`${fieldName} contém caracteres especiais não permitidos`);
+      }
+    }
+
+    // Validar contra SQL injection
+    this.validateNoSQLInjection(trimmedInput, fieldName);
+
+    return trimmedInput;
+  }
+
+  /**
+   * Validação de email robusta
+   */
+  static validateEmail(email, fieldName = 'Email') {
+    if (!email) {
+      throw ApiError.badRequest(`${fieldName} é obrigatório`);
+    }
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      throw ApiError.badRequest(`${fieldName} deve ter um formato válido`);
+    }
+
+    if (email.length > 254) {
+      throw ApiError.badRequest(`${fieldName} excede o tamanho máximo`);
+    }
+
+    return email.toLowerCase().trim();
+  }
+
+  /**
+   * Validação de ID numérico
+   */
+  static validateId(id, fieldName = 'ID') {
+    if (!id) {
+      throw ApiError.badRequest(`${fieldName} é obrigatório`);
+    }
+
+    const numId = parseInt(id);
+    if (isNaN(numId) || numId <= 0) {
+      throw ApiError.badRequest(`${fieldName} deve ser um número válido maior que zero`);
+    }
+
+    return numId;
   }
 }
 

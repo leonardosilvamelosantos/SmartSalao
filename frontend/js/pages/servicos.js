@@ -9,6 +9,18 @@ class ServicosPage {
     }
 
     async load() {
+        console.log('🔄 Página de serviços: Carregando...');
+        
+        // Verificar se os dados já foram carregados em background
+        if (window.servicosData && window.servicosData.length > 0) {
+            console.log('✅ Página de serviços: Usando dados já carregados');
+            this.data = window.servicosData;
+            this.render();
+            return;
+        }
+        
+        // Se não há dados em cache, carregar agora
+        console.log('🔄 Página de serviços: Carregando dados da API...');
         const content = document.getElementById('servicos-content');
         if (!content) return;
         content.innerHTML = '<div class="text-center"><i class="bi bi-arrow-clockwise" style="font-size: 3rem;"></i><p class="mt-2">Carregando serviços...</p></div>';
@@ -17,6 +29,7 @@ class ServicosPage {
             const response = await this.app.apiRequest('/api/servicos');
             if (response.success) {
                 this.data = response.data || [];
+                window.servicosData = this.data; // Armazenar em cache global
                 this.render();
             } else {
                 content.innerHTML = '<div class="text-center text-muted"><i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i><p class="mt-2">Erro ao carregar serviços</p></div>';
@@ -81,25 +94,25 @@ class ServicosPage {
             <form id="servicoForm">
                 <div class="mb-3">
                     <label for="nome_servico" class="form-label">Nome do Serviço *</label>
-                    <input type="text" class="form-control" id="nome_servico" required value="${servico?.nome_servico || ''}">
+                    <input type="text" class="form-control" id="nome_servico" name="nome_servico" required value="${servico?.nome_servico || ''}">
                 </div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="duracao_servico" class="form-label">Duração (minutos) *</label>
-                        <input type="number" class="form-control" id="duracao_servico" required value="${servico?.duracao_min || ''}" min="5" max="480">
+                        <input type="number" class="form-control" id="duracao_servico" name="duracao_servico" required value="${servico?.duracao_min || ''}" min="5" max="480">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="valor_servico" class="form-label">Valor (R$) *</label>
-                        <input type="number" class="form-control" id="valor_servico" required value="${servico?.valor || ''}" min="0" step="0.01">
+                        <input type="number" class="form-control" id="valor_servico" name="valor_servico" required value="${servico?.valor || ''}" min="0" step="0.01">
                     </div>
                 </div>
                 <div class="mb-3">
                     <label for="descricao_servico" class="form-label">Descrição</label>
-                    <textarea class="form-control" id="descricao_servico" rows="3">${servico?.descricao || ''}</textarea>
+                    <textarea class="form-control" id="descricao_servico" name="descricao_servico" rows="3">${servico?.descricao || ''}</textarea>
                 </div>
                 <div class="mb-3">
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="ativo_servico" ${servico?.ativo ? 'checked' : ''}>
+                        <input class="form-check-input" type="checkbox" id="ativo_servico" name="ativo_servico" ${servico?.ativo ? 'checked' : ''}>
                         <label class="form-check-label" for="ativo_servico">Serviço ativo</label>
                     </div>
                 </div>

@@ -96,19 +96,19 @@ class UsuariosPage {
             <form id="usuarioForm">
                 <div class="mb-3">
                     <label for="nome_usuario" class="form-label">Nome Completo *</label>
-                    <input type="text" class="form-control" id="nome_usuario" required value="${usuario?.nome || ''}">
+                    <input type="text" class="form-control" id="nome_usuario" name="nome_usuario" required value="${usuario?.nome || ''}">
                 </div>
                 <div class="mb-3">
                     <label for="email_usuario" class="form-label">Email *</label>
-                    <input type="email" class="form-control" id="email_usuario" required value="${usuario?.email || ''}">
+                    <input type="email" class="form-control" id="email_usuario" name="email_usuario" required value="${usuario?.email || ''}">
                 </div>
                 <div class="mb-3">
                     <label for="senha_usuario" class="form-label">Senha ${usuario ? '(deixe em branco para manter)' : '*'}</label>
-                    <input type="password" class="form-control" id="senha_usuario" ${usuario ? '' : 'required'}>
+                    <input type="password" class="form-control" id="senha_usuario" name="senha_usuario" ${usuario ? '' : 'required'}>
                 </div>
                 <div class="mb-3">
                     <label for="tipo_usuario" class="form-label">Tipo *</label>
-                    <select class="form-control" id="tipo_usuario" required>
+                    <select class="form-control" id="tipo_usuario" name="tipo_usuario" required>
                         <option value="barbeiro" ${usuario?.tipo === 'barbeiro' ? 'selected' : ''}>Barbeiro</option>
                         <option value="admin" ${usuario?.tipo === 'admin' ? 'selected' : ''}>Admin</option>
                     </select>

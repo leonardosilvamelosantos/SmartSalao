@@ -1,0 +1,659 @@
+/**
+ * SISTEMA DE CARDS ANIMADOS PARA AGENDA
+ * 
+ * Sistema otimizado baseado no projeto de referência
+ * Mantém compatibilidade com estrutura existente
+ * 
+ * @version 1.0.0
+ * @author Sistema Barbeiros
+ */
+
+/* ===== VARIÁVEIS CSS CUSTOMIZÁVEIS ===== */
+:root {
+  /* Cores dos estados - tons claros com texto escuro */
+  --card-success-bg: linear-gradient(135deg, #D2FFB8 0%, #B8F5A0 100%);
+  --card-success-border: #22c55e;
+  --card-success-text: #14532d;
+  --card-success-shadow: 0 4px 16px rgba(34, 197, 94, 0.15);
+  
+  --card-danger-bg: linear-gradient(135deg, #FFB8B8 0%, #FFA0A0 100%);
+  --card-danger-border: #ef4444;
+  --card-danger-text: #7f1d1d;
+  --card-danger-shadow: 0 4px 16px rgba(239, 68, 68, 0.15);
+  
+  --card-warning-bg: linear-gradient(135deg, #FFE4B8 0%, #FFD4A0 100%);
+  --card-warning-border: #f59e0b;
+  --card-warning-text: #92400e;
+  --card-warning-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+  
+  --card-info-bg: linear-gradient(135deg, #B8E4FF 0%, #A0D4FF 100%);
+  --card-info-border: #0ea5e9;
+  --card-info-text: #0c4a6e;
+  --card-info-shadow: 0 4px 16px rgba(14, 165, 233, 0.15);
+  
+  /* Transições otimizadas */
+  --card-transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --card-transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --card-transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Performance */
+  --card-will-change: transform, box-shadow, background-color;
+}
+
+/* ===== CARD BASE ANIMADO ===== */
+.agenda-item.animated-card {
+  position: relative;
+  overflow: hidden;
+  transition: all var(--card-transition-normal);
+  will-change: var(--card-will-change);
+  border-left: 4px solid var(--primary-500);
+  background: var(--bg-primary);
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+}
+
+/* Efeito de brilho sutil e elegante */
+.agenda-item.animated-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Efeito de brilho no hover */
+.agenda-item.animated-card:hover::before {
+  left: 100%;
+}
+
+/* ===== ESTADOS DOS CARDS ===== */
+
+/* Estado Confirmado */
+.agenda-item.animated-card.status-confirmed {
+  background: var(--card-success-bg) !important;
+  border-color: var(--card-success-border) !important;
+  border-left-color: var(--card-success-border) !important;
+  box-shadow: var(--card-success-shadow) !important;
+  transform: translateY(-1px);
+  color: var(--card-success-text) !important;
+}
+
+.agenda-item.animated-card.status-confirmed .text-muted {
+  color: rgba(20, 83, 45, 0.7) !important;
+}
+
+.agenda-item.animated-card.status-confirmed h6 {
+  color: var(--card-success-text) !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.animated-card.status-confirmed p {
+  color: rgba(20, 83, 45, 0.9) !important;
+}
+
+.agenda-item.animated-card.status-confirmed small {
+  color: rgba(20, 83, 45, 0.6) !important;
+}
+
+.agenda-item.animated-card.status-confirmed .badge {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3) !important;
+}
+
+/* Gradiente de status para confirmado */
+.agenda-item.animated-card.status-confirmed .badge::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #22c55e, #16a34a, #15803d);
+  border-radius: 0 0 6px 6px;
+}
+
+.agenda-item.animated-card.status-confirmed::before {
+  left: 100%;
+}
+
+.agenda-item.animated-card.status-confirmed:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.2);
+}
+
+/* Estado Cancelado */
+.agenda-item.animated-card.status-cancelled {
+  background: var(--card-danger-bg) !important;
+  border-color: var(--card-danger-border) !important;
+  border-left-color: var(--card-danger-border) !important;
+  box-shadow: var(--card-danger-shadow) !important;
+  transform: translateY(-1px);
+  color: var(--card-danger-text) !important;
+}
+
+.agenda-item.animated-card.status-cancelled .text-muted {
+  color: rgba(127, 29, 29, 0.7) !important;
+}
+
+.agenda-item.animated-card.status-cancelled h6 {
+  color: var(--card-danger-text) !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.animated-card.status-cancelled p {
+  color: rgba(127, 29, 29, 0.9) !important;
+}
+
+.agenda-item.animated-card.status-cancelled small {
+  color: rgba(127, 29, 29, 0.6) !important;
+}
+
+.agenda-item.animated-card.status-cancelled .badge {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Gradiente de status para cancelado */
+.agenda-item.animated-card.status-cancelled .badge::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ef4444, #dc2626, #b91c1c);
+  border-radius: 0 0 6px 6px;
+}
+
+.agenda-item.animated-card.status-cancelled::before {
+  left: 100%;
+}
+
+.agenda-item.animated-card.status-cancelled:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.2);
+}
+
+/* Estado Pendente */
+.agenda-item.animated-card.status-pending {
+  background: var(--card-warning-bg) !important;
+  border-color: var(--card-warning-border) !important;
+  border-left-color: var(--card-warning-border) !important;
+  box-shadow: var(--card-warning-shadow) !important;
+  color: var(--card-warning-text) !important;
+}
+
+.agenda-item.animated-card.status-pending .text-muted {
+  color: rgba(146, 64, 14, 0.7) !important;
+}
+
+.agenda-item.animated-card.status-pending h6 {
+  color: var(--card-warning-text) !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.animated-card.status-pending p {
+  color: rgba(146, 64, 14, 0.9) !important;
+}
+
+.agenda-item.animated-card.status-pending small {
+  color: rgba(146, 64, 14, 0.6) !important;
+}
+
+.agenda-item.animated-card.status-pending .badge {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Gradiente de status para pendente */
+.agenda-item.animated-card.status-pending .badge::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #f59e0b, #d97706, #b45309);
+  border-radius: 0 0 6px 6px;
+}
+
+.agenda-item.animated-card.status-pending:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+}
+
+/* Estado Processando */
+.agenda-item.animated-card.status-processing {
+  background: var(--card-info-bg) !important;
+  border-color: var(--card-info-border) !important;
+  border-left-color: var(--card-info-border) !important;
+  box-shadow: var(--card-info-shadow) !important;
+  transform: translateY(-1px);
+  color: var(--card-info-text) !important;
+}
+
+.agenda-item.animated-card.status-processing .text-muted {
+  color: rgba(12, 74, 110, 0.7) !important;
+}
+
+.agenda-item.animated-card.status-processing h6 {
+  color: var(--card-info-text) !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.animated-card.status-processing p {
+  color: rgba(12, 74, 110, 0.9) !important;
+}
+
+.agenda-item.animated-card.status-processing small {
+  color: rgba(12, 74, 110, 0.6) !important;
+}
+
+/* Ícones escuros para todos os estados */
+.agenda-item.animated-card.status-confirmed i {
+  color: var(--card-success-text) !important;
+}
+
+.agenda-item.animated-card.status-cancelled i {
+  color: var(--card-danger-text) !important;
+}
+
+.agenda-item.animated-card.status-pending i {
+  color: var(--card-warning-text) !important;
+}
+
+.agenda-item.animated-card.status-processing i {
+  color: var(--card-info-text) !important;
+}
+
+.agenda-item.animated-card.status-processing .badge {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 2px 4px rgba(14, 165, 233, 0.3) !important;
+}
+
+/* Gradiente de status para processando */
+.agenda-item.animated-card.status-processing .badge::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #0ea5e9, #0284c7, #0369a1);
+  border-radius: 0 0 6px 6px;
+}
+
+.agenda-item.animated-card.status-processing::before {
+  left: 100%;
+}
+
+.agenda-item.animated-card.status-processing:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.2);
+}
+
+/* ===== BOTÕES E CONTROLES ===== */
+
+/* Melhorar contraste dos botões nos cards */
+.agenda-item.animated-card .btn-group .btn {
+  border: 2px solid rgba(0, 0, 0, 0.1) !important;
+  backdrop-filter: blur(15px) !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  text-shadow: none !important;
+}
+
+/* Botão de confirmação */
+.agenda-item.animated-card .btn-success {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  color: white !important;
+  box-shadow: 0 3px 12px rgba(34, 197, 94, 0.4) !important;
+  border: 2px solid rgba(255, 255, 255, 0.4) !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+.agenda-item.animated-card .btn-success:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Botão de cancelamento */
+.agenda-item.animated-card .btn-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: white !important;
+  box-shadow: 0 3px 12px rgba(239, 68, 68, 0.4) !important;
+  border: 2px solid rgba(255, 255, 255, 0.4) !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+.agenda-item.animated-card .btn-danger:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Botão de edição */
+.agenda-item.animated-card .btn-outline-primary {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #1e40af !important;
+  border: 2px solid rgba(0, 0, 0, 0.1) !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+  box-shadow: 0 3px 12px rgba(30, 64, 175, 0.2) !important;
+}
+
+.agenda-item.animated-card .btn-outline-primary:hover {
+  background: rgba(0, 0, 0, 0.1) !important;
+  color: #1e3a8a !important;
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 6px 16px rgba(30, 64, 175, 0.3) !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Botão de reagendar */
+.agenda-item.animated-card .btn-outline-info {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #0369a1 !important;
+  border: 2px solid rgba(0, 0, 0, 0.1) !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+  box-shadow: 0 3px 12px rgba(3, 105, 161, 0.2) !important;
+}
+
+.agenda-item.animated-card .btn-outline-info:hover {
+  background: rgba(0, 0, 0, 0.1) !important;
+  color: #075985 !important;
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 6px 16px rgba(3, 105, 161, 0.3) !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Botão de lixeira (exclusão) */
+.agenda-item.animated-card .btn-trash {
+  position: absolute !important;
+  bottom: 12px !important;
+  right: 12px !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: white !important;
+  border: 2px solid rgba(255, 255, 255, 0.4) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4) !important;
+  transition: all 0.2s ease !important;
+  z-index: 10 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+.agenda-item.animated-card .btn-trash:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  transform: translateY(-3px) scale(1.15) !important;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.agenda-item.animated-card .btn-trash:active {
+  transform: translateY(-1px) scale(1.05) !important;
+}
+
+/* Badge com posição relativa para o gradiente */
+.agenda-item.animated-card .badge {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* ===== ANIMAÇÕES DE TRANSIÇÃO ===== */
+
+/* Animação de pulso sutil */
+@keyframes card-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.agenda-item.animated-card.animating-pulse {
+  animation: card-pulse 0.4s ease-in-out;
+}
+
+/* Animação de shake para erros */
+@keyframes card-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+.agenda-item.animated-card.animating-shake {
+  animation: card-shake 0.3s ease-in-out;
+}
+
+/* Animação de bounce para sucesso */
+@keyframes card-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.agenda-item.animated-card.animating-bounce {
+  animation: card-bounce 0.5s ease-in-out;
+}
+
+/* ===== AJUSTES DE TEXTO PARA CONTRASTE ===== */
+
+/* Texto em cards com estado ativo */
+.agenda-item.animated-card.status-confirmed .fw-bold,
+.agenda-item.animated-card.status-cancelled .fw-bold,
+.agenda-item.animated-card.status-processing .fw-bold {
+  color: var(--card-success-text);
+}
+
+.agenda-item.animated-card.status-cancelled .fw-bold {
+  color: var(--card-danger-text);
+}
+
+.agenda-item.animated-card.status-processing .fw-bold {
+  color: var(--card-info-text);
+}
+
+.agenda-item.animated-card.status-pending .fw-bold {
+  color: var(--card-warning-text);
+}
+
+/* Ajuste para texto secundário */
+.agenda-item.animated-card.status-confirmed .text-muted,
+.agenda-item.animated-card.status-cancelled .text-muted,
+.agenda-item.animated-card.status-processing .text-muted {
+  opacity: 0.8;
+}
+
+/* ===== BADGES DE STATUS MELHORADOS ===== */
+.agenda-item.animated-card .badge {
+  position: relative;
+  z-index: 2;
+  transition: all var(--card-transition-normal);
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.agenda-item.animated-card.status-confirmed .badge.bg-success {
+  background: rgba(34, 197, 94, 0.9) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+.agenda-item.animated-card.status-cancelled .badge.bg-danger {
+  background: rgba(239, 68, 68, 0.9) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.agenda-item.animated-card.status-pending .badge.bg-warning {
+  background: rgba(245, 158, 11, 0.9) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.agenda-item.animated-card.status-processing .badge.bg-info {
+  background: rgba(14, 165, 233, 0.9) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+
+/* ===== BOTÕES DE AÇÃO MELHORADOS ===== */
+.agenda-item.animated-card .btn-group .btn {
+  position: relative;
+  z-index: 2;
+  transition: all var(--card-transition-fast);
+  border-radius: 6px;
+  margin: 0 1px;
+}
+
+.agenda-item.animated-card .btn-group .btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Botões em cards com estado ativo */
+.agenda-item.animated-card.status-confirmed .btn-group .btn,
+.agenda-item.animated-card.status-cancelled .btn-group .btn,
+.agenda-item.animated-card.status-processing .btn-group .btn {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.agenda-item.animated-card.status-confirmed .btn-group .btn:hover,
+.agenda-item.animated-card.status-cancelled .btn-group .btn:hover,
+.agenda-item.animated-card.status-processing .btn-group .btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: scale(1.1);
+}
+
+/* ===== OTIMIZAÇÕES DE PERFORMANCE ===== */
+
+/* Reduzir animações em dispositivos com preferência por movimento reduzido */
+@media (prefers-reduced-motion: reduce) {
+  .agenda-item.animated-card,
+  .agenda-item.animated-card::before,
+  .agenda-item.animated-card .btn-group .btn {
+    transition: none;
+    animation: none;
+  }
+  
+  .agenda-item.animated-card.animating-pulse,
+  .agenda-item.animated-card.animating-shake,
+  .agenda-item.animated-card.animating-bounce {
+    animation: none;
+  }
+}
+
+/* Desabilitar animações em hover para muitos cards */
+.agenda-item.animated-card.batch-mode:hover {
+  transform: none;
+  box-shadow: var(--card-warning-shadow);
+}
+
+.agenda-item.animated-card.batch-mode.status-confirmed:hover {
+  box-shadow: var(--card-success-shadow);
+}
+
+.agenda-item.animated-card.batch-mode.status-cancelled:hover {
+  box-shadow: var(--card-danger-shadow);
+}
+
+.agenda-item.animated-card.batch-mode.status-processing:hover {
+  box-shadow: var(--card-info-shadow);
+}
+
+/* ===== RESPONSIVIDADE ===== */
+@media (max-width: 768px) {
+  .agenda-item.animated-card {
+    margin-bottom: 12px;
+  }
+  
+  .agenda-item.animated-card.status-confirmed,
+  .agenda-item.animated-card.status-cancelled,
+  .agenda-item.animated-card.status-processing {
+    transform: none;
+  }
+  
+  .agenda-item.animated-card:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* ===== MODO ESCURO ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --card-success-bg: linear-gradient(135deg, #14532d 0%, #166534 100%);
+    --card-success-text: #dcfce7;
+    
+    --card-danger-bg: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+    --card-danger-text: #fecaca;
+    
+    --card-warning-bg: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+    --card-warning-text: #fef3c7;
+    
+    --card-info-bg: linear-gradient(135deg, #0c4a6e 0%, #075985 100%);
+    --card-info-text: #e0f2fe;
+  }
+}
+
+/* ===== UTILITÁRIOS ===== */
+
+/* Classe para aplicar animação gradual */
+.agenda-item.animated-card.stagger-1 { animation-delay: 0.1s; }
+.agenda-item.animated-card.stagger-2 { animation-delay: 0.2s; }
+.agenda-item.animated-card.stagger-3 { animation-delay: 0.3s; }
+.agenda-item.animated-card.stagger-4 { animation-delay: 0.4s; }
+.agenda-item.animated-card.stagger-5 { animation-delay: 0.5s; }
+
+/* Classe para loading state */
+.agenda-item.animated-card.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.agenda-item.animated-card.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid var(--primary-200);
+  border-top: 2px solid var(--primary-500);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 10;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

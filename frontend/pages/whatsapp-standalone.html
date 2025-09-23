@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Bot - Sistema de Agendamento</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/dark-mode.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .whatsapp-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .whatsapp-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .whatsapp-header h1 {
+            color: #25d366;
+            margin-bottom: 10px;
+        }
+
+        .whatsapp-header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #25d366, #128c7e);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            padding: 15px 20px;
+        }
+
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #25d366, #128c7e);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-whatsapp:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+            color: white;
+        }
+
+        .btn-whatsapp:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-connected {
+            background-color: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .status-disconnected {
+            background-color: #dc3545;
+        }
+
+        .status-connecting {
+            background-color: #ffc107;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .qr-code-container {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .qr-code {
+            max-width: 300px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .stats-card h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .stats-card p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .message-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.3s ease;
+        }
+
+        .message-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #25d366, #128c7e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-time {
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #25d366;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="whatsapp-container">
+        <!-- Header -->
+        <div class="whatsapp-header">
+            <h1><i class="fab fa-whatsapp me-2"></i>WhatsApp Bot</h1>
+            <p>Gerencie suas conexões WhatsApp de forma inteligente</p>
+        </div>
+
+        <!-- Alertas -->
+        <div id="alert-success" class="alert alert-success" style="display: none;"></div>
+        <div id="alert-error" class="alert alert-danger" style="display: none;"></div>
+        <div id="alert-info" class="alert alert-info" style="display: none;"></div>
+
+        <!-- Seletor de Tenant -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <label for="tenantSelect" class="form-label">Selecionar Tenant:</label>
+                <select id="tenantSelect" class="form-select">
+                    <option value="">Selecione um tenant</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button id="refreshTenants" class="btn btn-outline-primary">
+                    <i class="fas fa-sync-alt me-2"></i>Atualizar
+                </button>
+            </div>
+        </div>
+
+        <!-- Status da Conexão -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fab fa-whatsapp me-2"></i>
+                    Status da Conexão
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <div id="connectionStatus" class="mb-3">
+                    <span class="status-indicator status-disconnected"></span>
+                    <span id="statusText">Desconectado</span>
+                </div>
+                <button id="connectBtn" class="btn btn-whatsapp btn-lg" disabled>
+                    <i class="fas fa-plug me-2"></i>Conectar
+                </button>
+            </div>
+        </div>
+
+        <!-- QR Code para Conexão -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-qrcode me-2"></i>
+                    QR Code para Conexão
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="qrCodeContainer" class="qr-code-container" style="display: none;">
+                    <img id="qrCodeImage" class="qr-code" alt="QR Code">
+                    <p class="mt-3 text-muted">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Certifique-se de que seu WhatsApp está fechado no navegador antes de escanear.
+                    </p>
+                </div>
+                <div id="qrCodeLoading" class="text-center" style="display: none;">
+                    <div class="loading"></div>
+                    <p class="mt-2">QR Code sendo gerado...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estatísticas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h3 id="messagesToday">0</h3>
+                    <p>Mensagens Hoje</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h3 id="appointmentsToday">0</h3>
+                    <p>Agendamentos</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h3 id="activeConversations">0</h3>
+                    <p>Conversas Ativas</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h3 id="onlineTime">0h</h3>
+                    <p>Tempo Online</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mensagens Recentes -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-comments me-2"></i>
+                    Mensagens Recentes
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="testMessage" class="form-control" placeholder="Digite uma mensagem para testar...">
+                    <button id="sendTestMessage" class="btn btn-whatsapp" disabled>
+                        <i class="fas fa-paper-plane me-2"></i>Enviar
+                    </button>
+                </div>
+                <div id="messagesList">
+                    <p class="text-muted text-center">Nenhuma mensagem ainda</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/core/api.js"></script>
+    <script>
+        console.log('🚀 Página WhatsApp Standalone carregada');
+        
+        class WhatsAppStandaloneManager {
+            constructor() {
+                console.log('🔧 Construtor WhatsAppStandaloneManager executado');
+                this.api = new ApiClient();
+                this.currentTenant = null;
+                this.qrCheckInterval = null;
+                this.initialize();
+            }
+
+            async initialize() {
+                console.log('🚀 Inicializando WhatsApp Standalone Manager...');
+                
+                // Verificar se está logado
+                const token = localStorage.getItem('barbeiros-token');
+                if (!token) {
+                    console.log('❌ Usuário não está logado, redirecionando...');
+                    window.location.href = '/frontend/pages/login.html';
+                    return;
+                }
+                console.log('✅ Token encontrado:', token.substring(0, 20) + '...');
+                
+                await this.loadTenants();
+                this.setupEventListeners();
+                this.startStatusCheck();
+            }
+
+            async loadTenants() {
+                try {
+                    console.log('🔍 Carregando tenants...');
+                    const response = await this.api.request('/api/bot/tenants');
+                    console.log('📊 Resposta da API:', response);
+                    
+                    const tenants = response.data?.tenants || [];
+                    console.log('📊 Tenants extraídos:', tenants);
+
+                    const select = document.getElementById('tenantSelect');
+                    select.innerHTML = '<option value="">Selecione um tenant</option>';
+
+                    tenants.forEach(tenant => {
+                        console.log('📊 Adicionando tenant:', tenant);
+                        const option = document.createElement('option');
+                        option.value = tenant.tenantId;
+                        option.textContent = `Tenant ${tenant.name}`;
+                        select.appendChild(option);
+                    });
+
+                    if (tenants.length === 0) {
+                        console.log('❌ Nenhum tenant encontrado');
+                        select.innerHTML = '<option value="">Nenhum tenant encontrado</option>';
+                    } else {
+                        console.log(`✅ ${tenants.length} tenants carregados`);
+                    }
+                } catch (error) {
+                    console.error('❌ Erro ao carregar tenants:', error);
+                    this.showAlert('error', 'Erro ao carregar tenants');
+                }
+            }
+
+            setupEventListeners() {
+                // Seletor de tenant
+                document.getElementById('tenantSelect').addEventListener('change', (e) => {
+                    this.currentTenant = e.target.value;
+                    this.updateConnectionStatus();
+                });
+
+                // Botão conectar
+                document.getElementById('connectBtn').addEventListener('click', () => {
+                    this.connect();
+                });
+
+                // Botão atualizar tenants
+                document.getElementById('refreshTenants').addEventListener('click', () => {
+                    this.loadTenants();
+                });
+
+                // Botão enviar mensagem de teste
+                document.getElementById('sendTestMessage').addEventListener('click', () => {
+                    this.sendTestMessage();
+                });
+            }
+
+            async connect() {
+                if (!this.currentTenant) {
+                    this.showAlert('error', 'Selecione um tenant primeiro');
+                    return;
+                }
+
+                try {
+                    console.log(`🔌 Conectando tenant ${this.currentTenant}...`);
+                    this.showAlert('info', 'Inicializando conexão...');
+                    
+                    // Inicializar conexão
+                    const initResponse = await this.api.request(`/api/bot/tenants/${this.currentTenant}/initialize`, {
+                        method: 'POST'
+                    });
+                    
+                    console.log('📊 Resposta de inicialização:', initResponse);
+                    
+                    if (initResponse.success) {
+                        this.showAlert('success', 'Conexão inicializada! Gerando QR Code...');
+                        this.showQRCode();
+                    } else {
+                        this.showAlert('error', initResponse.message || 'Erro ao inicializar conexão');
+                    }
+                } catch (error) {
+                    console.error('❌ Erro ao conectar:', error);
+                    this.showAlert('error', 'Erro ao conectar: ' + error.message);
+                }
+            }
+
+            async showQRCode() {
+                const qrContainer = document.getElementById('qrCodeContainer');
+                const qrLoading = document.getElementById('qrCodeLoading');
+                const qrImage = document.getElementById('qrCodeImage');
+                
+                qrLoading.style.display = 'block';
+                qrContainer.style.display = 'none';
+                
+                // Tentar obter QR Code
+                try {
+                    const response = await this.api.request(`/api/bot/tenants/${this.currentTenant}/qr`);
+                    console.log('📊 Resposta do QR Code:', response);
+                    
+                    if (response.data && response.data.qrData) {
+                        qrImage.src = `data:image/png;base64,${response.data.qrData}`;
+                        qrLoading.style.display = 'none';
+                        qrContainer.style.display = 'block';
+                        this.showAlert('success', 'QR Code gerado! Escaneie com seu WhatsApp.');
+                    } else {
+                        this.showAlert('info', 'QR Code ainda sendo gerado...');
+                        // Tentar novamente em 3 segundos
+                        setTimeout(() => this.showQRCode(), 3000);
+                    }
+                } catch (error) {
+                    console.error('❌ Erro ao obter QR Code:', error);
+                    this.showAlert('error', 'Erro ao obter QR Code: ' + error.message);
+                }
+            }
+
+            updateConnectionStatus() {
+                const connectBtn = document.getElementById('connectBtn');
+                const statusText = document.getElementById('statusText');
+                const statusIndicator = document.querySelector('.status-indicator');
+                
+                if (this.currentTenant) {
+                    connectBtn.disabled = false;
+                    statusText.textContent = 'Pronto para conectar';
+                    statusIndicator.className = 'status-indicator status-connecting';
+                } else {
+                    connectBtn.disabled = true;
+                    statusText.textContent = 'Selecione um tenant';
+                    statusIndicator.className = 'status-indicator status-disconnected';
+                }
+            }
+
+            startStatusCheck() {
+                // Verificar status a cada 5 segundos
+                setInterval(() => {
+                    if (this.currentTenant) {
+                        this.checkTenantStatus();
+                    }
+                }, 5000);
+            }
+
+            async checkTenantStatus() {
+                try {
+                    const response = await this.api.request(`/api/bot/tenants/${this.currentTenant}/status`);
+                    console.log('📊 Status do tenant:', response);
+                    
+                    if (response.data && response.data.isConnected) {
+                        this.updateConnectionStatus('connected');
+                    }
+                } catch (error) {
+                    console.error('❌ Erro ao verificar status:', error);
+                }
+            }
+
+            updateConnectionStatus(status = 'disconnected') {
+                const statusText = document.getElementById('statusText');
+                const statusIndicator = document.querySelector('.status-indicator');
+                const connectBtn = document.getElementById('connectBtn');
+                
+                switch (status) {
+                    case 'connected':
+                        statusText.textContent = 'Conectado';
+                        statusIndicator.className = 'status-indicator status-connected';
+                        connectBtn.innerHTML = '<i class="fas fa-check me-2"></i>Conectado';
+                        connectBtn.disabled = true;
+                        break;
+                    case 'connecting':
+                        statusText.textContent = 'Conectando...';
+                        statusIndicator.className = 'status-indicator status-connecting';
+                        connectBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Conectando...';
+                        connectBtn.disabled = true;
+                        break;
+                    default:
+                        statusText.textContent = 'Desconectado';
+                        statusIndicator.className = 'status-indicator status-disconnected';
+                        connectBtn.innerHTML = '<i class="fas fa-plug me-2"></i>Conectar';
+                        connectBtn.disabled = !this.currentTenant;
+                }
+            }
+
+            async sendTestMessage() {
+                const messageInput = document.getElementById('testMessage');
+                const message = messageInput.value.trim();
+                
+                if (!message) {
+                    this.showAlert('error', 'Digite uma mensagem');
+                    return;
+                }
+                
+                // Implementar envio de mensagem de teste
+                this.showAlert('info', 'Funcionalidade de teste em desenvolvimento');
+            }
+
+            showAlert(type, message) {
+                const alertElement = document.getElementById(`alert-${type}`);
+                if (alertElement) {
+                    alertElement.textContent = message;
+                    alertElement.style.display = 'block';
+                    
+                    // Esconder após 5 segundos
+                    setTimeout(() => {
+                        alertElement.style.display = 'none';
+                    }, 5000);
+                }
+            }
+        }
+
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 DOM carregado, inicializando WhatsApp Standalone Manager...');
+            try {
+                new WhatsAppStandaloneManager();
+            } catch (error) {
+                console.error('❌ Erro ao inicializar WhatsApp Manager:', error);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+

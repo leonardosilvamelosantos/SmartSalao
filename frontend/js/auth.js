@@ -2,13 +2,29 @@
 
 class AuthManager {
     constructor() {
-        this.apiUrl = 'http://localhost:3000';
+        this.apiUrl = this.getApiUrl();
         this.loginForm = document.getElementById('loginForm');
         this.loginBtn = document.getElementById('loginBtn');
         this.togglePasswordBtn = document.getElementById('togglePassword');
         this.alertContainer = document.getElementById('alertContainer');
 
         this.init();
+    }
+
+    // Detectar URL da API automaticamente
+    getApiUrl() {
+        // Se estiver rodando em localhost, usar localhost
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            return 'http://localhost:3000';
+        }
+        
+        // Se estiver rodando em IP da rede local, usar o mesmo IP
+        if (window.location.hostname.match(/^192\.168\.\d{1,3}\.\d{1,3}$/)) {
+            return `http://${window.location.hostname}:3000`;
+        }
+        
+        // Fallback para localhost
+        return 'http://localhost:3000';
     }
 
     init() {

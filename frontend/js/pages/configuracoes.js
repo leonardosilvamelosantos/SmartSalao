@@ -54,12 +54,12 @@ class ConfiguracoesPage {
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="nome_estabelecimento" class="form-label">Nome do Estabelecimento *</label>
-                                        <input type="text" class="form-control" id="nome_estabelecimento" 
+                                        <input type="text" class="form-control" id="nome_estabelecimento" name="nome_estabelecimento"
                                                value="${this.data.nome_estabelecimento || ''}" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="cnpj" class="form-label">CNPJ</label>
-                                        <input type="text" class="form-control" id="cnpj" 
+                                        <input type="text" class="form-control" id="cnpj" name="cnpj"
                                                value="${this.data.cnpj || ''}" placeholder="00.000.000/0000-00">
                                     </div>
                                 </div>
@@ -67,12 +67,12 @@ class ConfiguracoesPage {
                                 <div class="row">
                                     <div class="col-md-8 mb-3">
                                         <label for="endereco" class="form-label">Endereço Completo *</label>
-                                        <input type="text" class="form-control" id="endereco" 
+                                        <input type="text" class="form-control" id="endereco" name="endereco"
                                                value="${this.data.endereco || ''}" required>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label for="cep" class="form-label">CEP</label>
-                                        <input type="text" class="form-control" id="cep" 
+                                        <input type="text" class="form-control" id="cep" name="cep"
                                                value="${this.data.cep || ''}" placeholder="00000-000">
                                     </div>
                                 </div>
@@ -80,12 +80,12 @@ class ConfiguracoesPage {
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label for="cidade" class="form-label">Cidade *</label>
-                                        <input type="text" class="form-control" id="cidade" 
+                                        <input type="text" class="form-control" id="cidade" name="cidade"
                                                value="${this.data.cidade || ''}" required>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label for="estado" class="form-label">Estado *</label>
-                                        <select class="form-control" id="estado" required>
+                                        <select class="form-control" id="estado" name="estado" required>
                                             <option value="">Selecione...</option>
                                             <option value="AC" ${this.data.estado === 'AC' ? 'selected' : ''}>Acre</option>
                                             <option value="AL" ${this.data.estado === 'AL' ? 'selected' : ''}>Alagoas</option>
@@ -118,7 +118,7 @@ class ConfiguracoesPage {
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label for="bairro" class="form-label">Bairro</label>
-                                        <input type="text" class="form-control" id="bairro" 
+                                        <input type="text" class="form-control" id="bairro" name="bairro"
                                                value="${this.data.bairro || ''}">
                                     </div>
                                 </div>
@@ -135,17 +135,17 @@ class ConfiguracoesPage {
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label for="telefone" class="form-label">Telefone Principal *</label>
-                                        <input type="tel" class="form-control" id="telefone" 
+                                        <input type="tel" class="form-control" id="telefone" name="telefone"
                                                value="${this.data.telefone || ''}" required>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label for="whatsapp" class="form-label">WhatsApp</label>
-                                        <input type="tel" class="form-control" id="whatsapp" 
+                                        <input type="tel" class="form-control" id="whatsapp" name="whatsapp"
                                                value="${this.data.whatsapp || ''}">
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label for="email_contato" class="form-label">Email de Contato *</label>
-                                        <input type="email" class="form-control" id="email_contato" 
+                                        <input type="email" class="form-control" id="email_contato" name="email_contato"
                                                value="${this.data.email_contato || ''}" required>
                                     </div>
                                 </div>
@@ -162,12 +162,12 @@ class ConfiguracoesPage {
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="horario_abertura" class="form-label">Horário de Abertura *</label>
-                                        <input type="time" class="form-control" id="horario_abertura" 
+                                        <input type="time" class="form-control" id="horario_abertura" name="horario_abertura"
                                                value="${this.data.horario_abertura || '08:00'}" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="horario_fechamento" class="form-label">Horário de Fechamento *</label>
-                                        <input type="time" class="form-control" id="horario_fechamento" 
+                                        <input type="time" class="form-control" id="horario_fechamento" name="horario_fechamento"
                                                value="${this.data.horario_fechamento || '18:00'}" required>
                                     </div>
                                 </div>
@@ -215,7 +215,7 @@ class ConfiguracoesPage {
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="intervalo_agendamento" class="form-label">Intervalo entre Agendamentos (min)</label>
-                                        <select class="form-control" id="intervalo_agendamento">
+                                        <select class="form-control" id="intervalo_agendamento" name="intervalo_agendamento">
                                             <option value="15" ${this.data.intervalo_agendamento === 15 ? 'selected' : ''}>15 minutos</option>
                                             <option value="30" ${this.data.intervalo_agendamento === 30 ? 'selected' : ''}>30 minutos</option>
                                             <option value="45" ${this.data.intervalo_agendamento === 45 ? 'selected' : ''}>45 minutos</option>
@@ -254,6 +254,27 @@ class ConfiguracoesPage {
                                     </div>
                                 </div>
 
+                                <!-- Confirmação Automática (WhatsApp) -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <h6 class="text-primary border-bottom pb-2">
+                                            <i class="bi bi-whatsapp me-2"></i>Confirmação Automática (WhatsApp)
+                                        </h6>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="auto_confirm_whatsapp" ${this.data.auto_confirm_whatsapp ? 'checked' : ''}>
+                                            <label class="form-check-label" for="auto_confirm_whatsapp">
+                                                Confirmar automaticamente agendamentos feitos via WhatsApp
+                                            </label>
+                                        </div>
+                                        <small class="text-muted">Quando ativado, agendamentos recebidos pelo bot serão confirmados e registrados automaticamente.</small>
+                                    </div>
+                                </div>
+
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <div class="form-check">
@@ -266,7 +287,7 @@ class ConfiguracoesPage {
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="horas_lembrete" class="form-label">Horas antes do agendamento</label>
-                                        <select class="form-control" id="horas_lembrete">
+                                        <select class="form-control" id="horas_lembrete" name="horas_lembrete">
                                             <option value="1" ${this.data.horas_lembrete === 1 ? 'selected' : ''}>1 hora</option>
                                             <option value="2" ${this.data.horas_lembrete === 2 ? 'selected' : ''}>2 horas</option>
                                             <option value="4" ${this.data.horas_lembrete === 4 ? 'selected' : ''}>4 horas</option>
@@ -287,7 +308,7 @@ class ConfiguracoesPage {
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="metodo_pagamento_padrao" class="form-label">Método de Pagamento Padrão</label>
-                                        <select class="form-control" id="metodo_pagamento_padrao">
+                                        <select class="form-control" id="metodo_pagamento_padrao" name="metodo_pagamento_padrao">
                                             <option value="dinheiro" ${this.data.metodo_pagamento_padrao === 'dinheiro' ? 'selected' : ''}>Dinheiro</option>
                                             <option value="pix" ${this.data.metodo_pagamento_padrao === 'pix' ? 'selected' : ''}>PIX</option>
                                             <option value="cartao_debito" ${this.data.metodo_pagamento_padrao === 'cartao_debito' ? 'selected' : ''}>Cartão de Débito</option>
@@ -317,18 +338,18 @@ class ConfiguracoesPage {
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="senha_atual" class="form-label">Senha Atual</label>
-                                        <input type="password" class="form-control" id="senha_atual" placeholder="Digite sua senha atual">
+                                        <input type="password" class="form-control" id="senha_atual" name="senha_atual" placeholder="Digite sua senha atual">
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="nova_senha" class="form-label">Nova Senha</label>
-                                        <input type="password" class="form-control" id="nova_senha" placeholder="Digite a nova senha">
+                                        <input type="password" class="form-control" id="nova_senha" name="nova_senha" placeholder="Digite a nova senha">
                                     </div>
                                 </div>
 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="confirmar_senha" class="form-label">Confirmar Nova Senha</label>
-                                        <input type="password" class="form-control" id="confirmar_senha" placeholder="Confirme a nova senha">
+                                        <input type="password" class="form-control" id="confirmar_senha" name="confirmar_senha" placeholder="Confirme a nova senha">
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <div class="form-check">
@@ -367,28 +388,184 @@ class ConfiguracoesPage {
 
     async salvar() {
         const form = document.getElementById('configuracoesForm');
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData);
-
-        // Validar campos obrigatórios
-        if (!data.nome_estabelecimento || !data.endereco || !data.cidade || !data.estado || 
-            !data.telefone || !data.email_contato || !data.horario_abertura || !data.horario_fechamento) {
-            alert('Preencha todos os campos obrigatórios!');
+        
+        // Debug: verificar se o formulário existe
+        if (!form) {
+            console.error('Formulário configuracoesForm não encontrado!');
+            alert('Erro: Formulário não encontrado. Recarregue a página e tente novamente.');
             return;
         }
+        
+        console.log('Formulário encontrado:', form);
+        
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+        
+        // Debug: verificar se o FormData está coletando os dados
+        console.log('FormData entries:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}: "${value}"`);
+        }
 
-        // Validar senha se fornecida
-        if (data.nova_senha && data.nova_senha !== data.confirmar_senha) {
-            alert('As senhas não coincidem!');
+        // Debug: mostrar dados coletados
+        console.log('Dados do formulário de configurações:', data);
+        
+        // Debug: verificar elementos individuais
+        const elementos = [
+            'nome_estabelecimento', 'cnpj', 'endereco', 'cep', 'cidade', 'estado', 'bairro',
+            'telefone', 'whatsapp', 'email_contato', 'horario_abertura', 'horario_fechamento',
+            'intervalo_agendamento'
+        ];
+        
+        elementos.forEach(id => {
+            const elemento = document.getElementById(id);
+            console.log(`Elemento ${id}:`, {
+                existe: !!elemento,
+                valor: elemento ? elemento.value : 'NÃO ENCONTRADO',
+                tipo: elemento ? elemento.type : 'N/A',
+                required: elemento ? elemento.required : 'N/A',
+                name: elemento ? elemento.name : 'N/A'
+            });
+        });
+
+        // Validar campos obrigatórios com mais detalhes
+        const camposObrigatorios = [
+            { campo: 'nome_estabelecimento', valor: data.nome_estabelecimento, nome: 'Nome do Estabelecimento' },
+            { campo: 'endereco', valor: data.endereco, nome: 'Endereço' },
+            { campo: 'cidade', valor: data.cidade, nome: 'Cidade' },
+            { campo: 'estado', valor: data.estado, nome: 'Estado' },
+            { campo: 'telefone', valor: data.telefone, nome: 'Telefone Principal' },
+            { campo: 'email_contato', valor: data.email_contato, nome: 'Email de Contato' },
+            { campo: 'horario_abertura', valor: data.horario_abertura, nome: 'Horário de Abertura' },
+            { campo: 'horario_fechamento', valor: data.horario_fechamento, nome: 'Horário de Fechamento' }
+        ];
+
+        // Debug: mostrar cada campo obrigatório
+        console.log('Verificando campos obrigatórios:');
+        camposObrigatorios.forEach(campo => {
+            console.log(`${campo.nome}: "${campo.valor}" (vazio: ${!campo.valor || campo.valor.trim() === ''})`);
+        });
+
+        const camposVazios = camposObrigatorios.filter(campo => !campo.valor || campo.valor.trim() === '');
+        
+        if (camposVazios.length > 0) {
+            const camposFaltando = camposVazios.map(campo => campo.nome).join(', ');
+            console.error('Campos vazios encontrados:', camposFaltando);
+            alert(`Preencha os seguintes campos obrigatórios: ${camposFaltando}`);
             return;
         }
 
         // Coletar dias de funcionamento
         const diasFuncionamento = [];
         ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'].forEach(dia => {
-            if (document.getElementById(dia).checked) {
+            const checkbox = document.getElementById(dia);
+            console.log(`Checkbox ${dia}:`, {
+                existe: !!checkbox,
+                checked: checkbox ? checkbox.checked : false,
+                valor: checkbox ? checkbox.value : 'N/A'
+            });
+            if (checkbox && checkbox.checked) {
                 diasFuncionamento.push(dia);
             }
+        });
+        
+        console.log('Dias de funcionamento selecionados:', diasFuncionamento);
+
+        // Verificar se pelo menos um dia foi selecionado
+        if (diasFuncionamento.length === 0) {
+            alert('Selecione pelo menos um dia de funcionamento!');
+            return;
+        }
+
+        // Validar email se fornecido
+        if (data.email_contato && !this.validarEmail(data.email_contato)) {
+            alert('Email de contato inválido!');
+            return;
+        }
+
+        // Validar telefone se fornecido
+        if (data.telefone) {
+            console.log('Validando telefone:', data.telefone);
+            const numeros = data.telefone.replace(/\D/g, '');
+            console.log('Números extraídos:', numeros, 'Tamanho:', numeros.length);
+            if (!this.validarTelefone(data.telefone)) {
+                alert('Telefone principal inválido! Use apenas números.');
+                return;
+            }
+        }
+
+        // Validar WhatsApp se fornecido
+        if (data.whatsapp && !this.validarTelefone(data.whatsapp)) {
+            alert('WhatsApp inválido! Use apenas números.');
+            return;
+        }
+
+        // Validar CNPJ se fornecido
+        if (data.cnpj && !this.validarCNPJ(data.cnpj)) {
+            alert('CNPJ inválido!');
+            return;
+        }
+
+        // Validar CEP se fornecido
+        if (data.cep && !this.validarCEP(data.cep)) {
+            alert('CEP inválido! Use o formato 00000-000.');
+            return;
+        }
+
+        // Validar horários
+        if (data.horario_abertura && data.horario_fechamento) {
+            const abertura = new Date(`2000-01-01T${data.horario_abertura}`);
+            const fechamento = new Date(`2000-01-01T${data.horario_fechamento}`);
+            
+            if (abertura >= fechamento) {
+                alert('Horário de abertura deve ser anterior ao horário de fechamento!');
+                return;
+            }
+        }
+
+        // Validar senha se fornecida
+        if (data.nova_senha) {
+            if (data.nova_senha !== data.confirmar_senha) {
+                alert('As senhas não coincidem!');
+                return;
+            }
+            
+            if (data.nova_senha.length < 6) {
+                alert('A nova senha deve ter pelo menos 6 caracteres!');
+                return;
+            }
+            
+            if (!data.senha_atual) {
+                alert('Digite a senha atual para alterar a senha!');
+                return;
+            }
+        }
+
+        // Debug: mostrar todos os dados coletados
+        console.log('Dados completos do formulário:', {
+            nome_estabelecimento: data.nome_estabelecimento,
+            endereco: data.endereco,
+            cidade: data.cidade,
+            estado: data.estado,
+            telefone: data.telefone,
+            email_contato: data.email_contato,
+            horario_abertura: data.horario_abertura,
+            horario_fechamento: data.horario_fechamento,
+            dias_funcionamento: diasFuncionamento,
+            intervalo_agendamento: data.intervalo_agendamento,
+            horas_lembrete: data.horas_lembrete,
+            metodo_pagamento_padrao: data.metodo_pagamento_padrao
+        });
+        
+        // Debug: verificar selects
+        const selects = ['estado', 'intervalo_agendamento', 'horas_lembrete', 'metodo_pagamento_padrao'];
+        selects.forEach(id => {
+            const select = document.getElementById(id);
+            console.log(`Select ${id}:`, {
+                existe: !!select,
+                valor: select ? select.value : 'NÃO ENCONTRADO',
+                opcoes: select ? Array.from(select.options).map(opt => ({ valor: opt.value, texto: opt.text, selected: opt.selected })) : 'N/A'
+            });
         });
 
         const payload = {
@@ -405,21 +582,90 @@ class ConfiguracoesPage {
             horario_abertura: data.horario_abertura,
             horario_fechamento: data.horario_fechamento,
             dias_funcionamento: diasFuncionamento,
-            intervalo_agendamento: parseInt(data.intervalo_agendamento),
-            notificar_agendamentos: document.getElementById('notificar_agendamentos').checked,
-            notificar_cancelamentos: document.getElementById('notificar_cancelamentos').checked,
-            lembrete_cliente: document.getElementById('lembrete_cliente').checked,
-            horas_lembrete: parseInt(data.horas_lembrete),
-            metodo_pagamento_padrao: data.metodo_pagamento_padrao,
-            aceitar_pix: document.getElementById('aceitar_pix').checked,
-            logout_todos_dispositivos: document.getElementById('logout_todos_dispositivos').checked
+            intervalo_agendamento: parseInt(data.intervalo_agendamento) || 30,
+            notificar_agendamentos: this.getCheckboxValue('notificar_agendamentos'),
+            notificar_cancelamentos: this.getCheckboxValue('notificar_cancelamentos'),
+            lembrete_cliente: this.getCheckboxValue('lembrete_cliente'),
+            horas_lembrete: parseInt(data.horas_lembrete) || 1,
+            metodo_pagamento_padrao: data.metodo_pagamento_padrao || 'dinheiro',
+            aceitar_pix: this.getCheckboxValue('aceitar_pix'),
+            auto_confirm_whatsapp: this.getCheckboxValue('auto_confirm_whatsapp'),
+            logout_todos_dispositivos: this.getCheckboxValue('logout_todos_dispositivos')
         };
 
+        // Debug: verificar campos de senha
+        const senhaAtual = document.getElementById('senha_atual');
+        const novaSenha = document.getElementById('nova_senha');
+        const confirmarSenha = document.getElementById('confirmar_senha');
+        
+        console.log('Campos de senha:', {
+            senha_atual: {
+                existe: !!senhaAtual,
+                valor: senhaAtual ? senhaAtual.value : 'NÃO ENCONTRADO'
+            },
+            nova_senha: {
+                existe: !!novaSenha,
+                valor: novaSenha ? novaSenha.value : 'NÃO ENCONTRADO'
+            },
+            confirmar_senha: {
+                existe: !!confirmarSenha,
+                valor: confirmarSenha ? confirmarSenha.value : 'NÃO ENCONTRADO'
+            }
+        });
+        
+        // Debug: verificar se os dados estão sendo coletados corretamente
+        console.log('Dados do FormData:', data);
+        console.log('Campos obrigatórios verificados:', camposObrigatorios);
+        
+        // Debug: verificar se o formulário está sendo renderizado corretamente
+        console.log('Formulário renderizado:', form.innerHTML.substring(0, 200) + '...');
+        
+        // Debug: verificar se há algum problema com a coleta de dados
+        if (Object.keys(data).length === 0) {
+            console.error('Nenhum dado foi coletado do formulário!');
+            alert('Erro: Nenhum dado foi coletado do formulário. Verifique se os campos estão preenchidos corretamente.');
+            return;
+        }
+        
+        // Debug: verificar se os campos obrigatórios estão sendo coletados
+        const camposObrigatoriosColetados = camposObrigatorios.map(campo => ({
+            ...campo,
+            coletado: data[campo.campo] !== undefined
+        }));
+        
+        console.log('Campos obrigatórios coletados:', camposObrigatoriosColetados);
+        
+        // Debug: verificar se há algum problema com a coleta de dados específicos
+        const camposProblema = camposObrigatoriosColetados.filter(campo => !campo.coletado);
+        if (camposProblema.length > 0) {
+            console.error('Campos não coletados:', camposProblema);
+            alert(`Erro: Os seguintes campos não foram coletados: ${camposProblema.map(c => c.nome).join(', ')}`);
+            return;
+        }
+        
+        // Debug: verificar se os valores estão sendo coletados corretamente
+        console.log('Valores coletados dos campos obrigatórios:');
+        camposObrigatorios.forEach(campo => {
+            console.log(`${campo.nome}: "${data[campo.campo]}" (tipo: ${typeof data[campo.campo]})`);
+        });
+        
+        // Debug: verificar se há algum problema com a coleta de dados específicos
+        const camposVazios2 = camposObrigatorios.filter(campo => !data[campo.campo] || data[campo.campo].trim() === '');
+        if (camposVazios2.length > 0) {
+            console.error('Campos vazios encontrados:', camposVazios2);
+            const camposFaltando = camposVazios2.map(campo => campo.nome).join(', ');
+            alert(`Preencha os seguintes campos obrigatórios: ${camposFaltando}`);
+            return;
+        }
+        
         // Adicionar senha se fornecida
         if (data.senha_atual && data.nova_senha) {
             payload.senha_atual = data.senha_atual;
             payload.nova_senha = data.nova_senha;
         }
+
+        // Debug: mostrar payload final
+        console.log('Payload final:', payload);
 
         try {
             const response = await this.app.apiRequest('/api/configuracoes', {
@@ -441,6 +687,78 @@ class ConfiguracoesPage {
 
     cancelar() {
         this.load(); // Recarregar dados originais
+    }
+
+    validarEmail(email) {
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return regex.test(email);
+    }
+
+    validarTelefone(telefone) {
+        // Remove todos os caracteres não numéricos
+        const numeros = telefone.replace(/\D/g, '');
+        // Telefone deve ter:
+        // - 10 dígitos: DDD + 8 dígitos (celular antigo)
+        // - 11 dígitos: DDD + 9 dígitos (celular novo)
+        // - 12 dígitos: DDD + 8 dígitos (fixo com 9)
+        // - 13 dígitos: Código do país + DDD + 9 dígitos
+        return numeros.length >= 10 && numeros.length <= 13;
+    }
+
+    validarCNPJ(cnpj) {
+        // Remove todos os caracteres não numéricos
+        const numeros = cnpj.replace(/\D/g, '');
+        
+        // CNPJ deve ter 14 dígitos
+        if (numeros.length !== 14) return false;
+        
+        // Verificar se todos os dígitos são iguais
+        if (/^(\d)\1+$/.test(numeros)) return false;
+        
+        // Validação básica do CNPJ (algoritmo simplificado)
+        let soma = 0;
+        let peso = 2;
+        
+        // Calcular primeiro dígito verificador
+        for (let i = 11; i >= 0; i--) {
+            soma += parseInt(numeros.charAt(i)) * peso;
+            peso = peso === 9 ? 2 : peso + 1;
+        }
+        
+        const resto = soma % 11;
+        const digito1 = resto < 2 ? 0 : 11 - resto;
+        
+        if (parseInt(numeros.charAt(12)) !== digito1) return false;
+        
+        // Calcular segundo dígito verificador
+        soma = 0;
+        peso = 2;
+        
+        for (let i = 12; i >= 0; i--) {
+            soma += parseInt(numeros.charAt(i)) * peso;
+            peso = peso === 9 ? 2 : peso + 1;
+        }
+        
+        const resto2 = soma % 11;
+        const digito2 = resto2 < 2 ? 0 : 11 - resto2;
+        
+        return parseInt(numeros.charAt(13)) === digito2;
+    }
+
+    validarCEP(cep) {
+        // Remove todos os caracteres não numéricos
+        const numeros = cep.replace(/\D/g, '');
+        // CEP deve ter 8 dígitos
+        return numeros.length === 8;
+    }
+
+    getCheckboxValue(id) {
+        const checkbox = document.getElementById(id);
+        console.log(`Checkbox ${id}:`, {
+            existe: !!checkbox,
+            checked: checkbox ? checkbox.checked : false
+        });
+        return checkbox ? checkbox.checked : false;
     }
 }
 

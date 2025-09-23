@@ -7,7 +7,7 @@ const Joi = require('joi');
 // Schema para usuário
 const usuarioSchema = Joi.object({
   nome: Joi.string().min(2).max(100).required(),
-  whatsapp: Joi.string().pattern(/^\+?\d{10,15}$/).required(),
+  whatsapp: Joi.string().pattern(/^\+?\d{11,15}$/).required(),
   timezone: Joi.string().default('America/Sao_Paulo'),
   config_horarios: Joi.array().items(
     Joi.object({
