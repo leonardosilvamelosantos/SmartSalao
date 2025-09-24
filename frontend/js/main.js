@@ -65,7 +65,18 @@ class BarbeirosApp {
             console.warn('⚠️ Erro ao carregar dados de usuários:', error);
         });
         
-        console.log('🚀 Carregamento em background iniciado para todas as páginas');
+        // console.log('🚀 Carregamento em background iniciado para todas as páginas'); // Otimizado - log removido
+    }
+
+    // Função auxiliar para criar títulos de modal com ícones
+    createModalTitle(iconClass, text) {
+        const icon = document.createElement('i');
+        icon.className = iconClass;
+        const textNode = document.createTextNode(text);
+        const container = document.createElement('span');
+        container.appendChild(icon);
+        container.appendChild(textNode);
+        return container;
     }
 
     // Função auxiliar para gerenciar modal de forma segura
@@ -74,8 +85,23 @@ class BarbeirosApp {
         const modalTitle = document.getElementById('formModalTitle');
         const modalBody = document.getElementById('formModalBody');
         
-        // Configurar conteúdo
-        if (modalTitle) modalTitle.innerHTML = title;
+        // Configurar conteúdo - tratar título com HTML
+        if (modalTitle) {
+            modalTitle.innerHTML = '';
+            if (typeof title === 'string' && title.includes('<i class')) {
+                // Se for HTML string, usar innerHTML
+                modalTitle.innerHTML = title;
+            } else if (title && title.nodeType === 1) {
+                // Se for elemento DOM (nodeType === 1), anexar
+                modalTitle.appendChild(title);
+            } else if (typeof title === 'string') {
+                // Se for string simples, usar textContent
+                modalTitle.textContent = title;
+            } else {
+                // Fallback para outros tipos
+                modalTitle.textContent = String(title);
+            }
+        }
         if (modalBody) modalBody.innerHTML = content;
         
         // Remover event listeners antigos para evitar duplicação
@@ -244,19 +270,6 @@ class BarbeirosApp {
         }
     }
 
-    // Método para mostrar modal
-    showModal(title, content) {
-        const modalBody = document.getElementById('formModalBody');
-        const modalTitle = document.getElementById('formModalTitle');
-        
-        if (modalBody && modalTitle) {
-            modalTitle.textContent = title;
-            modalBody.innerHTML = content;
-            
-            const modal = new bootstrap.Modal(document.getElementById('formModal'));
-            modal.show();
-        }
-    }
 
     // Carregar dados do dashboard
     async loadDashboardData() {
@@ -466,19 +479,19 @@ class BarbeirosApp {
 
     // Carregar dados da agenda
     async loadAgendaData() {
-        console.log('🔄 loadAgendaData chamada');
+        // console.log('🔄 loadAgendaData chamada'); // Otimizado - log removido
         
         try {
             const response = await this.apiRequest('/api/agendamentos');
 
             if (response.success) {
-                console.log('📊 Dados da agenda recebidos:', response.data);
+                // console.log('📊 Dados da agenda recebidos:', response.data); // Otimizado - log removido
                 // Armazenar dados em cache global
                 window.agendaData = Array.isArray(response.data) ? response.data : (response.data?.items || []);
-                console.log('💾 Cache atualizado:', window.agendaData);
+                // console.log('💾 Cache atualizado:', window.agendaData); // Otimizado - log removido
                 
                 // NÃO renderizar aqui - deixar para o router/AgendaPage
-                console.log('⏭️ loadAgendaData: dados carregados, delegando renderização para router/AgendaPage');
+                // console.log('⏭️ loadAgendaData: dados carregados, delegando renderização para router/AgendaPage'); // Otimizado - log removido
             } else {
                 console.error('❌ Erro na resposta da API de agenda:', response);
                 const content = document.getElementById('agenda-content');
@@ -876,13 +889,18 @@ function novoAgendamento() {
 
     // Usar a função auxiliar para mostrar o modal
     if (window.barbeirosApp && window.barbeirosApp.showModal) {
-        window.barbeirosApp.showModal('<i class="bi bi-calendar-plus me-2"></i>Novo Agendamento', modalHtml);
+        const title = window.barbeirosApp.createModalTitle('bi bi-calendar-plus me-2', 'Novo Agendamento');
+        window.barbeirosApp.showModal(title, modalHtml);
     } else {
         // Fallback para compatibilidade
         document.getElementById('formModalBody').innerHTML = modalHtml;
         const modalTitle = document.getElementById('formModalTitle');
         if (modalTitle) {
-            modalTitle.innerHTML = '<i class="bi bi-calendar-plus me-2"></i>Novo Agendamento';
+            modalTitle.innerHTML = '';
+            const icon = document.createElement('i');
+            icon.className = 'bi bi-calendar-plus me-2';
+            modalTitle.appendChild(icon);
+            modalTitle.appendChild(document.createTextNode('Novo Agendamento'));
         }
         const modal = new bootstrap.Modal(document.getElementById('formModal'));
         modal.show();
@@ -938,13 +956,18 @@ function novoCliente() {
 
     // Usar a função auxiliar para mostrar o modal
     if (window.barbeirosApp && window.barbeirosApp.showModal) {
-        window.barbeirosApp.showModal('<i class="bi bi-person-plus me-2"></i>Novo Cliente', modalHtml);
+        const title = window.barbeirosApp.createModalTitle('bi bi-person-plus me-2', 'Novo Cliente');
+        window.barbeirosApp.showModal(title, modalHtml);
     } else {
         // Fallback para compatibilidade
         document.getElementById('formModalBody').innerHTML = modalHtml;
         const modalTitle = document.getElementById('formModalTitle');
         if (modalTitle) {
-            modalTitle.innerHTML = '<i class="bi bi-person-plus me-2"></i>Novo Cliente';
+            modalTitle.innerHTML = '';
+            const icon = document.createElement('i');
+            icon.className = 'bi bi-person-plus me-2';
+            modalTitle.appendChild(icon);
+            modalTitle.appendChild(document.createTextNode('Novo Cliente'));
         }
         const modal = new bootstrap.Modal(document.getElementById('formModal'));
         modal.show();
@@ -1064,13 +1087,18 @@ function novoServico() {
 
     // Usar a função auxiliar para mostrar o modal
     if (window.barbeirosApp && window.barbeirosApp.showModal) {
-        window.barbeirosApp.showModal('<i class="bi bi-wrench-adjustable me-2"></i>Novo Serviço', modalHtml);
+        const title = window.barbeirosApp.createModalTitle('bi bi-wrench-adjustable me-2', 'Novo Serviço');
+        window.barbeirosApp.showModal(title, modalHtml);
     } else {
         // Fallback para compatibilidade
         document.getElementById('formModalBody').innerHTML = modalHtml;
         const modalTitle = document.getElementById('formModalTitle');
         if (modalTitle) {
-            modalTitle.innerHTML = '<i class="bi bi-wrench-adjustable me-2"></i>Novo Serviço';
+            modalTitle.innerHTML = '';
+            const icon = document.createElement('i');
+            icon.className = 'bi bi-wrench-adjustable me-2';
+            modalTitle.appendChild(icon);
+            modalTitle.appendChild(document.createTextNode('Novo Serviço'));
         }
         const modal = new bootstrap.Modal(document.getElementById('formModal'));
         modal.show();
@@ -1345,6 +1373,12 @@ async function salvarAgendamento() {
                         window.barbeirosApp.loadAgendaData();
                     }
                 }, 100);
+            }
+
+            // Atualizar próximos agendamentos no dashboard
+            if (window.dashboardManager && window.dashboardManager.updateProximosAgendamentos) {
+                console.log('🔄 Atualizando próximos agendamentos no dashboard...');
+                window.dashboardManager.updateProximosAgendamentos();
             }
         } else {
             console.log('❌ Erro na resposta da API:', response);
@@ -2398,7 +2432,7 @@ BarbeirosApp.prototype.loadServicosData = async function() {
 
         if (response.success) {
             servicosData = response.data || [];
-            console.log('✅ Serviços carregados:', servicosData.length, 'itens');
+            // console.log('✅ Serviços carregados:', servicosData.length, 'itens'); // Otimizado - log removido
 
             // Atualizar métricas (sempre)
             if (typeof atualizarMetricasServicos === 'function') {
@@ -2407,7 +2441,7 @@ BarbeirosApp.prototype.loadServicosData = async function() {
 
             // Renderizar serviços se os elementos existirem
             if (tableContainer || cardsContainer) {
-                console.log('📄 Renderizando interface de serviços...');
+                // console.log('📄 Renderizando interface de serviços...'); // Otimizado - log removido
                 if (servicosViewMode === 'table' && tableContainer) {
                     renderizarServicosTabela(servicosData);
                 } else if (cardsContainer) {
@@ -2418,7 +2452,7 @@ BarbeirosApp.prototype.loadServicosData = async function() {
                 if (typeof filtrarServicos === 'function') {
                     filtrarServicos();
                 }
-                console.log('✅ Interface de serviços atualizada');
+                // console.log('✅ Interface de serviços atualizada'); // Otimizado - log removido
             } else {
                 console.log('ℹ️ Elementos de serviços não encontrados');
             }
@@ -2449,7 +2483,7 @@ function clearAuthOnStartup() {
     const user = localStorage.getItem('barbeiros-user');
     
     if (token || user) {
-        console.log('Dados de autenticação encontrados no localStorage, verificando validade...');
+        // console.log('Dados de autenticação encontrados no localStorage, verificando validade...'); // Otimizado - log removido
         
         // Se há token, verificar se é válido
         if (token) {
@@ -2507,21 +2541,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Inicializar router
     window.router = new Router();
-    console.log('🔧 Router inicializado');
+    // console.log('🔧 Router inicializado'); // Otimizado - log removido
     
     window.barbeirosApp = new BarbeirosApp();
     
     // Registrar páginas no router
     if (window.router) {
-        console.log('🔧 Registrando páginas no router...');
-        console.log('  - clientesPage:', !!window.clientesPage);
-        console.log('  - servicosPage:', !!window.servicosPage);
-        console.log('  - agendaPage:', !!window.agendaPage);
-        console.log('  - usuariosPage:', !!window.usuariosPage);
-        console.log('  - configuracoesPage:', !!window.configuracoesPage);
+        // console.log('🔧 Registrando páginas no router...'); // Otimizado - log removido
+        // console.log('  - clientesPage:', !!window.clientesPage); // Otimizado - log removido
+        // console.log('  - servicosPage:', !!window.servicosPage); // Otimizado - log removido
+        // console.log('  - agendaPage:', !!window.agendaPage); // Otimizado - log removido
+        // console.log('  - usuariosPage:', !!window.usuariosPage); // Otimizado - log removido
+        // console.log('  - configuracoesPage:', !!window.configuracoesPage); // Otimizado - log removido
         
         if (window.configuracoesPage) {
-            console.log('  - configuracoesPage.load:', typeof window.configuracoesPage.load);
+            // console.log('  - configuracoesPage.load:', typeof window.configuracoesPage.load); // Otimizado - log removido
         }
         
         window.router.registerPage('clientes', window.clientesPage);
@@ -2545,7 +2579,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Carregar estado atual da configuração
             try {
-                const cfg = await window.barbeirosApp.apiRequest('/api/configuracoes');
+                const cfg = await window.barbeirosApp.apiRequest('/api/agendamentos/auto-confirm-status');
                 if (cfg && cfg.success && cfg.data) {
                     topSwitch.checked = !!cfg.data.auto_confirm_whatsapp;
                 }
@@ -2557,9 +2591,9 @@ document.addEventListener('DOMContentLoaded', () => {
             topSwitch.addEventListener('change', async (ev) => {
                 const desired = !!ev.target.checked;
                 try {
-                    await window.barbeirosApp.apiRequest('/api/configuracoes', {
-                        method: 'PUT',
-                        body: JSON.stringify({ auto_confirm_whatsapp: desired })
+                    await window.barbeirosApp.apiRequest('/api/agendamentos/auto-confirm', {
+                        method: 'PATCH',
+                        body: JSON.stringify({ ativo: desired })
                     });
                     if (window.barbeirosApp?.showSuccess) {
                         window.barbeirosApp.showSuccess(`Auto-agendamento ${desired ? 'ativado' : 'desativado'}`);

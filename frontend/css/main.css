@@ -1,7 +1,6 @@
 /* CSS Principal - Sistema Barbeiros */
 
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* Google Fonts - Carregamento otimizado via HTML */
 
 /* Design System Variables */
 :root {
@@ -355,54 +354,283 @@ body {
 
 /* Header */
 .navbar {
-    background: var(--primary-900) !important;
-    border-bottom: 1px solid var(--primary-800);
-    box-shadow: var(--shadow-md);
+    background: linear-gradient(135deg, var(--primary-900), var(--primary-800)) !important;
+    border-bottom: 2px solid var(--primary-700);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
     z-index: 1030;
     height: 64px;
     padding: var(--space-2) var(--space-4);
 }
 
+/* Light mode - Background off-white para melhor contraste */
+body:not(.dark-mode) {
+    background-color: #f5f5f5 !important;
+}
+
+/* Light mode - Cores douradas para salão feminino */
+body:not(.dark-mode) .navbar {
+    background: linear-gradient(135deg, #D4AF37, #F4E4BC) !important;
+    border-bottom: 1px solid #B8860B !important;
+}
+
+/* Light mode - Botões primários em dourado */
+body:not(.dark-mode) .btn-primary {
+    background: linear-gradient(135deg, #D4AF37, #F4E4BC);
+    border-color: #B8860B;
+    color: #8B4513;
+}
+
+body:not(.dark-mode) .btn-primary:hover {
+    background: linear-gradient(135deg, #B8860B, #D4AF37);
+    border-color: #D4AF37;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3);
+}
+
+/* Light mode - Cards com bordas douradas e efeito dark mode */
+body:not(.dark-mode) .card {
+    background-color: #ffffff !important;
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.1) !important;
+    color: #1e293b !important;
+}
+
+body:not(.dark-mode) .card:hover {
+    border-color: rgba(212, 175, 55, 0.6) !important;
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.2) !important;
+    transform: translateY(-1px);
+}
+
+/* Light mode - Cards de métricas com bordas douradas */
+body:not(.dark-mode) .metric-card {
+    background-color: #ffffff !important;
+    border: 1px solid rgba(212, 175, 55, 0.4) !important;
+    box-shadow: 0 3px 10px rgba(212, 175, 55, 0.15) !important;
+}
+
+body:not(.dark-mode) .metric-card:hover {
+    border-color: rgba(212, 175, 55, 0.7) !important;
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25) !important;
+    transform: translateY(-2px);
+}
+
+/* Light mode - Links em dourado */
+body:not(.dark-mode) a {
+    color: #D4AF37;
+}
+
+body:not(.dark-mode) a:hover {
+    color: #B8860B;
+}
+
+/* Forçar bordas douradas em todos os cards */
+body:not(.dark-mode) .card,
+body:not(.dark-mode) .metric-card,
+body:not(.dark-mode) .stats-card {
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.1) !important;
+}
+
+/* Forçar bordas douradas em cards específicos */
+body:not(.dark-mode) .card.border-0 {
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+}
+
+body:not(.dark-mode) .card.shadow-sm {
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.1) !important;
+}
+
+/* === MELHORIAS - AÇÕES RÁPIDAS === */
+
+/* Botões de ações rápidas com altura fixa e centralização perfeita */
+#btn-novo-cliente,
+#btn-novo-servico {
+    height: 80px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+}
+
+#btn-novo-cliente .text-center,
+#btn-novo-servico .text-center {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* Botões de ações adicionais com cores e emojis */
+.btn-outline-info {
+    border-color: #17a2b8 !important;
+    color: #17a2b8 !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-outline-info:hover {
+    background-color: #17a2b8 !important;
+    border-color: #17a2b8 !important;
+    color: white !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3) !important;
+}
+
+.btn-outline-warning {
+    border-color: #ffc107 !important;
+    color: #ffc107 !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-outline-warning:hover {
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+    color: #212529 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3) !important;
+}
+
+/* Emojis nos botões de ações adicionais */
+.btn-outline-info .bi,
+.btn-outline-warning .bi {
+    font-size: 1.1rem !important;
+    margin-right: 0.5rem !important;
+}
+
+/* Responsividade para ações rápidas */
+@media (max-width: 768px) {
+    #btn-novo-cliente,
+    #btn-novo-servico {
+        height: 70px !important;
+    }
+    
+    .btn-outline-info,
+    .btn-outline-warning {
+        font-size: 0.9rem !important;
+        padding: 0.5rem !important;
+    }
+}
+
+
 /* Navbar Text Colors - Alto contraste */
 .navbar-brand {
     color: white !important;
     font-weight: var(--font-bold);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .navbar .dropdown-toggle {
     color: white !important;
-    font-weight: var(--font-medium);
+    font-weight: var(--font-semibold);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .navbar .btn {
     color: white !important;
-    font-weight: var(--font-medium);
-}
-
-/* Auto-agendamento toggle text */
-.navbar .form-check-label {
-    color: white !important;
-    font-weight: var(--font-medium);
+    font-weight: var(--font-semibold);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-/* Auto-agendamento toggle switch */
+/* Auto-agendamento toggle text - Consolidação otimizada */
+.navbar .form-check-label {
+    font-weight: var(--font-bold) !important;
+    text-shadow: none !important;
+    font-size: 0.95rem !important;
+    opacity: 1 !important;
+    letter-spacing: 0.5px;
+    color: #000000 !important; /* Light mode padrão */
+}
+
+/* Dark mode - Label do auto-agendamento em branco */
+.dark-mode .navbar .form-check-label {
+    color: #ffffff !important;
+}
+
+/* Forçar contraste máximo - regra mais específica */
+label[for="autoConfirmTopSwitch"] {
+    color: #000000 !important;
+    font-weight: var(--font-bold) !important;
+    text-shadow: none !important;
+    font-size: 0.95rem !important;
+    opacity: 1 !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* Dark mode - Regra específica para auto-agendamento */
+.dark-mode label[for="autoConfirmTopSwitch"] {
+    color: #ffffff !important;
+    font-weight: var(--font-bold) !important;
+    text-shadow: none !important;
+    font-size: 0.95rem !important;
+    opacity: 1 !important;
+    letter-spacing: 0.5px !important;
+}
+
+
+/* Auto-agendamento toggle switch - Estilo iOS */
 .navbar .form-check-input {
-    background-color: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    width: 50px !important;
+    height: 30px !important;
+    background-color: #f0f0f0 !important;
+    border: 2px solid #d0d0d0 !important;
+    border-radius: 15px !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    cursor: pointer;
+}
+
+.navbar .form-check-input::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 22px;
+    height: 22px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(0);
+    border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .navbar .form-check-input:checked {
-    background-color: var(--success-500);
-    border-color: var(--success-500);
-    box-shadow: 0 2px 6px rgba(34, 197, 94, 0.3);
+    background-color: #22c55e !important;
+    border-color: #22c55e !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.navbar .form-check-input:checked::before {
+    transform: translateX(20px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .navbar .form-check-input:focus {
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25) !important;
+}
+
+.navbar .form-check-input:focus:not(:checked) {
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(34, 197, 94, 0.25) !important;
+}
+
+/* Light mode - Toggle iOS com cores douradas */
+body:not(.dark-mode) .navbar .form-check-input {
+    background-color: #ffffff !important;
+    border-color: #D4AF37 !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+body:not(.dark-mode) .navbar .form-check-input:checked {
+    background-color: #22c55e !important;
+    border-color: #22c55e !important;
+}
+
+body:not(.dark-mode) .navbar .form-check-input:focus {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25) !important;
 }
 
 /* Header responsivo */
@@ -429,53 +657,112 @@ body {
     color: white !important;
     opacity: 0.9;
     transition: all 0.2s ease;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
 }
 
 .navbar .bi:hover {
     opacity: 1;
     transform: scale(1.05);
-    color: white !important;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
-}
-
-/* Navbar Brand Icon */
-.navbar-brand .bi {
-    color: white !important;
-    opacity: 1;
+    color: var(--primary-200) !important;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
-.navbar-brand:hover .bi {
-    color: white !important;
+/* Light mode - Navbar icons dourados */
+body:not(.dark-mode) .navbar .bi {
+    color: #8B4513 !important;
+    filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.3));
+}
+
+body:not(.dark-mode) .navbar .bi:hover {
+    color: #D4AF37 !important;
+    filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.4));
+}
+
+/* Navbar Brand Logo */
+#brand-logo {
+    height: 32px;
+    width: auto;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.navbar-brand:hover #brand-logo {
     transform: scale(1.05);
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+/* Light mode - Brand logo com filtro dourado */
+body:not(.dark-mode) #brand-logo {
+    filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.3));
+}
+
+body:not(.dark-mode) .navbar-brand:hover #brand-logo {
+    filter: drop-shadow(0 4px 8px rgba(255, 255, 255, 0.4));
 }
 
 /* Theme Toggle Icon */
 #theme-toggle .bi {
     color: white !important;
     opacity: 0.9;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
 }
 
 #theme-toggle:hover .bi {
-    color: white !important;
+    color: var(--primary-200) !important;
     opacity: 1;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Light mode - Theme toggle dourado */
+body:not(.dark-mode) #theme-toggle .bi {
+    color: #8B4513 !important;
+    filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.3));
+}
+
+body:not(.dark-mode) #theme-toggle:hover .bi {
+    color: #D4AF37 !important;
+    filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.4));
 }
 
 /* User Dropdown Icon */
 .navbar .dropdown-toggle .bi {
     color: white !important;
     opacity: 0.9;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
 }
 
 .navbar .dropdown-toggle:hover .bi {
-    color: white !important;
+    color: var(--primary-200) !important;
     opacity: 1;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Light mode - Dropdown dourado */
+body:not(.dark-mode) .navbar .dropdown-toggle .bi {
+    color: #8B4513 !important;
+    filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.3));
+}
+
+body:not(.dark-mode) .navbar .dropdown-toggle:hover .bi {
+    color: #D4AF37 !important;
+    filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.4));
+}
+
+/* Light mode - Melhor contraste para elementos da navbar direita */
+body:not(.dark-mode) .navbar .dropdown-toggle {
+    background: rgba(139, 69, 19, 0.9) !important;
+    border: 1px solid #8B4513 !important;
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    font-weight: var(--font-semibold);
+}
+
+body:not(.dark-mode) .navbar .dropdown-toggle:hover {
+    background: rgba(139, 69, 19, 1) !important;
+    border-color: #D4AF37 !important;
+    color: white !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(139, 69, 19, 0.3);
 }
 
 /* Dropdown Menu Icons */
@@ -680,6 +967,21 @@ body {
     padding-left: calc(var(--space-4) - 3px);
 }
 
+/* Light mode - Sidebar com cores douradas */
+body:not(.dark-mode) .sidebar .nav-link:hover {
+    background: rgba(212, 175, 55, 0.1);
+    color: #B8860B;
+    transform: translateX(2px);
+}
+
+body:not(.dark-mode) .sidebar .nav-link.active {
+    background: rgba(212, 175, 55, 0.15);
+    color: #8B4513;
+    font-weight: var(--font-semibold);
+    border-left: 3px solid #D4AF37;
+    padding-left: calc(var(--space-4) - 3px);
+}
+
 .sidebar .nav-link i {
     width: 20px;
     text-align: center;
@@ -817,6 +1119,12 @@ main {
     opacity: 0.8;
 }
 
+/* Light mode - Linha superior dourada */
+body:not(.dark-mode) .metric-card::before {
+    background: linear-gradient(90deg, #D4AF37, #F4E4BC);
+    opacity: 0.9;
+}
+
 .metric-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
@@ -847,6 +1155,11 @@ main {
     margin-bottom: var(--space-2);
     line-height: var(--leading-tight);
     letter-spacing: -0.025em;
+}
+
+/* Light mode - Valores das métricas em dourado escuro */
+body:not(.dark-mode) .metric-value {
+    color: #8B4513 !important;
 }
 
 .metric-label {
@@ -963,6 +1276,21 @@ main {
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(10px);
+    font-size: 1.2rem;
+}
+
+/* Ícones temáticos */
+#theme-toggle i,
+#brand-icon {
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+#theme-toggle:hover i,
+#brand-icon:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 #theme-toggle:hover {
@@ -1181,6 +1509,19 @@ main {
         background-color: var(--primary-100);
         color: var(--primary-700);
         border-left: 3px solid var(--primary-500);
+        padding-left: calc(var(--space-4) - 3px);
+    }
+
+    /* Light mode - Sidebar responsivo com cores douradas */
+    body:not(.dark-mode) .sidebar .nav-link:hover {
+        background-color: rgba(212, 175, 55, 0.1);
+        color: #B8860B;
+    }
+
+    body:not(.dark-mode) .sidebar .nav-link.active {
+        background-color: rgba(212, 175, 55, 0.15);
+        color: #8B4513;
+        border-left: 3px solid #D4AF37;
         padding-left: calc(var(--space-4) - 3px);
     }
 
@@ -1516,27 +1857,13 @@ main {
     font-size: 0.9rem;
 }
 
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
 
 /* Page Transitions */
 .page {
     opacity: 0;
-    animation: fadeInPage 0.3s ease-in-out forwards;
+    animation: fadeIn 0.3s ease-in forwards;
 }
 
-@keyframes fadeInPage {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 
 /* Smooth scrolling */
 html {
@@ -2007,14 +2334,6 @@ body.dark-mode .servicos-empty h5 {
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 /* Micro-feedback e Estados de Loading */
 .btn:disabled {
@@ -2128,6 +2447,17 @@ body.dark-mode .servicos-empty h5 {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+/* Dark mode - Avisos com melhor contraste geral */
+.dark-mode #avisos-list .alert {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dark-mode #avisos-list .alert:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
 #avisos-list .alert::before {
   content: '';
   position: absolute;
@@ -2140,9 +2470,25 @@ body.dark-mode .servicos-empty h5 {
 }
 
 #avisos-list .alert-info {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(56, 189, 248, 0.05));
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(56, 189, 248, 0.08));
   color: #0c4a6e;
   border-left: 4px solid #0ea5e9;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
+}
+
+/* Dark mode - Avisos com melhor contraste */
+.dark-mode #avisos-list .alert-info {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(56, 189, 248, 0.1));
+  color: #e0f2fe;
+  border-left: 4px solid #38bdf8;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+}
+
+/* Light mode - Avisos em dourado */
+body:not(.dark-mode) #avisos-list .alert-info {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(244, 228, 188, 0.05));
+  color: #8B4513;
+  border-left: 4px solid #D4AF37;
 }
 
 #avisos-list .alert-warning {
@@ -2161,6 +2507,28 @@ body.dark-mode .servicos-empty h5 {
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(248, 113, 113, 0.05));
   color: #7f1d1d;
   border-left: 4px solid #ef4444;
+}
+
+/* Dark mode - Avisos com melhor contraste */
+.dark-mode #avisos-list .alert-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.1));
+  color: #fef3c7;
+  border-left: 4px solid #fbbf24;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+
+.dark-mode #avisos-list .alert-success {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(74, 222, 128, 0.1));
+  color: #dcfce7;
+  border-left: 4px solid #4ade80;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
+}
+
+.dark-mode #avisos-list .alert-danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(248, 113, 113, 0.1));
+  color: #fee2e2;
+  border-left: 4px solid #f87171;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
 }
 
 #avisos-list .alert .btn {
@@ -2378,4 +2746,111 @@ body.dark-mode .servicos-empty h5 {
         width: 16px;
         text-align: center;
     }
+}
+
+/* === OTIMIZAÇÕES DE TEMA === */
+
+/* Variáveis CSS para transições mais eficientes */
+:root {
+    --theme-transition-duration: 0.2s;
+    --theme-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Classe para controlar transições durante mudança de tema */
+.theme-transitioning * {
+    transition: background-color var(--theme-transition-duration) var(--theme-transition-timing),
+               color var(--theme-transition-duration) var(--theme-transition-timing),
+               border-color var(--theme-transition-duration) var(--theme-transition-timing),
+               box-shadow var(--theme-transition-duration) var(--theme-transition-timing) !important;
+}
+
+/* Desabilitar transições para elementos que não precisam */
+.theme-transitioning img,
+.theme-transitioning svg,
+.theme-transitioning canvas,
+.theme-transitioning video {
+    transition: none !important;
+}
+
+/* Animação do botão de toggle otimizada */
+.theme-toggle-animate {
+    animation: themeTogglePulse 0.3s var(--theme-transition-timing);
+    will-change: transform;
+}
+
+@keyframes themeTogglePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Otimizações para elementos que mudam frequentemente */
+.navbar,
+.sidebar,
+.card,
+.modal-content,
+.btn,
+.form-control {
+    will-change: background-color, color, border-color;
+}
+
+/* Reduzir reflow/repaint durante transições */
+.theme-transitioning {
+    contain: layout style paint;
+}
+
+/* Transições mais suaves para elementos específicos */
+body {
+    transition: background-color var(--theme-transition-duration) var(--theme-transition-timing);
+}
+
+/* Otimização para elementos com muitas propriedades */
+.metric-card,
+.appointment-item,
+.table {
+    transition: background-color var(--theme-transition-duration) var(--theme-transition-timing),
+               border-color var(--theme-transition-duration) var(--theme-transition-timing);
+}
+
+/* Ícones temáticos com animações */
+#brand-icon,
+#theme-toggle i {
+    font-size: 1.2rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+}
+
+/* Tema atual - emoji maior para ênfase */
+.theme-current {
+    font-size: 1.4rem !important;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Hover effects */
+#brand-icon:hover,
+#theme-toggle:hover i {
+    transform: scale(1.1) rotate(5deg);
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+}
+
+/* Transições suaves para mudança de tema */
+.navbar,
+.navbar-brand,
+.navbar .bi,
+.navbar .dropdown-toggle,
+#theme-toggle {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animação especial para mudança de ícone */
+.icon-changing {
+    animation: iconChange 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes iconChange {
+    0% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.2) rotate(180deg); }
+    100% { transform: scale(1) rotate(360deg); }
 }

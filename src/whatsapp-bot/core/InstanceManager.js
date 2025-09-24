@@ -41,7 +41,7 @@ class InstanceManager {
         }
         // Se está conectando, aguardar ou retornar erro
         if (existing.isConnecting) {
-          console.log(`⏳ Instância já está conectando para tenant: ${tenantId}`);
+    // console.log(`⏳ Instância já está conectando para tenant: ${tenantId}`); // Otimizado para reduzir spam no console
           return { success: false, error: 'Instância já está conectando' };
         }
         // Reutilizar instância existente desconectada
@@ -226,6 +226,9 @@ class InstanceManager {
       
       // Atualizar no banco
       this.sessionManager.updateInstanceStatus(instance.tenantId, 'credentials_expired');
+      
+      // Não tentar reconectar automaticamente - aguardar ação manual do usuário
+      console.log(`⏸️ Tenant ${instance.tenantId} aguardando reconexão manual via dashboard`);
     });
   }
 
@@ -348,7 +351,7 @@ class InstanceManager {
 
       // Evitar múltiplas reconexões concorrentes
       if (instance.isConnecting) {
-        console.log(`⏳ Instância ${tenantId} já está conectando, ignorando reconexão.`);
+    // console.log(`⏳ Instância ${tenantId} já está conectando, ignorando reconexão.`); // Otimizado para reduzir spam no console
         return;
       }
 
@@ -533,7 +536,7 @@ class InstanceManager {
         .filter(dirent => dirent.isDirectory())
         .map(dirent => dirent.name);
 
-      console.log(`🔍 Encontradas ${sessionDirs.length} sessões existentes:`, sessionDirs);
+    // console.log(`🔍 Encontradas ${sessionDirs.length} sessões existentes:`, sessionDirs); // Otimizado para reduzir spam no console
 
       const validSessions = [];
 

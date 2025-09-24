@@ -1,0 +1,36 @@
+# Configurações de Logging Otimizado - REDUZ SPAM NO TERMINAL
+# Copie estas configurações para seu arquivo .env
+
+LOG_LEVEL=warn
+LOG_AUTH=false
+LOG_TENANT=false
+LOG_WHATSAPP=false
+LOG_DATABASE=false
+LOG_CACHE=false
+LOG_WA_STATUS=false
+ENABLE_DEBUG=false
+ENABLE_VERBOSE_LOGS=false
+
+# Configurações de Performance
+NODE_ENV=production
+NODE_OPTIONS=--max-old-space-size=512
+
+# Configurações de Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Configurações de Cache
+CACHE_TTL=300
+
+# Configurações de Cron Jobs
+ENABLE_CRON=false
+
+# Configurações de WhatsApp
+START_WHATSAPP_BOT=false
+WHATSAPP_AUTO_START_TENANTS=
+
+# Configurações de Segurança
+SECURITY_ALERTS=false
+
+# Configurações de Health Check
+HEALTH_CHECK_INTERVAL=60000

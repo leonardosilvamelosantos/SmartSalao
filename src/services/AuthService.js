@@ -183,7 +183,7 @@ class AuthService {
    */
   async logApiUsage(tenantId, endpoint, userId = null) {
     // Para desenvolvimento, apenas log no console
-    console.log(`🔐 API Access: ${endpoint} by user ${userId} in tenant ${tenantId}`);
+    // console.log(`🔐 API Access: ${endpoint} by user ${userId} in tenant ${tenantId}`); // Otimizado - log removido para reduzir spam
   }
 
   /**

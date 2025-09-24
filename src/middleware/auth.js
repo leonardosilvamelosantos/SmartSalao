@@ -1,6 +1,7 @@
 const AuthService = require('../services/AuthService');
 const SecurityAlertService = require('../services/SecurityAlertService');
 const pool = require('../config/database');
+const logger = require('../config/logging');
 
 // Instanciar os serviços
 const authService = new AuthService();
@@ -14,15 +15,13 @@ const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-    // Log reduzido para evitar spam
-    if (req.url.includes('/api/dashboard') || req.url.includes('/api/agendamentos')) {
-      // Só logar para rotas críticas
-    } else {
-      console.log(`🔐 Auth middleware - URL: ${req.method} ${req.url}`);
-    }
+    // Log COMPLETAMENTE DESABILITADO para reduzir spam no terminal
+    // if (process.env.LOG_AUTH === 'true' && (req.url.includes('/api/dashboard') || req.url.includes('/api/agendamentos'))) {
+    //       // logger.debug(`Auth middleware - ${req.method} ${req.url}`); // REMOVIDO - spam logs
+    // }
 
     if (!token) {
-      console.log(`❌ Token não fornecido`);
+      logger.warn(`Token não fornecido para ${req.method} ${req.url}`);
       return res.status(401).json({
         success: false,
         message: 'Token de acesso não fornecido'
@@ -35,7 +34,7 @@ const authenticateToken = async (req, res, next) => {
 
     // Verificar se é um token de acesso
     if (decoded.type !== 'access') {
-      console.log(`❌ Tipo de token inválido:`, decoded.type);
+      logger.warn(`Tipo de token inválido: ${decoded.type} para ${req.url}`);
       return res.status(401).json({
         success: false,
         message: 'Tipo de token inválido'
@@ -56,10 +55,10 @@ const authenticateToken = async (req, res, next) => {
       permissions: decoded.permissions
     };
 
-    // Log reduzido - só mostrar para rotas importantes
-    if (!req.url.includes('/api/dashboard') && !req.url.includes('/api/agendamentos')) {
-      console.log(`✅ Usuário autenticado:`, req.user);
-    }
+    // Log COMPLETAMENTE DESABILITADO para reduzir spam no terminal
+    // if (process.env.LOG_AUTH === 'true' && (req.url.includes('/api/dashboard') || req.url.includes('/api/agendamentos'))) {
+    //       // logger.debug(`Usuário autenticado: ${req.user.id} (${req.user.email})`); // REMOVIDO - spam logs
+    // }
 
 
     // Se não há tenant específico na rota, usar o do token

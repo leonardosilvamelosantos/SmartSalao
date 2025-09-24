@@ -105,7 +105,7 @@ class AgendaPage {
         });
 
         const html = Object.entries(agendamentosPorData).map(([data, agendamentosDoDia]) => `
-            <div class="agenda-day mb-4">
+            <div class="agenda-day mb-4" data-date="${data}">
                 <div class="d-flex align-items-center mb-3">
                     <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
                         <i class="bi bi-calendar-day"></i>
@@ -488,7 +488,7 @@ class AgendaPage {
         if (!confirm('⚠️ ATENÇÃO: Esta ação é irreversível!\n\nTem certeza que deseja EXCLUIR permanentemente este agendamento?')) return;
 
         try {
-            const response = await this.app.apiRequest(`/api/agendamentos/${id}`, {
+            const response = await this.app.apiRequest(`/api/agendamentos/${id}/permanent`, {
                 method: 'DELETE'
             });
 
@@ -548,11 +548,38 @@ class AgendaPage {
 
     // Remover agendamento dos dados locais
     removeAgendamentoFromData(id) {
+        // Encontrar o agendamento antes de removê-lo para obter a data
+        const agendamentoRemovido = this.data.find(a => a.id_agendamento === id);
+        
+        // Remover dos dados
         this.data = this.data.filter(a => a.id_agendamento !== id);
+        
         // Remover elemento da UI
         const agendamentoElement = document.querySelector(`[data-agendamento-id="${id}"]`);
         if (agendamentoElement) {
             agendamentoElement.remove();
+        }
+        
+        // Verificar se a data ficou vazia e remover a seção da data se necessário
+        if (agendamentoRemovido) {
+            const dataObj = new Date(agendamentoRemovido.start_at);
+            const data = dataObj.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+            
+            // Contar quantos agendamentos restam para esta data
+            const agendamentosRestantes = this.data.filter(a => {
+                const agendamentoData = new Date(a.start_at);
+                const agendamentoDataStr = agendamentoData.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+                return agendamentoDataStr === data;
+            });
+            
+            // Se não há mais agendamentos para esta data, remover a seção da data
+            if (agendamentosRestantes.length === 0) {
+                const dataSection = document.querySelector(`[data-date="${data}"]`);
+                if (dataSection) {
+                    console.log(`🗑️ Removendo seção da data vazia: ${data}`);
+                    dataSection.remove();
+                }
+            }
         }
     }
 
@@ -581,7 +608,9 @@ class AgendaPage {
     // Atualizar dashboard se estiver visível
     atualizarDashboard() {
         if (window.dashboardManager) {
-            window.dashboardManager.loadMetrics();
+            // Atualizar apenas os próximos agendamentos (mais eficiente)
+            // Forçar atualização apenas quando necessário (criação/edição)
+            window.dashboardManager.updateProximosAgendamentos(true);
         }
     }
 

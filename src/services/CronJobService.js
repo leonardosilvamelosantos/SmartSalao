@@ -124,7 +124,7 @@ class CronJobService {
    */
   scheduleCacheCleanup() {
     const job = cron.schedule('0 4 * * *', async () => {
-      console.log('🗑️ Iniciando limpeza de cache...');
+    // console.log('🗑️ Iniciando limpeza de cache...'); // Otimizado para reduzir spam no console
 
       try {
         await this.cleanupExpiredCache();
@@ -142,7 +142,7 @@ class CronJobService {
       schedule: '0 4 * * *'
     });
 
-    console.log('📅 Job de limpeza de cache agendado para 04:00 (America/Sao_Paulo)');
+    // console.log('📅 Job de limpeza de cache agendado para 04:00 (America/Sao_Paulo)'); // Otimizado para reduzir spam no console
   }
 
   /**
@@ -150,7 +150,7 @@ class CronJobService {
    */
   scheduleAutomaticBackup() {
     const job = cron.schedule('0 3 * * *', async () => {
-      console.log('💾 Iniciando backup automático...');
+    // console.log('💾 Iniciando backup automático...'); // Otimizado para reduzir spam no console
 
       try {
         await this.performAutomaticBackup();
@@ -177,7 +177,7 @@ class CronJobService {
   async generateDailySlots() {
     const usuarios = await Usuario.query('SELECT * FROM usuarios', []);
 
-    console.log(`👥 Processando ${usuarios.length} usuários...`);
+    // console.log(`👥 Processando ${usuarios.length} usuários...`); // Otimizado para reduzir spam no console
 
     for (const usuario of usuarios) {
       try {
@@ -250,7 +250,7 @@ class CronJobService {
     const startDateUTC = this.convertLocalToUTC(startDateLocal, timezone);
     const endDateUTC = this.convertLocalToUTC(endDateLocal, timezone);
 
-    console.log(`📅 Processando dia ${date.toISOString().split('T')[0]}: ${dayConfig.inicio}-${dayConfig.fim} (${timezone})`);
+    // console.log(`📅 Processando dia ${date.toISOString().split('T')[0]}: ${dayConfig.inicio}-${dayConfig.fim} (${timezone})`); // Otimizado para reduzir spam no console
 
     // Gerar slots dentro do horário de funcionamento
     let currentTimeLocal = new Date(startDateLocal);
@@ -388,7 +388,7 @@ class CronJobService {
         WHERE expires_at < datetime('now')
       `);
 
-      console.log(`🗑️ ${result.length} registros de cache expirados removidos`);
+    // console.log(`🗑️ ${result.length} registros de cache expirados removidos`); // Otimizado para reduzir spam no console
       return result.length;
     } catch (error) {
       console.error('Erro ao limpar cache:', error);

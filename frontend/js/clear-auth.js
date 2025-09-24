@@ -4,7 +4,7 @@
 (function() {
     'use strict';
     
-    console.log('🔒 Verificando dados de autenticação na inicialização...');
+    // console.log('🔒 Verificando dados de autenticação na inicialização...'); // Otimizado - log removido
     
     // Verificar se há dados de autenticação válidos
     const token = localStorage.getItem('barbeiros-token');

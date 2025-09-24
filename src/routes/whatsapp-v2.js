@@ -18,11 +18,11 @@ router.get('/instances', async (req, res) => {
   try {
     // Obter o tenant do usuário logado
     const userTenantId = req.user?.tenant_id || req.user?.id_tenant;
-    console.log('🔍 Tenant do usuário logado:', userTenantId);
+    // console.log('🔍 Tenant do usuário logado:', userTenantId); // Otimizado - log removido
     
     // Buscar tenants filtrados por tenant do usuário
     const tenants = await whatsappServiceV2.getAllTenants(userTenantId);
-    console.log('📊 Tenants encontrados:', tenants);
+    // console.log('📊 Tenants encontrados:', tenants); // Otimizado - log removido
     
     res.json({
       success: true,

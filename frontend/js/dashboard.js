@@ -4,6 +4,15 @@ class DashboardManager {
     constructor(app) {
         this.app = app;
         this.chart = null;
+        this.agendamentos = [];
+        this.autoRefreshInterval = null;
+        this.refreshInterval = 60000; // 60 segundos (reduzido de 30s)
+        this.lastMetricsUpdate = 0;
+        this.lastAgendamentosUpdate = 0;
+        this.metricsUpdateDebounce = 5000; // 5 segundos (aumentado de 2s)
+        this.agendamentosUpdateDebounce = 3000; // 3 segundos
+        this.isInitialized = false;
+        this.lastAgendamentosData = null; // Cache dos dados
         this.init();
     }
 
@@ -13,6 +22,7 @@ class DashboardManager {
         this.initChart();
         this.setupEventListeners();
         this.addButtonFeedback();
+        this.startAutoRefresh();
     }
 
     // Inicializar gráfico
@@ -30,8 +40,8 @@ class DashboardManager {
                 datasets: [{
                     label: 'Agendamentos',
                     data: data.agendamentos,
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderColor: '#D4AF37',
+                    backgroundColor: 'rgba(212, 175, 55, 0.1)',
                     tension: 0.4,
                     fill: true
                 }, {
@@ -219,8 +229,14 @@ class DashboardManager {
             // Mostrar loading states
             this.showLoadingStates();
 
-            // Carregar métricas principais
-            await this.loadMetrics();
+            // Só carregar métricas na primeira vez
+            if (!this.isInitialized) {
+                // console.log('🚀 Primeira inicialização do dashboard...'); // Otimizado - log removido
+                await this.loadMetrics(true); // Forçar na primeira vez
+                this.isInitialized = true;
+            } else {
+                console.log('🔄 Dashboard já inicializado, pulando métricas...');
+            }
 
             // Carregar próximos agendamentos
             await this.loadProximosAgendamentos();
@@ -238,8 +254,19 @@ class DashboardManager {
     }
 
     // Carregar métricas principais
-    async loadMetrics() {
+    async loadMetrics(force = false) {
+        const now = Date.now();
+        
+        // Debounce: evitar muitas atualizações em pouco tempo
+        if (!force && now - this.lastMetricsUpdate < this.metricsUpdateDebounce) {
+            console.log('⏳ Métricas em debounce, ignorando atualização');
+            return;
+        }
+        
+        this.lastMetricsUpdate = now;
+        
         try {
+            // console.log('📊 Carregando métricas do dashboard...'); // Otimizado - log removido
             const response = await this.app.apiRequest('/api/dashboard');
 
             if (response.success && response.data) {
@@ -378,7 +405,7 @@ class DashboardManager {
         if (list) list.style.display = 'none';
     }
 
-    // Renderizar próximos agendamentos
+    // Renderizar próximos agendamentos com separação Hoje/Próximos
     renderProximosAgendamentos(agendamentos) {
         const loading = document.getElementById('agendamentos-loading');
         const empty = document.getElementById('agendamentos-empty');
@@ -391,6 +418,78 @@ class DashboardManager {
 
         if (!agendamentos || agendamentos.length === 0) {
             this.renderEmptyAgendamentos();
+            return;
+        }
+
+        // Separar agendamentos por data
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        const amanha = new Date(hoje);
+        amanha.setDate(amanha.getDate() + 1);
+
+        const agendamentosHoje = [];
+        const agendamentosProximos = [];
+
+        // console.log('📅 Data de hoje:', hoje.toISOString()); // Otimizado - log removido
+        // console.log('📅 Agendamentos recebidos:', agendamentos.length); // Otimizado - log removido
+
+        agendamentos.forEach(agendamento => {
+            const dataAgendamento = new Date(agendamento.start_at);
+            
+            // Comparar apenas a data (sem hora) usando toDateString()
+            const dataAgendamentoStr = dataAgendamento.toDateString();
+            const hojeStr = hoje.toDateString();
+            
+            // console.log('📅 Agendamento data string:', dataAgendamentoStr); // Otimizado - log removido
+            // console.log('📅 Hoje string:', hojeStr); // Otimizado - log removido
+            // console.log('📅 São iguais?', dataAgendamentoStr === hojeStr); // Otimizado - log removido
+
+            if (dataAgendamentoStr === hojeStr) {
+                agendamentosHoje.push(agendamento);
+                // console.log('✅ Adicionado a HOJE:', agendamento.cliente_nome); // Otimizado - log removido
+            } else {
+                agendamentosProximos.push(agendamento);
+                // console.log('✅ Adicionado a PRÓXIMOS:', agendamento.cliente_nome); // Otimizado - log removido
+            }
+        });
+
+        // console.log('📅 Agendamentos HOJE:', agendamentosHoje.length); // Otimizado - log removido
+        // console.log('📅 Agendamentos PRÓXIMOS:', agendamentosProximos.length); // Otimizado - log removido
+
+        // Renderizar seção "Hoje"
+        this.renderSecaoAgendamentos('agendamentos-hoje-list', agendamentosHoje, 'hoje-count');
+        
+        // Renderizar seção "Próximos"
+        this.renderSecaoAgendamentos('agendamentos-proximos-list', agendamentosProximos, 'proximos-count');
+
+        // Esconder seções vazias
+        this.ajustarVisibilidadeSecoes(agendamentosHoje.length, agendamentosProximos.length);
+    }
+
+    // Renderizar uma seção específica de agendamentos
+    renderSecaoAgendamentos(containerId, agendamentos, countId) {
+        const container = document.getElementById(containerId);
+        const countElement = document.getElementById(countId);
+
+        // console.log(`🎨 Renderizando seção ${containerId} com ${agendamentos.length} agendamentos`); // Otimizado - log removido
+
+        if (!container) {
+            console.error(`❌ Container ${containerId} não encontrado`);
+            return;
+        }
+
+        // Atualizar contador
+        if (countElement) {
+            countElement.textContent = agendamentos.length;
+            // console.log(`📊 Contador ${countId} atualizado para: ${agendamentos.length}`); // Otimizado - log removido
+        }
+
+        if (agendamentos.length === 0) {
+            const mensagem = containerId.includes('hoje') ? 
+                '<p class="text-muted small"><i class="bi bi-calendar-day me-1"></i>Nenhum agendamento para hoje</p>' :
+                '<p class="text-muted small"><i class="bi bi-calendar-week me-1"></i>Nenhum agendamento futuro</p>';
+            container.innerHTML = mensagem;
+            // console.log(`📝 Seção ${containerId} vazia - mostrando mensagem`); // Otimizado - log removido
             return;
         }
 
@@ -450,8 +549,25 @@ class DashboardManager {
             `;
         }).join('');
 
-        if (list) {
-            list.innerHTML = html;
+        container.innerHTML = html;
+    }
+
+    // Ajustar visibilidade das seções
+    ajustarVisibilidadeSecoes(hojeCount, proximosCount) {
+        const secaoHoje = document.getElementById('secao-agendamentos-hoje');
+        const secaoProximos = document.getElementById('agendamentos-proximos');
+
+        // console.log('👁️ Ajustando visibilidade - Hoje:', hojeCount, 'Próximos:', proximosCount); // Otimizado - log removido
+
+        // Sempre mostrar as seções, mas com conteúdo apropriado
+        if (secaoHoje) {
+            secaoHoje.style.display = 'block';
+            // console.log('✅ Seção HOJE sempre visível'); // Otimizado - log removido
+        }
+
+        if (secaoProximos) {
+            secaoProximos.style.display = 'block';
+            // console.log('✅ Seção PRÓXIMOS sempre visível'); // Otimizado - log removido
         }
     }
 
@@ -471,7 +587,7 @@ class DashboardManager {
     async loadTrendsChart() {
         // Implementar gráfico com Chart.js se disponível
         // Por enquanto, mostrar apenas informações textuais
-        console.log('Gráfico de tendências - TODO');
+        // console.log('Gráfico de tendências - TODO'); // Otimizado - log removido
     }
 
     // Dados simulados para desenvolvimento
@@ -563,6 +679,95 @@ class DashboardManager {
         } else {
             button.classList.remove('loading');
             button.disabled = false;
+        }
+    }
+
+    // Iniciar atualização automática
+    startAutoRefresh() {
+        // console.log('🔄 Iniciando atualização automática do dashboard...'); // Otimizado - log removido
+        
+        // Limpar intervalo anterior se existir
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+        }
+
+        // Configurar intervalo de atualização (apenas agendamentos, não métricas)
+        this.autoRefreshInterval = setInterval(() => {
+            console.log('🔄 Atualizando agendamentos automaticamente...');
+            this.refreshAgendamentos(false); // Não forçar, respeitar debounce
+        }, this.refreshInterval);
+
+        // Atualizar quando a página ganha foco (com debounce)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                console.log('🔄 Página ganhou foco, verificando se precisa atualizar...');
+                // Só atualizar se passou tempo suficiente
+                const now = Date.now();
+                if (now - this.lastAgendamentosUpdate > this.agendamentosUpdateDebounce) {
+                    this.refreshAgendamentos(false);
+                } else {
+                    console.log('⏳ Página ganhou foco mas agendamentos ainda em debounce');
+                }
+            }
+        });
+    }
+
+    // Parar atualização automática
+    stopAutoRefresh() {
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+            this.autoRefreshInterval = null;
+            console.log('⏹️ Atualização automática parada');
+        }
+    }
+
+    // Atualizar apenas os agendamentos
+    async refreshAgendamentos(force = false) {
+        const now = Date.now();
+        
+        // Debounce: evitar muitas atualizações em pouco tempo
+        if (!force && now - this.lastAgendamentosUpdate < this.agendamentosUpdateDebounce) {
+            console.log('⏳ Agendamentos em debounce, ignorando atualização');
+            return;
+        }
+        
+        this.lastAgendamentosUpdate = now;
+        
+        try {
+            console.log('🔄 Atualizando agendamentos...');
+            
+            // Buscar agendamentos confirmados
+            const response = await this.app.apiRequest('/api/agendamentos?status=confirmed&limit=3&sort=start_at');
+            
+            if (response.success && response.data) {
+                // Verificar se os dados mudaram
+                const dataChanged = JSON.stringify(response.data) !== JSON.stringify(this.lastAgendamentosData);
+                
+                if (dataChanged || force) {
+                    this.agendamentos = response.data;
+                    this.lastAgendamentosData = JSON.parse(JSON.stringify(response.data)); // Deep copy
+                    this.renderProximosAgendamentos(this.agendamentos);
+                    console.log('✅ Agendamentos atualizados:', this.agendamentos.length);
+                } else {
+                    console.log('📋 Dados dos agendamentos não mudaram, pulando renderização');
+                }
+            }
+        } catch (error) {
+            console.error('❌ Erro ao atualizar agendamentos:', error);
+        }
+    }
+
+    // Atualizar apenas os próximos agendamentos (chamado quando novo agendamento é criado)
+    async updateProximosAgendamentos(force = true) {
+        // Para criação de agendamentos, sempre forçar atualização
+        await this.refreshAgendamentos(force);
+    }
+
+    // Destruir o dashboard (limpar intervalos)
+    destroy() {
+        this.stopAutoRefresh();
+        if (this.chart) {
+            this.chart.destroy();
         }
     }
 }

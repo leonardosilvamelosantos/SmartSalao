@@ -1,0 +1,50 @@
+/* ===== LIGHT MODE - ÍCONES DOURADOS ===== */
+
+/* Light mode - Ícones dos cards em dourado */
+body:not(.dark-mode) .metric-icon {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(244, 228, 188, 0.1)) !important;
+    color: #D4AF37 !important;
+}
+
+body:not(.dark-mode) .metric-card:hover .metric-icon {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(244, 228, 188, 0.15)) !important;
+    color: #B8860B !important;
+}
+
+/* Light mode - Ícones específicos por card em dourado */
+body:not(.dark-mode) .metric-card:nth-child(1) .metric-icon {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(244, 228, 188, 0.1)) !important;
+    color: #D4AF37 !important;
+}
+
+body:not(.dark-mode) .metric-card:nth-child(2) .metric-icon {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(244, 228, 188, 0.1)) !important;
+    color: #D4AF37 !important;
+}
+
+body:not(.dark-mode) .metric-card:nth-child(3) .metric-icon {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(244, 228, 188, 0.1)) !important;
+    color: #D4AF37 !important;
+}
+
+body:not(.dark-mode) .metric-card:nth-child(4) .metric-icon {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(244, 228, 188, 0.1)) !important;
+    color: #D4AF37 !important;
+}
+
+/* Light mode - Ícones dos títulos das páginas em dourado */
+body:not(.dark-mode) .page-title-section .bi {
+    color: #D4AF37 !important;
+}
+
+/* Light mode - Ícones específicos dos títulos */
+body:not(.dark-mode) .bi-house-door,
+body:not(.dark-mode) .bi-wrench-adjustable,
+body:not(.dark-mode) .bi-calendar3 {
+    color: #D4AF37 !important;
+}
+
+/* Light mode - Botão "Esta semana" */
+body:not(.dark-mode) .btn-ghost .bi-calendar3 {
+    color: #D4AF37 !important;
+}

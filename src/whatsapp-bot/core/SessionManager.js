@@ -212,7 +212,7 @@ class SessionManager {
       );
 
       if (instanceResult.rows.length === 0) {
-        console.log(`⚠️ Instância não encontrada para tenant ${tenantId}`);
+        // console.log(`⚠️ Instância não encontrada para tenant ${tenantId}`); // Otimizado - log removido
         return;
       }
 

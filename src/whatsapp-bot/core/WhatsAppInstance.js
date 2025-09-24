@@ -86,7 +86,11 @@ class WhatsAppInstance extends EventEmitter {
 
       // Importar Baileys dinamicamente
       const baileys = await import('@whiskeysockets/baileys');
+      console.log('🔍 Baileys importado:', Object.keys(baileys));
+      
       const { makeWASocket, useMultiFileAuthState } = baileys;
+      console.log('🔍 makeWASocket:', typeof makeWASocket);
+      console.log('🔍 useMultiFileAuthState:', typeof useMultiFileAuthState);
 
       // Criar diretório de sessão isolado
       if (!fs.existsSync(this.authDir)) {
@@ -123,20 +127,41 @@ class WhatsAppInstance extends EventEmitter {
           };
         },
         logger: {
-          level: 'error', // Mudar para error para ver logs importantes
+          level: 'silent', // Reduzir logs para evitar spam
           child: () => ({ 
-            level: 'error',
+            level: 'silent',
             error: (msg) => console.error(`[Baileys-${this.tenantId}]`, msg),
             warn: (msg) => console.warn(`[Baileys-${this.tenantId}]`, msg),
-            info: () => {},
-            debug: () => {},
+            info: (msg) => {}, // Silenciar logs info
+            debug: (msg) => {}, // Silenciar logs debug
             trace: () => {}
           }),
           error: (msg) => console.error(`[Baileys-${this.tenantId}]`, msg),
           warn: (msg) => console.warn(`[Baileys-${this.tenantId}]`, msg),
-          info: () => {},
-          debug: () => {},
+          info: (msg) => {}, // Silenciar logs info
+          debug: (msg) => {}, // Silenciar logs debug
           trace: () => {}
+        },
+        
+        // Configurações de buffer para evitar timeout
+        bufferTimeoutMs: 60000, // 60 segundos
+        maxMsgRetryCount: 3,
+        retryRequestDelayMs: 2000,
+        
+        // Configurações de reconexão desabilitadas
+        shouldReconnect: false,
+        maxReconnectAttempts: 0,
+        
+        // Configurações adicionais para estabilidade
+        keepAliveIntervalMs: 30000,
+        connectTimeoutMs: 60000,
+        defaultQueryTimeoutMs: 60000,
+        
+        // Configurações de WebSocket
+        ws: {
+          timeout: 60000,
+          keepAlive: true,
+          keepAliveInterval: 30000
         }
       });
 
@@ -144,6 +169,20 @@ class WhatsAppInstance extends EventEmitter {
       this.setupEvents(saveCreds);
 
       console.log(`✅ Instância WhatsApp criada para tenant: ${this.tenantId}`);
+      console.log(`🔍 Socket criado: ${!!this.sock}`);
+      console.log(`🔍 Auth state: ${!!state}`);
+      console.log(`🔍 Save creds: ${!!saveCreds}`);
+      
+      // Aguardar um pouco para ver se o QR é gerado
+      console.log(`⏳ Aguardando geração do QR Code...`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Se não gerou QR Code, tentar forçar
+      if (!this.qrCode) {
+        console.log(`🔄 QR Code não gerado automaticamente, tentando forçar...`);
+        await this.forceQRGeneration();
+      }
+      
       return { success: true, tenantId: this.tenantId };
 
     } catch (error) {
@@ -163,11 +202,16 @@ class WhatsAppInstance extends EventEmitter {
       try {
         const { connection, lastDisconnect, qr } = update;
 
+        console.log(`🔍 connection.update recebido para tenant ${this.tenantId}:`, {
+          connection,
+          hasQr: !!qr,
+          qrLength: qr ? qr.length : 0,
+          lastDisconnect: !!lastDisconnect
+        });
+
         // Logar transições de estado apenas quando mudarem
         if (connection !== this.lastLoggedConnection) {
-          if (process.env.LOG_WA_STATUS === 'true') {
-            console.log(`🔄 connection.update → ${connection} | tenant ${this.tenantId}`);
-          }
+          console.log(`🔄 connection.update → ${connection} | tenant ${this.tenantId}`);
           this.lastLoggedConnection = connection;
         }
 
@@ -215,6 +259,10 @@ class WhatsAppInstance extends EventEmitter {
             this.clearExpiredSession();
             console.log(`🧹 Sessão limpa para tenant ${this.tenantId}. Use o dashboard para reconectar via QR Code.`);
             this.emit('credentials_expired', { statusCode, errorMessage });
+            
+            // Não tentar reconectar automaticamente - aguardar ação manual
+            console.log(`⏸️ Tenant ${this.tenantId} aguardando reconexão manual via dashboard`);
+            return;
           } else if (statusCode === 440) {
             console.log(`⚠️ Erro 440 (Stream Errored) detectado para tenant ${this.tenantId}. Tentando reconexão com backoff.`);
             this.scheduleReconnect(440);
@@ -735,6 +783,33 @@ class WhatsAppInstance extends EventEmitter {
   }
 
   /**
+   * Forçar geração do QR Code
+   * @returns {Promise<void>}
+   */
+  async forceQRGeneration() {
+    try {
+      if (!this.sock) {
+        console.log(`❌ Socket não disponível para gerar QR Code para tenant ${this.tenantId}`);
+        return;
+      }
+
+      // Forçar desconexão e reconexão para gerar QR Code
+      if (this.sock.user) {
+        console.log(`🔄 Forçando desconexão para gerar QR Code para tenant ${this.tenantId}`);
+        await this.sock.logout();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      // Tentar reconectar
+      console.log(`🔄 Tentando reconectar para gerar QR Code para tenant ${this.tenantId}`);
+      await this.sock.connect();
+      
+    } catch (error) {
+      console.log(`❌ Erro ao forçar geração do QR Code para tenant ${this.tenantId}:`, error.message);
+    }
+  }
+
+  /**
    * Limpar sessão expirada
    * @returns {Promise<void>}
    */
@@ -742,7 +817,14 @@ class WhatsAppInstance extends EventEmitter {
     try {
       // Desconectar socket se existir
       if (this.sock) {
-        await this.sock.logout();
+        try {
+          await this.sock.logout();
+        } catch (error) {
+          // Ignorar erro de logout se a conexão já foi fechada
+          if (!error.message.includes('Connection Closed')) {
+            console.log(`❌ Erro ao limpar sessão expirada do tenant ${this.tenantId}:`, error.message);
+          }
+        }
         this.sock = null;
       }
 
@@ -763,6 +845,12 @@ class WhatsAppInstance extends EventEmitter {
       if (this.reconnectTimeout) {
         clearTimeout(this.reconnectTimeout);
         this.reconnectTimeout = null;
+      }
+      
+      // Limpar timers de reconexão
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = null;
       }
 
     } catch (error) {

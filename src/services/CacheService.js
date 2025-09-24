@@ -274,7 +274,7 @@ class CacheService {
     }
 
     if (cleaned > 0) {
-      console.log(`🧹 Cache: ${cleaned} chaves expiradas removidas`);
+    // console.log(`🧹 Cache: ${cleaned} chaves expiradas removidas`); // Otimizado para reduzir spam no console
     }
   }
 

@@ -9,18 +9,18 @@ class ThemeManager {
         this.init();
     }
 
-    init() {
-        // Aplicar tema salvo sem transição inicial
-        this.applyTheme(this.currentTheme, false);
+        init() {
+            // Aplicar tema salvo sem transição inicial
+            this.applyTheme(this.currentTheme, false);
 
-        // Event listener para o botão de toggle com debounce
-        if (this.themeToggle) {
-            this.themeToggle.addEventListener('click', () => this.debouncedToggleTheme());
+            // Event listener para o botão de toggle com debounce
+            if (this.themeToggle) {
+                this.themeToggle.addEventListener('click', () => this.debouncedToggleTheme());
+            }
+
+            // Atualizar ícones (toggle e marca)
+            this.updateToggleIcon();
         }
-
-        // Atualizar ícone do botão
-        this.updateToggleIcon();
-    }
 
     getSavedTheme() {
         return localStorage.getItem('barbeiros-theme');
@@ -90,19 +90,58 @@ class ThemeManager {
         this.animateToggleButton();
     }
 
-    updateToggleIcon() {
-        if (!this.themeToggle) return;
+        updateToggleIcon() {
+            if (!this.themeToggle) return;
 
-        const icon = this.themeToggle.querySelector('i');
+            const icon = this.themeToggle.querySelector('i');
 
-        if (this.currentTheme === 'dark') {
-            icon.className = 'bi bi-moon-fill';
-            this.themeToggle.setAttribute('title', 'Mudar para tema claro');
-        } else {
-            icon.className = 'bi bi-sun-fill';
-            this.themeToggle.setAttribute('title', 'Mudar para tema escuro');
+            // Animação de saída
+            icon.style.opacity = '0';
+            icon.style.transform = 'scale(0.8) rotate(180deg)';
+
+            setTimeout(() => {
+                if (this.currentTheme === 'dark') {
+                    // Dark mode = Barbearia (poste de barbeiro) - TEMA ATUAL
+                    icon.className = 'theme-current';
+                    icon.innerHTML = '💈'; // Emoji do poste de barbeiro
+                    icon.setAttribute('title', 'Barbearia (Tema Atual) - Clique para Salão Feminino');
+                } else {
+                    // Light mode = Salão Feminino (unhas) - TEMA ATUAL
+                    icon.className = 'theme-current';
+                    icon.innerHTML = '💅'; // Emoji de unhas
+                    icon.setAttribute('title', 'Salão Feminino (Tema Atual) - Clique para Barbearia');
+                }
+
+                // Animação de entrada
+                icon.style.opacity = '1';
+                icon.style.transform = 'scale(1) rotate(0deg)';
+            }, 200);
+
+            // Atualizar também o ícone da marca
+            this.updateBrandIcon();
         }
-    }
+
+        updateBrandIcon() {
+            const brandLogo = document.getElementById('brand-logo');
+            if (brandLogo) {
+                // Animação de saída
+                brandLogo.style.opacity = '0';
+                brandLogo.style.transform = 'scale(0.8) rotate(180deg)';
+
+                setTimeout(() => {
+                    // A logo permanece a mesma, apenas atualizamos o título
+                    if (this.currentTheme === 'dark') {
+                        brandLogo.setAttribute('title', 'Barbearia - Tema Atual');
+                    } else {
+                        brandLogo.setAttribute('title', 'Salão Feminino - Tema Atual');
+                    }
+
+                    // Animação de entrada
+                    brandLogo.style.opacity = '1';
+                    brandLogo.style.transform = 'scale(1) rotate(0deg)';
+                }, 200);
+            }
+        }
 
     animateToggleButton() {
         if (!this.themeToggle) return;
@@ -160,73 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// CSS otimizado para performance de temas
-const style = document.createElement('style');
-style.textContent = `
-    /* Otimizações de performance para mudanças de tema */
-    :root {
-        /* Variáveis CSS para transições mais eficientes */
-        --theme-transition-duration: 0.2s;
-        --theme-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* Classe para controlar transições durante mudança de tema */
-    .theme-transitioning * {
-        transition: background-color var(--theme-transition-duration) var(--theme-transition-timing),
-                   color var(--theme-transition-duration) var(--theme-transition-timing),
-                   border-color var(--theme-transition-duration) var(--theme-transition-timing),
-                   box-shadow var(--theme-transition-duration) var(--theme-transition-timing) !important;
-    }
-
-    /* Desabilitar transições para elementos que não precisam */
-    .theme-transitioning img,
-    .theme-transitioning svg,
-    .theme-transitioning canvas,
-    .theme-transitioning video {
-        transition: none !important;
-    }
-
-    /* Animação do botão de toggle otimizada */
-    .theme-toggle-animate {
-        animation: themeTogglePulse 0.3s var(--theme-transition-timing);
-        will-change: transform;
-    }
-
-    @keyframes themeTogglePulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-    }
-
-    /* Otimizações para elementos que mudam frequentemente */
-    .navbar,
-    .sidebar,
-    .card,
-    .modal-content,
-    .btn,
-    .form-control {
-        will-change: background-color, color, border-color;
-    }
-
-    /* Reduzir reflow/repaint durante transições */
-    .theme-transitioning {
-        contain: layout style paint;
-    }
-
-    /* Transições mais suaves para elementos específicos */
-    body {
-        transition: background-color var(--theme-transition-duration) var(--theme-transition-timing);
-    }
-
-    /* Otimização para elementos com muitas propriedades */
-    .metric-card,
-    .appointment-item,
-    .table {
-        transition: background-color var(--theme-transition-duration) var(--theme-transition-timing),
-                   border-color var(--theme-transition-duration) var(--theme-transition-timing);
-    }
-`;
-document.head.appendChild(style);
+    // CSS otimizado movido para main.css para melhor performance
 
 // Exportar para uso em outros arquivos
 if (typeof module !== 'undefined' && module.exports) {

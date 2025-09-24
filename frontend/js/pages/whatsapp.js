@@ -1,5 +1,5 @@
 // Página WhatsApp - Gerenciamento de Bot Multi-Tenant
-console.log('🔧 whatsapp.js carregado');
+// console.log('🔧 whatsapp.js carregado'); // Otimizado - log removido
 
 class WhatsAppPage {
     constructor() {
@@ -627,12 +627,18 @@ class WhatsAppPage {
             statusText.textContent = 'Conectando...';
             statusText.className = 'text-warning';
             
-            // Mostrar botões apropriados
-            this.hideButtons(['connect', 'disconnect', 'restart', 'logout']);
+            // Mostrar botão conectar para permitir nova tentativa se necessário
+            this.showButtons(['connect']);
+            this.hideButtons(['disconnect', 'restart', 'logout']);
             
             // Esconder informações da conexão
             connectionInfo.style.display = 'none';
-            qrSection.style.display = 'none';
+            
+            // Mostrar QR code se disponível
+            if (status.qrCode || status.pairingCode) {
+                qrSection.style.display = 'block';
+                this.showQRCode(status.qrCode || status.pairingCode);
+            }
 
         } else {
             statusIcon.innerHTML = '<i class="fas fa-circle text-danger"></i>';
@@ -818,43 +824,29 @@ class WhatsAppPage {
     }
 
     // Mostrar QR Code ou Pairing Code usando polling no endpoint /status
-    async showQRCode() {
+    async showQRCode(qrCodeData = null) {
         if (!this.currentTenant) return;
 
         try {
-            console.log(`📱 Aguardando QR Code/Pairing Code para tenant ${this.currentTenant}...`);
+            console.log(`📱 Exibindo QR Code para tenant ${this.currentTenant}...`);
+            
+            // Se já temos o QR code, usar diretamente
+            if (qrCodeData) {
+                console.log('✅ QR Code já disponível, exibindo diretamente');
+                this.displayQRCode(qrCodeData);
+                return;
+            }
             
             // Mostrar loading
             document.getElementById('qrLoading').innerHTML =
                 '<i class="fas fa-clock fa-2x text-warning"></i><br><p>Aguardando código de conexão...</p>';
             
             // Iniciar polling para obter código do endpoint /status
-            const connectionCode = await this.waitForQRCode(this.currentTenant, 20); // 20 tentativas máximo (1 minuto)
+            const connectionCode = await this.waitForQRCode(this.currentTenant, 5); // 5 tentativas máximo (15 segundos)
             
             if (connectionCode) {
                 console.log('✅ Código de conexão recebido:', connectionCode);
-                
-                // Verificar se é QR Code (base64) ou Pairing Code (numérico)
-                if (connectionCode.startsWith('data:image/') || 
-                   (connectionCode.length > 100 && /^[A-Za-z0-9+/=]+$/.test(connectionCode))) {
-                    // É QR Code (base64 ou dados encoded)
-                    console.log('🎨 QR Code detectado, gerando imagem...');
-                    this.generateQRCodeImage(connectionCode);
-                    document.getElementById('qrSection').style.display = 'block';
-                    document.getElementById('pairingSection').style.display = 'none';
-                } else if (/^\d+$/.test(connectionCode) && connectionCode.length >= 4 && connectionCode.length <= 12) {
-                    // É Pairing Code (numérico com comprimento típico)
-                    console.log('🔢 Exibindo Pairing Code:', connectionCode);
-                    this.showPairingCode(connectionCode);
-                    document.getElementById('qrSection').style.display = 'none';
-                    document.getElementById('pairingSection').style.display = 'block';
-                } else {
-                    // Formato não reconhecido - tratar como texto
-                    console.log('📝 Formato não reconhecido, exibindo como texto:', connectionCode);
-                    this.showPairingCode(connectionCode);
-                    document.getElementById('qrSection').style.display = 'none';
-                    document.getElementById('pairingSection').style.display = 'block';
-                }
+                this.displayQRCode(connectionCode);
             } else {
                 console.error('❌ Código de conexão não gerado a tempo');
                 document.getElementById('qrLoading').innerHTML =
@@ -870,8 +862,35 @@ class WhatsAppPage {
         }
     }
 
+    // Exibir QR Code ou Pairing Code
+    displayQRCode(connectionCode) {
+        console.log('🎨 Exibindo código de conexão:', connectionCode);
+        
+        // Verificar se é QR Code (base64) ou Pairing Code (numérico)
+        if (connectionCode.startsWith('data:image/') || 
+           (connectionCode.length > 100 && /^[A-Za-z0-9+/=]+$/.test(connectionCode))) {
+            // É QR Code (base64 ou dados encoded)
+            console.log('🎨 QR Code detectado, gerando imagem...');
+            this.generateQRCodeImage(connectionCode);
+            document.getElementById('qrSection').style.display = 'block';
+            document.getElementById('pairingSection').style.display = 'none';
+        } else if (/^\d+$/.test(connectionCode) && connectionCode.length >= 4 && connectionCode.length <= 12) {
+            // É Pairing Code (numérico com comprimento típico)
+            console.log('🔢 Exibindo Pairing Code:', connectionCode);
+            this.showPairingCode(connectionCode);
+            document.getElementById('qrSection').style.display = 'none';
+            document.getElementById('pairingSection').style.display = 'block';
+        } else {
+            // Formato não reconhecido - tratar como texto
+            console.log('📝 Formato não reconhecido, exibindo como texto:', connectionCode);
+            this.showPairingCode(connectionCode);
+            document.getElementById('qrSection').style.display = 'none';
+            document.getElementById('pairingSection').style.display = 'block';
+        }
+    }
+
     // Aguardar QR Code ou Pairing Code ficar disponível no endpoint /status
-    async waitForQRCode(tenantId, maxAttempts = 20) {
+    async waitForQRCode(tenantId, maxAttempts = 5) {
         let attempts = 0;
         let qrCode = null;
         let pairingCode = null;

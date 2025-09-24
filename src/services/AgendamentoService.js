@@ -115,13 +115,31 @@ class AgendamentoService {
         cliente_nome: clienteNome
       });
       
+      // Verificar configurações de auto confirmação
+      let statusInicial = 'pending';
+      try {
+        const ConfiguracaoService = require('./ConfiguracaoService');
+        const configService = new ConfiguracaoService();
+        const configuracoes = await configService.getConfiguracoes(userId);
+        
+        if (configuracoes && configuracoes.auto_confirm_whatsapp) {
+          console.log('🤖 Auto confirmação ativa - agendamento será confirmado automaticamente');
+          statusInicial = 'confirmed';
+        } else {
+          console.log('⏳ Auto confirmação inativa - agendamento ficará pendente');
+        }
+      } catch (error) {
+        console.log('⚠️ Erro ao verificar configurações de auto confirmação:', error.message);
+        // Em caso de erro, manter como pending
+      }
+
       const novoAgendamento = {
         id_usuario: userId,
         id_cliente: clienteIdFinal,
         id_servico,
         start_at,
         end_at: end_at.toISOString(),
-        status: 'pending',
+        status: statusInicial,
         observacoes: observacoes || '',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -328,6 +346,37 @@ class AgendamentoService {
       return { success: true, message: 'Agendamento cancelado com sucesso' };
     } catch (error) {
       console.error('❌ Erro ao cancelar agendamento:', error);
+      console.error('Stack trace:', error.stack);
+      return { success: false, message: 'Erro interno do servidor' };
+    }
+  }
+
+  /**
+   * Excluir agendamento permanentemente
+   * @param {number} id - ID do agendamento
+   * @param {number} userId - ID do usuário
+   * @returns {Object} - Resultado da operação
+   */
+  async excluirAgendamento(id, userId) {
+    try {
+      console.log(`🗑️ Excluindo permanentemente agendamento ID: ${id} para usuário: ${userId}`);
+      
+      // Verificar se agendamento pertence ao usuário
+      const agendamento = await this.agendamentoModel.findById(id);
+      console.log(`🔍 Agendamento encontrado:`, agendamento);
+      
+      if (!agendamento || agendamento.id_usuario !== userId) {
+        console.log(`❌ Agendamento não encontrado ou não pertence ao usuário`);
+        return { success: false, message: 'Agendamento não encontrado' };
+      }
+
+      console.log(`✅ Excluindo agendamento permanentemente`);
+      await this.agendamentoModel.delete(id);
+
+      console.log(`✅ Agendamento excluído permanentemente`);
+      return { success: true, message: 'Agendamento excluído permanentemente' };
+    } catch (error) {
+      console.error('❌ Erro ao excluir agendamento:', error);
       console.error('Stack trace:', error.stack);
       return { success: false, message: 'Erro interno do servidor' };
     }

@@ -37,7 +37,7 @@ class AnimatedCardsManager {
     this.bindEvents();
     
     this.isInitialized = true;
-    console.log('🎨 AnimatedCardsManager inicializado');
+    // console.log('🎨 AnimatedCardsManager inicializado'); // Otimizado - log removido
   }
 
   /**

@@ -17,7 +17,7 @@ const ApiClient = (() => {
   }
   
   const baseURL = getBaseURL();
-  console.log('🌐 API Base URL:', baseURL);
+  // console.log('🌐 API Base URL:', baseURL); // Otimizado - log removido
 
   function getToken() {
     return localStorage.getItem('barbeiros-token');
@@ -31,17 +31,17 @@ const ApiClient = (() => {
       if (token) finalHeaders['Authorization'] = `Bearer ${token}`;
     }
     
-    console.log(`🌐 [API] ${method} ${url}`);
-    console.log(`📱 [API] Headers:`, finalHeaders);
-    if (body) console.log(`📦 [API] Body:`, body);
+    // console.log(`🌐 [API] ${method} ${url}`); // Otimizado - log removido
+    // console.log(`📱 [API] Headers:`, finalHeaders); // Otimizado - log removido
+    // if (body) console.log(`📦 [API] Body:`, body); // Otimizado - log removido
     
     try {
       const res = await fetch(url, { method, headers: finalHeaders, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
       let data = {};
       try { data = await res.json(); } catch (_) {}
       
-      console.log(`📊 [API] Response: ${res.status} ${res.statusText}`);
-      console.log(`📄 [API] Data:`, data);
+      // console.log(`📊 [API] Response: ${res.status} ${res.statusText}`); // Otimizado - log removido
+      // console.log(`📄 [API] Data:`, data); // Otimizado - log removido
       
       if (!res.ok) {
         if (res.status === 401) {

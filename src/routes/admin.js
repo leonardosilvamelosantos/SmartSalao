@@ -357,7 +357,7 @@ router.post('/users', authenticateToken, async (req, res) => {
         const tenantResult = await provisioningService.provisionTenant(tenantData);
         tenantId = tenantResult.tenant.id_tenant;
         
-        console.log(`✅ Tenant ${tenantId} criado automaticamente para usuário ${nome}`);
+        // console.log(`✅ Tenant ${tenantId} criado automaticamente para usuário ${nome}`); // Otimizado - log removido para reduzir spam
       } catch (tenantError) {
         console.error('Erro ao criar tenant automaticamente:', tenantError);
         // Continuar com tenant padrão se falhar
@@ -975,6 +975,7 @@ router.post('/:barberId/system/cache/clear',
     }
   }
 );
+
 
 // ====================
 // PÁGINA HTML DO DASHBOARD

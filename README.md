@@ -1,6 +1,36 @@
-# Sistema de Agendamento – Barbearias/Salões (SQLite Dev)
+# 🚀 Sistema de Agendamento Multi-Tenant
 
-Sistema completo para agendamento de serviços, com backend em Node.js + Express e frontend em HTML/CSS/JS. Ambiente de desenvolvimento usa SQLite (arquivo único). PostgreSQL e API v2 permanecem como trilha futura.
+Sistema completo para agendamento de serviços, com backend em Node.js + Express e frontend em HTML/CSS/JS. **Agora funcionando com PostgreSQL em produção!**
+
+## ✅ Status Atual - FUNCIONANDO
+- ✅ **Login funcionando** com PostgreSQL
+- ✅ **Tabela usuarios criada** e funcionando  
+- ✅ **Usuário admin configurado**
+- ✅ **Servidor rodando** na porta 3000
+
+## 🔑 Acesso Rápido
+- **URL:** http://localhost:3000/frontend
+- **Email:** admin@teste.com
+- **Senha:** 123456
+
+## 🚀 Início Rápido
+
+### Windows
+```powershell
+.\start-production.ps1
+```
+
+### Linux/Mac
+```bash
+./start-production.sh
+```
+
+### Manual
+```bash
+npm run start:postgres
+```
+
+---
 
 ## 🚀 Funcionalidades Implementadas
 

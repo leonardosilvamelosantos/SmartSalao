@@ -6,6 +6,7 @@ const dbConfig = require('../config/database');
 const { pool } = dbConfig;
 const CacheService = require('../services/CacheService');
 const AuthService = require('../services/AuthService');
+const logger = require('../config/logging');
 
 class TenantMiddleware {
   constructor() {
@@ -30,7 +31,7 @@ class TenantMiddleware {
       const { tenant_id, schema, plan, limits } = req.user;
 
       if (!tenant_id) {
-        console.warn('TenantMiddleware: tenant_id ausente no token do usuário');
+        logger.warn('TenantMiddleware: tenant_id ausente no token do usuário');
       }
 
       // O tenant já foi verificado no AuthService.verifyToken()
@@ -53,11 +54,11 @@ class TenantMiddleware {
         req.tenantSchema = schema;
       }
 
-      // Configurar contexto para auditoria (SQLite não suporta SET)
-      if (req.user.id) {
-        // Apenas armazenamos no contexto da requisição (SQLite não suporta SET)
-        console.log(`🔐 Tenant ${tenant_id} - User ${req.user.id} autenticado`);
-      }
+      // Log COMPLETAMENTE DESABILITADO para reduzir spam no terminal
+      // if (req.user.id && process.env.LOG_TENANT === 'true') {
+      //   // Apenas armazenamos no contexto da requisição (SQLite não suporta SET)
+      //       // logger.debug(`Tenant ${tenant_id} - User ${req.user.id} autenticado`); // REMOVIDO - spam logs
+      // }
 
       next();
 
@@ -78,7 +79,7 @@ class TenantMiddleware {
       try {
         // Em desenvolvimento, pular verificação de limites
         if (process.env.NODE_ENV === 'development') {
-          console.log(`🔓 [DEV] Verificação de limites desabilitada para ${resourceType}`);
+          logger.debug(`[DEV] Verificação de limites desabilitada para ${resourceType}`);
           return next();
         }
 
@@ -262,7 +263,7 @@ class TenantMiddleware {
         // Verificar se está em desenvolvimento
         const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'dev';
         if (isDevelopment) {
-          console.log(`🔓 [DEV] Rate limiting desabilitado para ${req.originalUrl}`);
+          logger.debug(`[DEV] Rate limiting desabilitado para ${req.originalUrl}`);
           return next();
         }
 

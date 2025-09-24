@@ -132,7 +132,7 @@ class BaseModel {
    * Buscar registro por ID
    */
   async findById(id, tenantId = null, schema = null) {
-    console.log(`🔍 BaseModel.findById: ${this.tableName} - ID: ${id}, tenantId: ${tenantId}, schema: ${schema}`);
+    // console.log(`🔍 BaseModel.findById: ${this.tableName} - ID: ${id}, tenantId: ${tenantId}, schema: ${schema}`); // Otimizado - log removido
     
     let tableName = this.tableName;
     if (schema) {
@@ -147,11 +147,11 @@ class BaseModel {
       values.push(tenantId);
     }
 
-    console.log(`🔍 Query: ${query}`);
-    console.log(`🔍 Values:`, values);
+    // console.log(`🔍 Query: ${query}`); // Otimizado - log removido
+    // console.log(`🔍 Values:`, values); // Otimizado - log removido
 
     const result = await pool.query(query, values);
-    console.log(`🔍 Resultado:`, result.rows[0] || null);
+    // console.log(`🔍 Resultado:`, result.rows[0] || null); // Otimizado - log removido
     
     return result.rows[0] || null;
   }

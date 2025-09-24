@@ -90,7 +90,7 @@
     
     // Função principal de inicialização de segurança
     function initSecurity() {
-        console.log('🔒 Inicializando sistema de segurança...');
+        // console.log('🔒 Inicializando sistema de segurança...'); // Otimizado - log removido
         
         // Verificar tokens inválidos
         checkForInvalidTokens();

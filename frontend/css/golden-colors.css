@@ -1,0 +1,866 @@
+/* ===== CORES DOURADAS PARA CARDS DE AGENDAMENTOS ===== */
+
+:root {
+  /* Cores Douradas */
+  --gold-50: #fffbeb;
+  --gold-100: #fef3c7;
+  --gold-200: #fde68a;
+  --gold-300: #fcd34d;
+  --gold-400: #fbbf24;
+  --gold-500: #f59e0b;
+  --gold-600: #d97706;
+  --gold-700: #b45309;
+  --gold-800: #92400e;
+  --gold-900: #78350f;
+}
+
+/* ===== CARDS DE AGENDAMENTOS - CORES DOURADAS ===== */
+
+/* Bordas dos cards de agendamentos em dourado */
+.agenda-item {
+  border-left: 4px solid var(--gold-500) !important;
+}
+
+.agenda-item:hover {
+  border-left-color: var(--gold-600) !important;
+}
+
+/* Botões dos cards de agendamentos em dourado */
+.agenda-item .btn-outline-primary {
+  color: var(--gold-600) !important;
+  border-color: var(--gold-300) !important;
+}
+
+.agenda-item .btn-outline-primary:hover {
+  background-color: var(--gold-500) !important;
+  border-color: var(--gold-500) !important;
+  color: white !important;
+}
+
+/* Badges dos cards de agendamentos em dourado */
+.agenda-item .badge.bg-primary {
+  background-color: var(--gold-500) !important;
+  color: white !important;
+}
+
+/* Títulos das seções em dourado */
+.agenda-day h5 {
+  color: var(--gold-600) !important;
+}
+
+.agenda-day h5 .bi {
+  color: var(--gold-500) !important;
+}
+
+/* Botões de ação dos cards em dourado */
+.agenda-item .btn-group .btn-outline-primary {
+  color: var(--gold-600) !important;
+  border-color: var(--gold-300) !important;
+}
+
+.agenda-item .btn-group .btn-outline-primary:hover {
+  background-color: var(--gold-500) !important;
+  border-color: var(--gold-500) !important;
+  color: white !important;
+}
+
+/* ===== CARDS ANIMADOS - CORES DOURADAS ===== */
+
+/* Bordas dos cards animados em dourado */
+.agenda-item.animated-card {
+  border-left: 4px solid var(--gold-500) !important;
+}
+
+.agenda-item.animated-card:hover {
+  border-left-color: var(--gold-600) !important;
+}
+
+/* Botões dos cards animados em dourado */
+.agenda-item.animated-card .btn-outline-primary {
+  color: var(--gold-600) !important;
+  border-color: var(--gold-300) !important;
+}
+
+.agenda-item.animated-card .btn-outline-primary:hover {
+  background-color: var(--gold-500) !important;
+  border-color: var(--gold-500) !important;
+  color: white !important;
+}
+
+/* ===== MODO ESCURO - CORES DOURADAS ===== */
+
+body.dark-mode {
+  --gold-50: #78350f;
+  --gold-100: #92400e;
+  --gold-200: #b45309;
+  --gold-300: #d97706;
+  --gold-400: #f59e0b;
+  --gold-500: #fbbf24;
+  --gold-600: #fcd34d;
+  --gold-700: #fde68a;
+  --gold-800: #fef3c7;
+  --gold-900: #fffbeb;
+}
+
+/* Bordas dos cards em modo escuro - CORES PRIMÁRIAS */
+body.dark-mode .agenda-item {
+  border-left-color: var(--primary-500) !important;
+}
+
+body.dark-mode .agenda-item:hover {
+  border-left-color: var(--primary-400) !important;
+}
+
+/* Botões em modo escuro - CORES PRIMÁRIAS */
+body.dark-mode .agenda-item .btn-outline-primary {
+  color: var(--primary-400) !important;
+  border-color: var(--primary-500) !important;
+}
+
+body.dark-mode .agenda-item .btn-outline-primary:hover {
+  background-color: var(--primary-500) !important;
+  border-color: var(--primary-400) !important;
+  color: white !important;
+}
+
+/* Títulos em modo escuro - CORES PRIMÁRIAS */
+body.dark-mode .agenda-day h5 {
+  color: var(--primary-400) !important;
+}
+
+body.dark-mode .agenda-day h5 .bi {
+  color: var(--primary-500) !important;
+}
+
+/* ===== ELEMENTOS GERAIS COM CORES DOURADAS ===== */
+
+/* Botões outline-primary em dourado */
+.btn-outline-primary {
+  color: var(--gold-600) !important;
+  border-color: var(--gold-300) !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--gold-500) !important;
+  border-color: var(--gold-500) !important;
+  color: white !important;
+}
+
+/* Texto primary em dourado */
+.text-primary {
+  color: var(--gold-600) !important;
+}
+
+/* Background primary em dourado */
+.bg-primary {
+  background-color: var(--gold-500) !important;
+  color: white !important;
+}
+
+/* Badges primary em dourado */
+.badge.bg-primary {
+  background-color: var(--gold-500) !important;
+  color: white !important;
+}
+
+/* ===== MODO ESCURO - ELEMENTOS GERAIS - CORES PRIMÁRIAS ===== */
+
+body.dark-mode .btn-outline-primary {
+  color: var(--primary-400) !important;
+  border-color: var(--primary-500) !important;
+}
+
+body.dark-mode .btn-outline-primary:hover {
+  background-color: var(--primary-500) !important;
+  border-color: var(--primary-400) !important;
+  color: white !important;
+}
+
+body.dark-mode .text-primary {
+  color: var(--primary-400) !important;
+}
+
+body.dark-mode .bg-primary {
+  background-color: var(--primary-500) !important;
+  color: white !important;
+}
+
+body.dark-mode .badge.bg-primary {
+  background-color: var(--primary-500) !important;
+  color: white !important;
+}
+
+/* ===== CORREÇÕES ESPECÍFICAS PARA MODO ESCURO ===== */
+
+/* Garantir que no modo escuro os cards usem cores primárias */
+body.dark-mode .agenda-item.animated-card {
+  border-left-color: var(--primary-500) !important;
+}
+
+body.dark-mode .agenda-item.animated-card:hover {
+  border-left-color: var(--primary-400) !important;
+}
+
+/* Garantir que no modo escuro os botões dos cards usem cores primárias */
+body.dark-mode .agenda-item.animated-card .btn-outline-primary {
+  color: var(--primary-400) !important;
+  border-color: var(--primary-500) !important;
+}
+
+body.dark-mode .agenda-item.animated-card .btn-outline-primary:hover {
+  background-color: var(--primary-500) !important;
+  border-color: var(--primary-400) !important;
+  color: white !important;
+}
+
+/* Garantir que no modo escuro os badges dos cards usem cores primárias */
+body.dark-mode .agenda-item .badge.bg-primary {
+  background-color: var(--primary-500) !important;
+  color: white !important;
+}
+
+/* Garantir que no modo escuro os títulos das seções usem cores primárias */
+body.dark-mode .agenda-day h5 {
+  color: var(--primary-400) !important;
+}
+
+body.dark-mode .agenda-day h5 .bi {
+  color: var(--primary-500) !important;
+}
+
+/* ===== CARDS DE AGENDAMENTOS - CORES CLARAS ===== */
+
+/* Card Confirmado - Verde Claro */
+.agenda-item.status-confirmed {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0) !important;
+  border: 1px solid #86efac !important;
+  border-left: 4px solid #22c55e !important;
+  color: #14532d !important;
+}
+
+.agenda-item.status-confirmed h6 {
+  color: #14532d !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.status-confirmed p {
+  color: #166534 !important;
+}
+
+.agenda-item.status-confirmed small {
+  color: #15803d !important;
+}
+
+.agenda-item.status-confirmed .text-muted {
+  color: #166534 !important;
+}
+
+.agenda-item.status-confirmed .badge {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Card Pendente - Amarelo Claro */
+.agenda-item.status-pending {
+  background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+  border: 1px solid #fcd34d !important;
+  border-left: 4px solid #f59e0b !important;
+  color: #78350f !important;
+}
+
+.agenda-item.status-pending h6 {
+  color: #78350f !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.status-pending p {
+  color: #92400e !important;
+}
+
+.agenda-item.status-pending small {
+  color: #b45309 !important;
+}
+
+.agenda-item.status-pending .text-muted {
+  color: #92400e !important;
+}
+
+.agenda-item.status-pending .badge {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Card Cancelado - Vermelho Claro */
+.agenda-item.status-cancelled {
+  background: linear-gradient(135deg, #fee2e2, #fecaca) !important;
+  border: 1px solid #fca5a5 !important;
+  border-left: 4px solid #ef4444 !important;
+  color: #991b1b !important;
+}
+
+.agenda-item.status-cancelled h6 {
+  color: #991b1b !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.status-cancelled p {
+  color: #b91c1c !important;
+}
+
+.agenda-item.status-cancelled small {
+  color: #dc2626 !important;
+}
+
+.agenda-item.status-cancelled .text-muted {
+  color: #b91c1c !important;
+}
+
+.agenda-item.status-cancelled .badge {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* ===== CARDS ANIMADOS - CORES CLARAS ===== */
+
+/* Card Animado Confirmado - Verde Claro */
+.agenda-item.animated-card.status-confirmed {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0) !important;
+  border: 1px solid #86efac !important;
+  border-left: 4px solid #22c55e !important;
+  color: #14532d !important;
+}
+
+.agenda-item.animated-card.status-confirmed h6 {
+  color: #14532d !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.animated-card.status-confirmed p {
+  color: #166534 !important;
+}
+
+.agenda-item.animated-card.status-confirmed small {
+  color: #15803d !important;
+}
+
+.agenda-item.animated-card.status-confirmed .text-muted {
+  color: #166534 !important;
+}
+
+.agenda-item.animated-card.status-confirmed .badge {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Card Animado Pendente - Amarelo Claro */
+.agenda-item.animated-card.status-pending {
+  background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+  border: 1px solid #fcd34d !important;
+  border-left: 4px solid #f59e0b !important;
+  color: #78350f !important;
+}
+
+.agenda-item.animated-card.status-pending h6 {
+  color: #78350f !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.animated-card.status-pending p {
+  color: #92400e !important;
+}
+
+.agenda-item.animated-card.status-pending small {
+  color: #b45309 !important;
+}
+
+.agenda-item.animated-card.status-pending .text-muted {
+  color: #92400e !important;
+}
+
+.agenda-item.animated-card.status-pending .badge {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Card Animado Cancelado - Vermelho Claro */
+.agenda-item.animated-card.status-cancelled {
+  background: linear-gradient(135deg, #fee2e2, #fecaca) !important;
+  border: 1px solid #fca5a5 !important;
+  border-left: 4px solid #ef4444 !important;
+  color: #991b1b !important;
+}
+
+.agenda-item.animated-card.status-cancelled h6 {
+  color: #991b1b !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.animated-card.status-cancelled p {
+  color: #b91c1c !important;
+}
+
+.agenda-item.animated-card.status-cancelled small {
+  color: #dc2626 !important;
+}
+
+.agenda-item.animated-card.status-cancelled .text-muted {
+  color: #b91c1c !important;
+}
+
+.agenda-item.animated-card.status-cancelled .badge {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* ===== MODO ESCURO - CARDS COM CORES CLARAS ===== */
+
+/* Modo escuro - Card Confirmado */
+body.dark-mode .agenda-item.status-confirmed {
+  background: linear-gradient(135deg, #14532d, #166534) !important;
+  border: 1px solid #16a34a !important;
+  border-left: 4px solid #22c55e !important;
+  color: #dcfce7 !important;
+}
+
+body.dark-mode .agenda-item.status-confirmed h6 {
+  color: #dcfce7 !important;
+}
+
+body.dark-mode .agenda-item.status-confirmed p {
+  color: #bbf7d0 !important;
+}
+
+body.dark-mode .agenda-item.status-confirmed small {
+  color: #86efac !important;
+}
+
+body.dark-mode .agenda-item.status-confirmed .text-muted {
+  color: #bbf7d0 !important;
+}
+
+/* Modo escuro - Card Pendente */
+body.dark-mode .agenda-item.status-pending {
+  background: linear-gradient(135deg, #78350f, #92400e) !important;
+  border: 1px solid #b45309 !important;
+  border-left: 4px solid #f59e0b !important;
+  color: #fef3c7 !important;
+}
+
+body.dark-mode .agenda-item.status-pending h6 {
+  color: #fef3c7 !important;
+}
+
+body.dark-mode .agenda-item.status-pending p {
+  color: #fde68a !important;
+}
+
+body.dark-mode .agenda-item.status-pending small {
+  color: #fcd34d !important;
+}
+
+body.dark-mode .agenda-item.status-pending .text-muted {
+  color: #fde68a !important;
+}
+
+/* Modo escuro - Card Cancelado */
+body.dark-mode .agenda-item.status-cancelled {
+  background: linear-gradient(135deg, #991b1b, #b91c1c) !important;
+  border: 1px solid #dc2626 !important;
+  border-left: 4px solid #ef4444 !important;
+  color: #fee2e2 !important;
+}
+
+body.dark-mode .agenda-item.status-cancelled h6 {
+  color: #fee2e2 !important;
+}
+
+body.dark-mode .agenda-item.status-cancelled p {
+  color: #fecaca !important;
+}
+
+body.dark-mode .agenda-item.status-cancelled small {
+  color: #fca5a5 !important;
+}
+
+body.dark-mode .agenda-item.status-cancelled .text-muted {
+  color: #fecaca !important;
+}
+
+/* ===== BOTÕES DE AÇÃO - CONTRASTE OTIMIZADO ===== */
+
+/* Botões de ação em cards confirmados */
+.agenda-item.status-confirmed .btn-group .btn {
+  border: 2px solid #22c55e !important;
+  background: #22c55e !important;
+  color: white !important;
+  font-weight: 700 !important;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2) !important;
+  opacity: 1 !important;
+}
+
+.agenda-item.status-confirmed .btn-group .btn i {
+  color: white !important;
+}
+
+.agenda-item.status-confirmed .btn-group .btn:hover {
+  background: #16a34a !important;
+  border-color: #15803d !important;
+  color: white !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(34, 197, 94, 0.4) !important;
+}
+
+.agenda-item.status-confirmed .btn-group .btn:hover i {
+  color: white !important;
+}
+
+.agenda-item.status-confirmed .btn-group .btn-success {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  color: white !important;
+  border-color: #16a34a !important;
+}
+
+.agenda-item.status-confirmed .btn-group .btn-success:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  color: white !important;
+}
+
+.agenda-item.status-confirmed .btn-group .btn-outline-primary {
+  color: white !important;
+  border-color: #22c55e !important;
+  background: #22c55e !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.status-confirmed .btn-group .btn-outline-primary:hover {
+  background: #16a34a !important;
+  color: white !important;
+  border-color: #16a34a !important;
+}
+
+.agenda-item.status-confirmed .btn-group .btn-outline-primary i {
+  color: white !important;
+}
+
+.agenda-item.status-confirmed .btn-group .btn-outline-danger {
+  color: white !important;
+  border-color: #ef4444 !important;
+  background: #ef4444 !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.status-confirmed .btn-group .btn-outline-danger:hover {
+  background: #dc2626 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+.agenda-item.status-confirmed .btn-group .btn-outline-danger i {
+  color: white !important;
+}
+
+/* Botões de ação em cards pendentes */
+.agenda-item.status-pending .btn-group .btn {
+  border: 2px solid #f59e0b !important;
+  background: #f59e0b !important;
+  color: white !important;
+  font-weight: 700 !important;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2) !important;
+  opacity: 1 !important;
+}
+
+.agenda-item.status-pending .btn-group .btn i {
+  color: white !important;
+}
+
+.agenda-item.status-pending .btn-group .btn:hover {
+  background: #d97706 !important;
+  border-color: #b45309 !important;
+  color: white !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.4) !important;
+}
+
+.agenda-item.status-pending .btn-group .btn:hover i {
+  color: white !important;
+}
+
+.agenda-item.status-pending .btn-group .btn-success {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  color: white !important;
+  border-color: #16a34a !important;
+}
+
+.agenda-item.status-pending .btn-group .btn-success:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  color: white !important;
+}
+
+.agenda-item.status-pending .btn-group .btn-outline-primary {
+  color: white !important;
+  border-color: #f59e0b !important;
+  background: #f59e0b !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.status-pending .btn-group .btn-outline-primary:hover {
+  background: #d97706 !important;
+  color: white !important;
+  border-color: #d97706 !important;
+}
+
+.agenda-item.status-pending .btn-group .btn-outline-primary i {
+  color: white !important;
+}
+
+.agenda-item.status-pending .btn-group .btn-outline-danger {
+  color: white !important;
+  border-color: #ef4444 !important;
+  background: #ef4444 !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.status-pending .btn-group .btn-outline-danger:hover {
+  background: #dc2626 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+.agenda-item.status-pending .btn-group .btn-outline-danger i {
+  color: white !important;
+}
+
+/* Botões de ação em cards cancelados */
+.agenda-item.status-cancelled .btn-group .btn {
+  border: 2px solid #ef4444 !important;
+  background: #ef4444 !important;
+  color: white !important;
+  font-weight: 700 !important;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2) !important;
+  opacity: 1 !important;
+}
+
+.agenda-item.status-cancelled .btn-group .btn i {
+  color: white !important;
+}
+
+.agenda-item.status-cancelled .btn-group .btn:hover {
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+  color: white !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4) !important;
+}
+
+.agenda-item.status-cancelled .btn-group .btn:hover i {
+  color: white !important;
+}
+
+.agenda-item.status-cancelled .btn-group .btn-success {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  color: white !important;
+  border-color: #16a34a !important;
+}
+
+.agenda-item.status-cancelled .btn-group .btn-success:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  color: white !important;
+}
+
+.agenda-item.status-cancelled .btn-group .btn-outline-primary {
+  color: white !important;
+  border-color: #ef4444 !important;
+  background: #ef4444 !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.status-cancelled .btn-group .btn-outline-primary:hover {
+  background: #dc2626 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+.agenda-item.status-cancelled .btn-group .btn-outline-primary i {
+  color: white !important;
+}
+
+.agenda-item.status-cancelled .btn-group .btn-outline-danger {
+  color: white !important;
+  border-color: #ef4444 !important;
+  background: #ef4444 !important;
+  font-weight: 700 !important;
+}
+
+.agenda-item.status-cancelled .btn-group .btn-outline-danger:hover {
+  background: #dc2626 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+.agenda-item.status-cancelled .btn-group .btn-outline-danger i {
+  color: white !important;
+}
+
+/* ===== MODO ESCURO - BOTÕES DE AÇÃO ===== */
+
+/* Modo escuro - Botões em cards confirmados */
+body.dark-mode .agenda-item.status-confirmed .btn-group .btn {
+  border: 2px solid rgba(34, 197, 94, 0.4) !important;
+  background: rgba(30, 41, 59, 0.9) !important;
+  color: #dcfce7 !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .agenda-item.status-confirmed .btn-group .btn:hover {
+  background: rgba(34, 197, 94, 0.2) !important;
+  border-color: #22c55e !important;
+  color: #dcfce7 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(34, 197, 94, 0.3) !important;
+}
+
+body.dark-mode .agenda-item.status-confirmed .btn-group .btn-success {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  color: white !important;
+  border-color: #16a34a !important;
+}
+
+body.dark-mode .agenda-item.status-confirmed .btn-group .btn-success:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  color: white !important;
+}
+
+body.dark-mode .agenda-item.status-confirmed .btn-group .btn-outline-primary {
+  color: #dcfce7 !important;
+  border-color: #22c55e !important;
+  background: rgba(30, 41, 59, 0.9) !important;
+}
+
+body.dark-mode .agenda-item.status-confirmed .btn-group .btn-outline-primary:hover {
+  background: #22c55e !important;
+  color: white !important;
+  border-color: #22c55e !important;
+}
+
+body.dark-mode .agenda-item.status-confirmed .btn-group .btn-outline-danger {
+  color: #fca5a5 !important;
+  border-color: #ef4444 !important;
+  background: rgba(30, 41, 59, 0.9) !important;
+}
+
+body.dark-mode .agenda-item.status-confirmed .btn-group .btn-outline-danger:hover {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #ef4444 !important;
+}
+
+/* Modo escuro - Botões em cards pendentes */
+body.dark-mode .agenda-item.status-pending .btn-group .btn {
+  border: 2px solid rgba(245, 158, 11, 0.4) !important;
+  background: rgba(30, 41, 59, 0.9) !important;
+  color: #fef3c7 !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .agenda-item.status-pending .btn-group .btn:hover {
+  background: rgba(245, 158, 11, 0.2) !important;
+  border-color: #f59e0b !important;
+  color: #fef3c7 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3) !important;
+}
+
+body.dark-mode .agenda-item.status-pending .btn-group .btn-success {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  color: white !important;
+  border-color: #16a34a !important;
+}
+
+body.dark-mode .agenda-item.status-pending .btn-group .btn-success:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  color: white !important;
+}
+
+body.dark-mode .agenda-item.status-pending .btn-group .btn-outline-primary {
+  color: #fef3c7 !important;
+  border-color: #f59e0b !important;
+  background: rgba(30, 41, 59, 0.9) !important;
+}
+
+body.dark-mode .agenda-item.status-pending .btn-group .btn-outline-primary:hover {
+  background: #f59e0b !important;
+  color: white !important;
+  border-color: #f59e0b !important;
+}
+
+body.dark-mode .agenda-item.status-pending .btn-group .btn-outline-danger {
+  color: #fca5a5 !important;
+  border-color: #ef4444 !important;
+  background: rgba(30, 41, 59, 0.9) !important;
+}
+
+body.dark-mode .agenda-item.status-pending .btn-group .btn-outline-danger:hover {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #ef4444 !important;
+}
+
+/* Modo escuro - Botões em cards cancelados */
+body.dark-mode .agenda-item.status-cancelled .btn-group .btn {
+  border: 2px solid rgba(239, 68, 68, 0.4) !important;
+  background: rgba(30, 41, 59, 0.9) !important;
+  color: #fee2e2 !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .agenda-item.status-cancelled .btn-group .btn:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #ef4444 !important;
+  color: #fee2e2 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3) !important;
+}
+
+body.dark-mode .agenda-item.status-cancelled .btn-group .btn-success {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  color: white !important;
+  border-color: #16a34a !important;
+}
+
+body.dark-mode .agenda-item.status-cancelled .btn-group .btn-success:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  color: white !important;
+}
+
+body.dark-mode .agenda-item.status-cancelled .btn-group .btn-outline-primary {
+  color: #fee2e2 !important;
+  border-color: #ef4444 !important;
+  background: rgba(30, 41, 59, 0.9) !important;
+}
+
+body.dark-mode .agenda-item.status-cancelled .btn-group .btn-outline-primary:hover {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #ef4444 !important;
+}
+
+body.dark-mode .agenda-item.status-cancelled .btn-group .btn-outline-danger {
+  color: #fca5a5 !important;
+  border-color: #ef4444 !important;
+  background: rgba(30, 41, 59, 0.9) !important;
+}
+
+body.dark-mode .agenda-item.status-cancelled .btn-group .btn-outline-danger:hover {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #ef4444 !important;
+}

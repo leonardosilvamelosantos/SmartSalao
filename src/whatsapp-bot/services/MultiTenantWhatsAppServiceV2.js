@@ -258,7 +258,7 @@ class MultiTenantWhatsAppServiceV2 {
       const result = await this.instanceManager.sendMessage(tenantId.toString(), to, message);
       
       if (result.success) {
-        console.log(`📤 Mensagem enviada para ${to} no tenant ${tenantId}`);
+    // console.log(`📤 Mensagem enviada para ${to} no tenant ${tenantId}`); // Otimizado para reduzir spam no console
       } else {
         console.log(`❌ Falha ao enviar mensagem para ${to} no tenant ${tenantId}: ${result.error}`);
       }
@@ -286,7 +286,7 @@ class MultiTenantWhatsAppServiceV2 {
       const result = await this.instanceManager.sendMediaMessage(tenantId.toString(), to, media, caption);
       
       if (result.success) {
-        console.log(`📤 Mídia enviada para ${to} no tenant ${tenantId}`);
+    // console.log(`📤 Mídia enviada para ${to} no tenant ${tenantId}`); // Otimizado para reduzir spam no console
       } else {
         console.log(`❌ Falha ao enviar mídia para ${to} no tenant ${tenantId}: ${result.error}`);
       }
@@ -496,12 +496,12 @@ class MultiTenantWhatsAppServiceV2 {
    */
   getInstanceStatus(tenantId) {
     if (process.env.LOG_WA_STATUS === 'true') {
-      console.log(`🔍 Buscando status para tenant ${tenantId}...`);
+    // console.log(`🔍 Buscando status para tenant ${tenantId}...`); // Otimizado para reduzir spam no console
     }
     const instance = this.instanceManager.getInstance(tenantId.toString());
     
     if (!instance) {
-      console.log(`❌ Instância não encontrada para tenant ${tenantId}`);
+      // console.log(`❌ Instância não encontrada para tenant ${tenantId}`); // Otimizado - log removido
       return {
         success: false,
         isConnected: false,

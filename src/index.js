@@ -243,7 +243,7 @@ const setupTenantCallbacks = (tenantId) => {
   whatsappService.registerConnectionCallback(tenantId, (event) => {
     switch (event.type) {
       case 'connected':
-        console.log(`✅ [${tenantId}] WhatsApp conectado`);
+        // console.log(`✅ [${tenantId}] WhatsApp conectado`); // Otimizado - log removido para reduzir spam
         break;
 
       case 'disconnected':
@@ -268,7 +268,7 @@ const initializeTenantBot = async (tenantId, config = {}) => {
     // Inicializar conexão
     const connection = await whatsappService.initializeTenantConnection(tenantId, config);
 
-    console.log(`✅ Bot WhatsApp inicializado com sucesso para tenant ${tenantId}`);
+    // console.log(`✅ Bot WhatsApp inicializado com sucesso para tenant ${tenantId}`); // Otimizado - log removido para reduzir spam
     return connection;
 
   } catch (error) {
@@ -277,12 +277,12 @@ const initializeTenantBot = async (tenantId, config = {}) => {
   }
 };
 
+// Importar configuração do WhatsApp
+const whatsappConfig = require('./whatsapp-bot/config/whatsapp-config');
+
 // Inicialização baseada em configuração
 const initializeWhatsAppBots = async () => {
-  const shouldStartBot = process.env.START_WHATSAPP_BOT === 'true' ||
-                        process.env.NODE_ENV === 'production';
-
-  if (!shouldStartBot) {
+  if (!whatsappConfig.autoStart.enabled) {
     console.log('🤖 Bot WhatsApp não inicializado automaticamente');
     console.log('💡 Para ativar, defina START_WHATSAPP_BOT=true ou execute em produção');
     return;
@@ -292,11 +292,11 @@ const initializeWhatsAppBots = async () => {
 
   try {
     // Verificar se há tenants para inicializar automaticamente
-    const autoStartTenants = process.env.WHATSAPP_AUTO_START_TENANTS;
+    const tenantList = whatsappConfig.autoStart.tenants;
 
-    if (autoStartTenants) {
-      const tenantList = autoStartTenants.split(',').map(t => t.trim());
-
+    if (tenantList.length > 0) {
+      console.log(`📋 Inicializando tenants configurados: ${tenantList.join(', ')}`);
+      
       for (const tenantId of tenantList) {
         try {
           await initializeTenantBot(tenantId);
@@ -304,16 +304,20 @@ const initializeWhatsAppBots = async () => {
           console.error(`❌ Falha ao inicializar tenant ${tenantId}, continuando...`);
         }
       }
+    } else {
+      console.log('ℹ️ Nenhum tenant configurado para inicialização automática');
     }
 
-    // Configurar limpeza automática de conexões inativas
-    setInterval(() => {
-      if (typeof whatsappService.cleanupInactiveConnections === 'function') {
-        whatsappService.cleanupInactiveConnections();
-      }
-    }, 5 * 60 * 1000); // A cada 5 minutos
+    // Configurar limpeza automática de conexões inativas (apenas se houver tenants ativos)
+    if (tenantList.length > 0 && whatsappConfig.cleanup.autoCleanup) {
+      setInterval(() => {
+        if (typeof whatsappService.cleanupInactiveConnections === 'function') {
+          whatsappService.cleanupInactiveConnections();
+        }
+      }, whatsappConfig.cleanup.intervalMs);
+    }
 
-    console.log('✅ Sistema multi-tenant WhatsApp inicializado com sucesso');
+    // console.log('✅ Sistema multi-tenant WhatsApp inicializado com sucesso'); // Otimizado - log removido para reduzir spam
 
   } catch (error) {
     console.error('❌ Erro ao inicializar sistema multi-tenant WhatsApp:', error);
@@ -543,7 +547,7 @@ if (require.main === module && process.env.NODE_ENV !== 'test') {
     const localIP = getLocalIP();
     
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
-    console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    // console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`); // Otimizado para reduzir spam no console
     console.log(`🌐 Host: ${HOST}`);
     console.log(`🏥 Health check: http://localhost:${PORT}/health`);
     console.log(`💻 Acesso local: http://localhost:${PORT}/frontend`);
