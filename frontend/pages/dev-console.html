@@ -3,14 +3,123 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dev Console</title>
+  <title>Dev Console - Sistema de Administração</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    /* Notificações Toast */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1055;
+    }
+    
+    /* Loading States */
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .spinner-border-sm {
+      width: 1rem;
+      height: 1rem;
+    }
+    
+    /* Cards melhorados */
+    .card {
+      border: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    /* Tabelas responsivas */
+    .table-responsive {
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    /* Badges melhorados */
+    .badge {
+      font-size: 0.75em;
+      padding: 0.375rem 0.5rem;
+    }
+    
+    /* Botões com ícones */
+    .btn i {
+      margin-right: 0.25rem;
+    }
+    
+    /* Sidebar melhorada */
+    .list-group-item {
+      border: none;
+      border-radius: 8px !important;
+      margin-bottom: 2px;
+      transition: all 0.3s ease;
+    }
+    
+    .list-group-item:hover {
+      background-color: #f8f9fa;
+      transform: translateX(2px);
+    }
+    
+    .list-group-item.active {
+      background-color: #0d6efd;
+      border-color: #0d6efd;
+    }
+    
+    /* Status indicators */
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 0.5rem;
+    }
+    
+    .status-active { background-color: #28a745; }
+    .status-inactive { background-color: #dc3545; }
+    .status-pending { background-color: #ffc107; }
+    
+    /* Mobile improvements */
+    @media (max-width: 768px) {
+      .container-fluid {
+        padding: 0.5rem;
+      }
+      
+      .col-md-3 {
+        margin-bottom: 0.5rem;
+      }
+    }
+  </style>
 </head>
 <body class="bg-light">
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#">Dev Console</a>
-      <div class="text-warning" id="impersonateBanner" style="display:none;">Impersonando usuário</div>
+      <a class="navbar-brand" href="#">
+        <i class="bi bi-terminal me-2"></i>Dev Console
+      </a>
+      <div class="d-flex align-items-center">
+        <div class="text-warning me-3" id="impersonateBanner" style="display:none;">
+          <i class="bi bi-person-check me-1"></i>Impersonando usuário
+        </div>
+        <div class="text-light small" id="userInfo">
+          <i class="bi bi-person-circle me-1"></i>
+          <span id="currentUser">Carregando...</span>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -18,28 +127,106 @@
     <div class="row">
       <aside class="col-12 col-md-3 col-lg-2 mb-3">
         <div class="list-group">
-          <button class="list-group-item list-group-item-action active" data-section="overview">Overview</button>
-          <button class="list-group-item list-group-item-action" data-section="tenants">Tenants</button>
-          <button class="list-group-item list-group-item-action" data-section="users">Usuários</button>
-          <button class="list-group-item list-group-item-action" data-section="audit">Auditoria</button>
-          <button class="list-group-item list-group-item-action" data-section="system">Sistema</button>
+          <button class="list-group-item list-group-item-action active" data-section="overview">
+            <i class="bi bi-speedometer2 me-2"></i>Overview
+          </button>
+          <button class="list-group-item list-group-item-action" data-section="tenants">
+            <i class="bi bi-building me-2"></i>Tenants
+          </button>
+          <button class="list-group-item list-group-item-action" data-section="users">
+            <i class="bi bi-people me-2"></i>Usuários
+          </button>
+          <button class="list-group-item list-group-item-action" data-section="audit">
+            <i class="bi bi-shield-check me-2"></i>Auditoria
+          </button>
+          <button class="list-group-item list-group-item-action" data-section="system">
+            <i class="bi bi-gear me-2"></i>Sistema
+          </button>
         </div>
       </aside>
       <main class="col">
         <div id="section-overview" class="section">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4><i class="bi bi-speedometer2 me-2"></i>Visão Geral do Sistema</h4>
+            <button class="btn btn-outline-primary btn-sm" id="btnRefreshOverview">
+              <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+            </button>
+          </div>
           <div class="row g-3">
-            <div class="col-12 col-md-3"><div class="card"><div class="card-body"><div class="fw-bold">Tenants</div><div id="kpiTenants">-</div></div></div></div>
-            <div class="col-12 col-md-3"><div class="card"><div class="card-body"><div class="fw-bold">Usuários</div><div id="kpiUsers">-</div></div></div></div>
-            <div class="col-12 col-md-3"><div class="card"><div class="card-body"><div class="fw-bold">Requisições/min</div><div id="kpiRpm">-</div></div></div></div>
-            <div class="col-12 col-md-3"><div class="card"><div class="card-body"><div class="fw-bold">Erros (24h)</div><div id="kpiErrors">-</div></div></div></div>
+            <div class="col-12 col-md-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                      <i class="bi bi-building text-primary fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                      <div class="fw-bold text-muted small">Tenants</div>
+                      <div class="h4 mb-0" id="kpiTenants">-</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                      <i class="bi bi-people text-success fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                      <div class="fw-bold text-muted small">Usuários</div>
+                      <div class="h4 mb-0" id="kpiUsers">-</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                      <i class="bi bi-graph-up text-info fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                      <div class="fw-bold text-muted small">Requisições/min</div>
+                      <div class="h4 mb-0" id="kpiRpm">-</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                      <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                      <div class="fw-bold text-muted small">Erros (24h)</div>
+                      <div class="h4 mb-0" id="kpiErrors">-</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         <div id="section-tenants" class="section" style="display:none;">
-          <h5>Tenants</h5>
-          <div class="d-flex gap-2 mb-3">
-            <button class="btn btn-primary btn-sm" id="btnRefreshTenants">Atualizar</button>
-            <button class="btn btn-success btn-sm" id="btnCreateTenant">Novo Tenant</button>
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4><i class="bi bi-building me-2"></i>Gerenciar Tenants</h4>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-primary btn-sm" id="btnRefreshTenants">
+                <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+              </button>
+              <button class="btn btn-success btn-sm" id="btnCreateTenant">
+                <i class="bi bi-plus-circle me-1"></i>Novo Tenant
+              </button>
+            </div>
           </div>
           <div class="table-responsive">
             <table class="table table-striped">
@@ -61,10 +248,16 @@
         </div>
 
         <div id="section-users" class="section" style="display:none;">
-          <h5>Usuários</h5>
-          <div class="d-flex gap-2 mb-3">
-            <button class="btn btn-primary btn-sm" id="btnRefreshUsers">Atualizar</button>
-            <button class="btn btn-success btn-sm" id="btnCreateUser">Novo Usuário</button>
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4><i class="bi bi-people me-2"></i>Gerenciar Usuários</h4>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-primary btn-sm" id="btnRefreshUsers">
+                <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+              </button>
+              <button class="btn btn-success btn-sm" id="btnCreateUser">
+                <i class="bi bi-person-plus me-1"></i>Novo Usuário
+              </button>
+            </div>
           </div>
           <div class="table-responsive">
             <table class="table table-striped">
@@ -87,10 +280,21 @@
         </div>
 
         <div id="section-audit" class="section" style="display:none;">
-          <h5>Auditoria</h5>
-          <div class="d-flex gap-2 mb-3">
-            <button class="btn btn-primary btn-sm" id="btnRefreshAudit">Atualizar</button>
-            <input type="text" class="form-control form-control-sm" id="auditSearch" placeholder="Buscar...">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4><i class="bi bi-shield-check me-2"></i>Logs de Auditoria</h4>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-primary btn-sm" id="btnRefreshAudit">
+                <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+              </button>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" id="auditSearch" placeholder="Buscar por ação, entidade ou dados...">
+              </div>
+            </div>
           </div>
           <div class="table-responsive">
             <table class="table table-striped">
@@ -111,16 +315,32 @@
         </div>
 
         <div id="section-system" class="section" style="display:none;">
-          <h5>Sistema</h5>
-          <div class="d-flex gap-2">
-            <button class="btn btn-outline-danger btn-sm" id="btnClearCache">Limpar Cache</button>
-            <button class="btn btn-outline-primary btn-sm" id="btnHealth">Health</button>
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4><i class="bi bi-gear me-2"></i>Status do Sistema</h4>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-danger btn-sm" id="btnClearCache">
+                <i class="bi bi-trash me-1"></i>Limpar Cache
+              </button>
+              <button class="btn btn-outline-primary btn-sm" id="btnHealth">
+                <i class="bi bi-heart-pulse me-1"></i>Health Check
+              </button>
+            </div>
           </div>
-          <pre class="mt-3 small" id="systemOutput"></pre>
+          <div class="card">
+            <div class="card-header">
+              <h6 class="mb-0"><i class="bi bi-terminal me-2"></i>Informações do Sistema</h6>
+            </div>
+            <div class="card-body">
+              <pre class="mb-0 small" id="systemOutput">Carregando informações do sistema...</pre>
+            </div>
+          </div>
         </div>
       </main>
     </div>
   </div>
+
+  <!-- Toast Container para Notificações -->
+  <div class="toast-container" id="toastContainer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/frontend/js/core/api.js"></script>

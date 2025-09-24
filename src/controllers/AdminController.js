@@ -79,14 +79,14 @@ class AdminController {
           SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as total_confirmed,
           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as total_completed,
           SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as total_cancelled,
-          SUM(CASE WHEN start_at >= ? AND start_at < ? THEN 1 ELSE 0 END) as today_appointments,
-          SUM(CASE WHEN start_at >= ? AND start_at < ? AND status = 'confirmed' THEN 1 ELSE 0 END) as today_confirmed,
+          SUM(CASE WHEN data_agendamento >= ? AND data_agendamento < ? THEN 1 ELSE 0 END) as today_appointments,
+          SUM(CASE WHEN data_agendamento >= ? AND data_agendamento < ? AND status = 'confirmed' THEN 1 ELSE 0 END) as today_confirmed,
           COALESCE(SUM(CASE WHEN status = 'completed' THEN valor_total END), 0) as total_revenue,
-          COALESCE(AVG(CASE WHEN status = 'completed' THEN (strftime('%s', end_at) - strftime('%s', start_at))/60.0 END), 0) as avg_service_duration,
+          COALESCE(AVG(CASE WHEN status = 'completed' THEN (strftime('%s', end_at) - strftime('%s', data_agendamento))/60.0 END), 0) as avg_service_duration,
           COUNT(DISTINCT c.id_cliente) as total_clients
         FROM agendamentos a
         LEFT JOIN clientes c ON a.id_cliente = c.id_cliente
-        WHERE a.id_usuario = ? AND a.start_at >= ?
+        WHERE a.id_usuario = ? AND a.data_agendamento >= ?
       `, [todayStart, todayEnd, todayStart, todayEnd, barberId, monthStart]);
       const metrics = result.rows[0];
 
@@ -118,17 +118,17 @@ class AdminController {
       const end = new Date(start); end.setDate(end.getDate()+1);
       const result = await pool.query(`
         SELECT
-          DATE(start_at) as date,
+          DATE(data_agendamento) as date,
           COUNT(*) as total_appointments,
           SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as confirmed,
           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
           SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
           COALESCE(SUM(CASE WHEN status = 'completed' THEN valor_total END), 0) as revenue,
-          MIN(start_at) as first_appointment,
+          MIN(data_agendamento) as first_appointment,
           MAX(end_at) as last_appointment
         FROM agendamentos
-        WHERE id_usuario = ? AND start_at >= ? AND start_at < ?
-        GROUP BY DATE(start_at)
+        WHERE id_usuario = ? AND data_agendamento >= ? AND data_agendamento < ?
+        GROUP BY DATE(data_agendamento)
       `, [barberId, start, end]);
 
       if (result.rows.length === 0) {
@@ -164,7 +164,7 @@ class AdminController {
       const result = await pool.query(`
         SELECT
           a.id_agendamento,
-          a.start_at,
+          a.data_agendamento,
           a.end_at,
           a.status,
           a.valor_total,
@@ -177,7 +177,7 @@ class AdminController {
         JOIN servicos s ON a.id_servico = s.id_servico
         JOIN clientes c ON a.id_cliente = c.id_cliente
         WHERE a.id_usuario = ?
-        ORDER BY a.start_at DESC
+        ORDER BY a.data_agendamento DESC
         LIMIT ?
       `, [barberId, limit]);
 
@@ -186,7 +186,7 @@ class AdminController {
         service: appointment.nome_servico,
         client: appointment.cliente_nome,
         phone: appointment.cliente_whatsapp,
-        start_time: appointment.start_at,
+        start_time: appointment.data_agendamento,
         end_time: appointment.end_at,
         status: appointment.status,
         value: parseFloat(appointment.valor_total || 0),
@@ -252,8 +252,8 @@ class AdminController {
           COALESCE(AVG(a.valor_total) FILTER (WHERE a.status = 'completed'), 0) as avg_revenue
         FROM servicos s
         LEFT JOIN agendamentos a ON s.id_servico = a.id_servico
-          AND a.start_at >= CURRENT_DATE - INTERVAL '30 days'
-        WHERE s.id_usuario = $1
+          AND a.data_agendamento >= CURRENT_DATE - INTERVAL '30 days'
+        WHERE a.id_usuario = $1
           ${status ? `AND s.ativo = $${queryParams.length + 1}` : ''}
           ${search ? `AND s.nome_servico ILIKE $${queryParams.length + 2}` : ''}
         GROUP BY s.id_servico
@@ -390,13 +390,13 @@ class AdminController {
       }
 
       if (start_date) {
-        whereConditions.push(`DATE(a.start_at) >= $${paramIndex}`);
+        whereConditions.push(`DATE(a.data_agendamento) >= $${paramIndex}`);
         params.push(start_date);
         paramIndex++;
       }
 
       if (end_date) {
-        whereConditions.push(`DATE(a.start_at) <= $${paramIndex}`);
+        whereConditions.push(`DATE(a.data_agendamento) <= $${paramIndex}`);
         params.push(end_date);
         paramIndex++;
       }
@@ -418,7 +418,7 @@ class AdminController {
       const query = `
         SELECT
           a.id_agendamento,
-          a.start_at,
+          a.data_agendamento,
           a.end_at,
           a.status,
           a.valor_total,
@@ -433,7 +433,7 @@ class AdminController {
         JOIN servicos s ON a.id_servico = s.id_servico
         JOIN clientes c ON a.id_cliente = c.id_cliente
         WHERE ${whereClause}
-        ORDER BY a.start_at DESC
+        ORDER BY a.data_agendamento DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
       `;
 
@@ -520,7 +520,7 @@ class AdminController {
       const result = await pool.query(`
         SELECT u.*, COUNT(s.id_servico) as total_services
         FROM usuarios u
-        LEFT JOIN servicos s ON u.id_usuario = s.id_usuario AND s.ativo = 1
+        LEFT JOIN servicos s ON u.id_usuario = a.id_usuario AND s.ativo = 1
         WHERE u.id_usuario = ?
         GROUP BY u.id_usuario
       `, [barberId]);
@@ -595,16 +595,16 @@ class AdminController {
 
       const query = `
         SELECT
-          DATE(a.start_at) as date,
+          DATE(a.data_agendamento) as date,
           COUNT(*) FILTER (WHERE a.status = 'completed') as completed_appointments,
           COALESCE(SUM(a.valor_total) FILTER (WHERE a.status = 'completed'), 0) as revenue,
           COUNT(*) FILTER (WHERE a.status = 'cancelled') as cancelled_appointments,
           AVG(a.valor_total) FILTER (WHERE a.status = 'completed') as avg_ticket
         FROM agendamentos a
         WHERE a.id_usuario = $1
-          AND DATE(a.start_at) BETWEEN $2 AND $3
-        GROUP BY DATE(a.start_at)
-        ORDER BY DATE(a.start_at) ASC
+          AND DATE(a.data_agendamento) BETWEEN $2 AND $3
+        GROUP BY DATE(a.data_agendamento)
+        ORDER BY DATE(a.data_agendamento) ASC
       `;
 
       const result = await pool.query(query, [barberId, startDate, endDate]);

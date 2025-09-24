@@ -31,7 +31,7 @@ class AppointmentServiceV2 {
           s.id_servico as id,
           s.nome_servico as name,
           s.duracao_min as duration_minutes,
-          s.valor as price,
+          s.preco as price,
           s.descricao as description,
           s.ativo as is_active,
           s.created_at,
@@ -39,10 +39,10 @@ class AppointmentServiceV2 {
         FROM servicos s
         LEFT JOIN agendamentos a ON s.id_servico = a.id_servico
           AND a.status IN ('confirmed', 'completed')
-          AND a.start_at >= NOW() - INTERVAL '30 days'
-        WHERE s.id_usuario = $1
+          AND a.data_agendamento >= NOW() - INTERVAL '30 days'
+        WHERE a.id_usuario = $1
           AND ($2::boolean IS NULL OR s.ativo = $2)
-        GROUP BY s.id_servico, s.nome_servico, s.duracao_min, s.valor, s.descricao, s.ativo, s.created_at
+        GROUP BY s.id_servico, s.nome_servico, s.duracao_min, s.preco, s.descricao, s.ativo, s.created_at
         ORDER BY s.ativo DESC, s.nome_servico ASC
         LIMIT $3 OFFSET $4
       `;
@@ -115,27 +115,27 @@ class AppointmentServiceV2 {
       const query = `
         WITH available_days AS (
           SELECT
-            DATE(s.start_at AT TIME ZONE $5) as local_date,
+            DATE(s.data_agendamento AT TIME ZONE $5) as local_date,
             COUNT(*) as total_slots,
             COUNT(*) FILTER (WHERE s.status = 'free') as free_slots
           FROM slots s
-          WHERE s.id_usuario = $1
-            AND s.start_at >= $3::timestamptz
+          WHERE a.id_usuario = $1
+            AND s.data_agendamento >= $3::timestamptz
             AND s.end_at <= $4::timestamptz + INTERVAL '1 day'
             AND s.status IN ('free', 'booked')
-          GROUP BY DATE(s.start_at AT TIME ZONE $5)
+          GROUP BY DATE(s.data_agendamento AT TIME ZONE $5)
           HAVING COUNT(*) FILTER (WHERE s.status = 'free') > 0
         ),
         day_schedule AS (
           SELECT
-            DATE(s.start_at AT TIME ZONE $5) as local_date,
-            MIN(s.start_at AT TIME ZONE $5) as first_slot,
+            DATE(s.data_agendamento AT TIME ZONE $5) as local_date,
+            MIN(s.data_agendamento AT TIME ZONE $5) as first_slot,
             MAX(s.end_at AT TIME ZONE $5) as last_slot
           FROM slots s
-          WHERE s.id_usuario = $1
-            AND s.start_at >= $3::timestamptz
+          WHERE a.id_usuario = $1
+            AND s.data_agendamento >= $3::timestamptz
             AND s.end_at <= $4::timestamptz + INTERVAL '1 day'
-          GROUP BY DATE(s.start_at AT TIME ZONE $5)
+          GROUP BY DATE(s.data_agendamento AT TIME ZONE $5)
         )
         SELECT
           ad.local_date as date,
@@ -208,30 +208,30 @@ class AppointmentServiceV2 {
         WITH available_slots AS (
           SELECT
             s.id_slot,
-            s.start_at,
+            s.data_agendamento,
             s.end_at,
-            s.start_at AT TIME ZONE $6 as local_start,
+            s.data_agendamento AT TIME ZONE $6 as local_start,
             s.end_at AT TIME ZONE $6 as local_end,
-            ROW_NUMBER() OVER (ORDER BY s.start_at ASC) as row_num,
+            ROW_NUMBER() OVER (ORDER BY s.data_agendamento ASC) as row_num,
             COUNT(*) OVER() as total_count
           FROM slots s
-          WHERE s.id_usuario = $1
-            AND DATE(s.start_at AT TIME ZONE $6) = $3::date
+          WHERE a.id_usuario = $1
+            AND DATE(s.data_agendamento AT TIME ZONE $6) = $3::date
             AND s.status = 'free'
             AND NOT EXISTS (
               SELECT 1 FROM slots s2
-              WHERE s2.id_usuario = s.id_usuario
-                AND s2.start_at < s.end_at
-                AND s2.end_at > s.start_at
+              WHERE s2.id_usuario = a.id_usuario
+                AND s2.data_agendamento < s.end_at
+                AND s2.end_at > s.data_agendamento
                 AND s2.status = 'booked'
             )
-          ORDER BY s.start_at ASC
+          ORDER BY s.data_agendamento ASC
         )
         SELECT
           id_slot as slot_id,
           TO_CHAR(local_start, 'HH24:MI') as start_time,
           TO_CHAR(local_end, 'HH24:MI') as end_time,
-          start_at as datetime_utc,
+          data_agendamento as datetime_utc,
           local_start as datetime_local,
           $5 as duration_minutes,
           true as is_available,
@@ -266,7 +266,7 @@ class AppointmentServiceV2 {
           ) as utilization_percentage
         FROM slots
         WHERE id_usuario = $1
-          AND DATE(start_at AT TIME ZONE $2) = $3::date
+          AND DATE(data_agendamento AT TIME ZONE $2) = $3::date
       `;
 
       const statsResult = await pool.query(statsQuery, [barberId, timezone, date]);
@@ -350,7 +350,7 @@ class AppointmentServiceV2 {
       // 5. Criar agendamento
       const appointmentResult = await client.query(
         `INSERT INTO agendamentos (
-          id_usuario, id_servico, id_cliente, start_at, end_at,
+          id_usuario, id_servico, id_cliente, data_agendamento, end_at,
           status, valor_total, observacoes, created_at, idempotency_key
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9)
         RETURNING id_agendamento`,
@@ -421,7 +421,7 @@ class AppointmentServiceV2 {
 
       // Verificar tempo mínimo para cancelamento (2 horas antes)
       const now = new Date();
-      const appointmentTime = new Date(appointment.start_at);
+      const appointmentTime = new Date(appointment.data_agendamento);
       const hoursUntilAppointment = (appointmentTime - now) / (1000 * 60 * 60);
 
       if (hoursUntilAppointment < 2) {
@@ -449,7 +449,7 @@ class AppointmentServiceV2 {
         cancel_reason: reason,
         refunded_slots: slotsFreed.rows.length,
         service_id: appointment.id_servico,
-        start_datetime: appointment.start_at,
+        start_datetime: appointment.data_agendamento,
         notification_sent: notify_customer,
         _links: {
           self: `/api/v2/barbers/${barberId}/appointments/${appointmentId}`,
@@ -495,7 +495,7 @@ class AppointmentServiceV2 {
           a.id_usuario as barber_id,
           a.id_servico as service_id,
           a.id_cliente as customer_id,
-          a.start_at,
+          a.data_agendamento,
           a.end_at,
           a.status,
           a.valor_total as total_price,
@@ -557,7 +557,7 @@ class AppointmentServiceV2 {
       }
 
       if (start_date) {
-        whereConditions.push(`a.start_at >= $${paramIndex}::timestamptz`);
+        whereConditions.push(`a.data_agendamento >= $${paramIndex}::timestamptz`);
         params.push(start_date);
         paramIndex++;
       }
@@ -573,7 +573,7 @@ class AppointmentServiceV2 {
       const query = `
         SELECT
           a.id_agendamento as id,
-          a.start_at,
+          a.data_agendamento,
           a.end_at,
           a.status,
           a.valor_total as total_price,
@@ -585,7 +585,7 @@ class AppointmentServiceV2 {
         JOIN servicos s ON a.id_servico = s.id_servico
         JOIN clientes c ON a.id_cliente = c.id_cliente
         WHERE ${whereClause}
-        ORDER BY a.start_at DESC
+        ORDER BY a.data_agendamento DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
       `;
 

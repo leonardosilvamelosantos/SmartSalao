@@ -109,6 +109,14 @@ if (!isDevelopment) {
 app.use(express.json({ limit: process.env.REQUEST_LIMIT || '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: process.env.REQUEST_LIMIT || '10mb' }));
 
+// Reparar schema PostgreSQL (quando aplicável)
+try {
+  const { repairPostgresSchema } = require('./database/repair-postgres');
+  repairPostgresSchema().catch(() => {});
+} catch (e) {
+  // ignora em ambiente sem PostgreSQL
+}
+
 // ====================
 // HEALTH CHECK ENDPOINTS
 // ====================

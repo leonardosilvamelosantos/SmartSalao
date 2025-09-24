@@ -9,7 +9,8 @@ const useSSL = (() => {
   const env = (process.env.DB_SSL || '').toLowerCase();
   if (env === 'true') return true;
   if (env === 'false') return false;
-  return process.env.NODE_ENV === 'production';
+  // Desabilitar SSL por padrão para desenvolvimento local
+  return false;
 })();
 
 const dbConfig = {

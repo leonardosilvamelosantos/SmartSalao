@@ -374,11 +374,11 @@ class ServicoController {
           s.*,
           COUNT(a.id_agendamento) as total_agendamentos,
           COUNT(CASE WHEN a.status = 'completed' THEN 1 END) as agendamentos_concluidos,
-          AVG(CASE WHEN a.status = 'completed' THEN s.valor END) as receita_media,
-          MAX(a.start_at) as ultimo_agendamento
+          AVG(CASE WHEN a.status = 'completed' THEN s.preco END) as receita_media,
+          MAX(a.data_agendamento) as ultimo_agendamento
         FROM servicos s
         LEFT JOIN agendamentos a ON s.id_servico = a.id_servico
-        WHERE s.id_usuario = $1
+        WHERE a.id_usuario = $1
         GROUP BY s.id_servico
         ORDER BY total_agendamentos DESC
       `, [id_usuario]);

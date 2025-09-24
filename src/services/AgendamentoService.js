@@ -19,7 +19,7 @@ class AgendamentoService {
     try {
       console.log('🔍 [DEBUG] AgendamentoService.criarAgendamento chamado com dados:', agendamentoData);
       
-      const { id_cliente, id_servico, start_at, observacoes, nome_cliente_manual, telefone_cliente_manual } = agendamentoData;
+      const { id_cliente, id_servico, data_agendamento, observacoes, nome_cliente_manual, telefone_cliente_manual } = agendamentoData;
 
       // Buscar dados do serviço para obter duração
       console.log('🔍 Buscando serviço ID:', id_servico);
@@ -88,7 +88,7 @@ class AgendamentoService {
       // Validar agendamento
       console.log('🔍 Validando agendamento...');
       const validacao = await this.validationService.validateAgendamento(userId, {
-        start_at,
+        data_agendamento,
         duracao_min: servico.duracao_min
       });
 
@@ -100,17 +100,17 @@ class AgendamentoService {
       console.log('✅ Validação passou');
 
       // Calcular end_at
-      const end_at = new Date(new Date(start_at).getTime() + servico.duracao_min * 60000);
+      const end_at = new Date(new Date(data_agendamento).getTime() + servico.duracao_min * 60000);
 
       // Garantir que clienteId seja um número
       const clienteIdFinal = typeof clienteId === 'object' ? clienteId.id_cliente : clienteId;
       
       // Criar agendamento
       console.log('📅 Dados do agendamento:', {
-        start_at: start_at,
+        data_agendamento: data_agendamento,
         end_at: end_at.toISOString(),
-        start_at_parsed: new Date(start_at),
-        start_at_local: new Date(start_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+        data_agendamento_parsed: new Date(data_agendamento),
+        data_agendamento_local: new Date(data_agendamento).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
         cliente_id: clienteIdFinal,
         cliente_nome: clienteNome
       });
@@ -137,7 +137,7 @@ class AgendamentoService {
         id_usuario: userId,
         id_cliente: clienteIdFinal,
         id_servico,
-        start_at,
+        data_agendamento,
         end_at: end_at.toISOString(),
         status: statusInicial,
         observacoes: observacoes || '',
@@ -183,12 +183,12 @@ class AgendamentoService {
       let p = 2;
 
       if (data_inicio) {
-        where += ` AND a.start_at >= $${p++}`;
+        where += ` AND a.data_agendamento >= $${p++}`;
         params.push(data_inicio);
       }
 
       if (data_fim) {
-        where += ` AND a.start_at <= $${p++}`;
+        where += ` AND a.data_agendamento <= $${p++}`;
         params.push(data_fim);
       }
 
@@ -212,12 +212,12 @@ class AgendamentoService {
           c.whatsapp as cliente_whatsapp,
           s.nome_servico,
           s.duracao_min,
-          s.valor
+          s.preco
         FROM agendamentos a
         JOIN clientes c ON a.id_cliente = c.id_cliente
         JOIN servicos s ON a.id_servico = s.id_servico
         WHERE ${where}
-        ORDER BY a.start_at ASC
+        ORDER BY a.data_agendamento ASC
       `, params);
 
       // Log reduzido
@@ -247,7 +247,7 @@ class AgendamentoService {
           c.email as cliente_email,
           s.nome_servico,
           s.duracao_min,
-          s.valor,
+          s.preco,
           s.descricao as servico_descricao
         FROM agendamentos a
         JOIN clientes c ON a.id_cliente = c.id_cliente
@@ -279,10 +279,10 @@ class AgendamentoService {
       }
 
       // Se está alterando horário, validar
-      if (dadosAtualizacao.start_at) {
+      if (dadosAtualizacao.data_agendamento) {
         const servico = await this.servicoModel.findById(agendamento.id_servico);
         const validacao = await this.validationService.validateAgendamento(userId, {
-          start_at: dadosAtualizacao.start_at,
+          data_agendamento: dadosAtualizacao.data_agendamento,
           duracao_min: servico.duracao_min
         });
 
@@ -291,7 +291,7 @@ class AgendamentoService {
         }
 
         // Recalcular end_at
-        const end_at = new Date(new Date(dadosAtualizacao.start_at).getTime() + servico.duracao_min * 60000);
+        const end_at = new Date(new Date(dadosAtualizacao.data_agendamento).getTime() + servico.duracao_min * 60000);
         dadosAtualizacao.end_at = end_at.toISOString();
       }
 

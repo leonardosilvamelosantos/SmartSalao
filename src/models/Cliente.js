@@ -130,11 +130,11 @@ class Cliente extends BaseModel {
 
     // Buscar agendamentos do cliente
     const agendamentos = await this.query(`
-      SELECT a.id_agendamento, s.nome_servico as servico_nome, a.start_at, a.status, s.valor
+      SELECT a.id_agendamento, s.nome_servico as servico_nome, a.data_agendamento, a.status, s.preco
       FROM agendamentos a
       JOIN servicos s ON a.id_servico = s.id_servico
       WHERE a.id_cliente = ?
-      ORDER BY a.start_at DESC
+      ORDER BY a.data_agendamento DESC
     `, [id]);
 
     return { ...cliente, agendamentos };
@@ -151,7 +151,7 @@ class Cliente extends BaseModel {
         c.*,
         COUNT(a.id_agendamento) as total_agendamentos,
         COUNT(CASE WHEN a.status = 'completed' THEN 1 END) as agendamentos_concluidos,
-        MAX(a.start_at) as ultimo_agendamento
+        MAX(a.data_agendamento) as ultimo_agendamento
       FROM clientes c
       LEFT JOIN agendamentos a ON c.id_cliente = a.id_cliente
       WHERE c.id_usuario = $1

@@ -153,8 +153,17 @@ CREATE INDEX IF NOT EXISTS idx_audit_usuario_admin ON audit_logs(id_usuario_admi
 CREATE INDEX IF NOT EXISTS idx_audit_acao ON audit_logs(acao);
 CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at);
 
--- CONFIG EXTRA: auto confirmação de agendamentos por WhatsApp
-ALTER TABLE configuracoes ADD COLUMN IF NOT EXISTS auto_confirm_whatsapp INTEGER DEFAULT 0;
+-- CONFIGURAÇÕES (SQLite)
+CREATE TABLE IF NOT EXISTS configuracoes (
+  id_configuracao INTEGER PRIMARY KEY AUTOINCREMENT,
+  id_usuario INTEGER,
+  chave TEXT NOT NULL,
+  valor TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_configuracoes_usuario ON configuracoes(id_usuario);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_configuracoes_usuario_chave ON configuracoes(id_usuario, chave);
 `;
 
 // Script de criação para PostgreSQL com tipos corretos e FKs
@@ -251,12 +260,10 @@ CREATE TABLE IF NOT EXISTS notificacoes (
 );
 
 -- CONFIGURAÇÕES DE USUÁRIO (campos adicionais)
-DO $$ BEGIN
-  BEGIN ALTER TABLE usuarios ADD COLUMN email TEXT; EXCEPTION WHEN duplicate_column THEN END;
-  BEGIN ALTER TABLE usuarios ADD COLUMN senha_hash TEXT; EXCEPTION WHEN duplicate_column THEN END;
-  BEGIN ALTER TABLE usuarios ADD COLUMN tipo TEXT DEFAULT 'barbeiro'; EXCEPTION WHEN duplicate_column THEN END;
-  BEGIN ALTER TABLE usuarios ADD COLUMN ativo BOOLEAN DEFAULT true; EXCEPTION WHEN duplicate_column THEN END;
-END $$;
+ALTER TABLE IF EXISTS usuarios ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE IF EXISTS usuarios ADD COLUMN IF NOT EXISTS senha_hash TEXT;
+ALTER TABLE IF EXISTS usuarios ADD COLUMN IF NOT EXISTS tipo TEXT DEFAULT 'barbeiro';
+ALTER TABLE IF EXISTS usuarios ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email);
 
 -- DASHBOARD CACHE - Para armazenar métricas calculadas
@@ -301,6 +308,17 @@ CREATE INDEX IF NOT EXISTS idx_audit_tenant ON audit_logs(id_tenant);
 CREATE INDEX IF NOT EXISTS idx_audit_usuario_admin ON audit_logs(id_usuario_admin);
 CREATE INDEX IF NOT EXISTS idx_audit_acao ON audit_logs(acao);
 CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at);
+
+-- CONFIGURAÇÕES (PostgreSQL)
+CREATE TABLE IF NOT EXISTS configuracoes (
+  id_configuracao SERIAL PRIMARY KEY,
+  id_usuario INTEGER REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  chave TEXT NOT NULL,
+  valor JSONB,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(id_usuario, chave)
+);
 `;
 
 /**
@@ -336,6 +354,12 @@ async function runMigrations() {
             throw err;
           }
         }
+        continue;
+      }
+
+      // Pular ALTERs na tabela 'configuracoes' quando SQLite (não existe na V1)
+      if (!isPostgres && /ALTER\s+TABLE\s+configuracoes/i.test(sql)) {
+        console.log('ℹ️  Ignorando ALTER em tabela inexistente "configuracoes" (SQLite)');
         continue;
       }
 
@@ -379,18 +403,42 @@ async function runMigrations() {
 async function dropTables() {
   try {
     console.log('🗑️  Removendo tabelas existentes...');
+    const isPostgres = pool.isPostgreSQL === true;
 
-    const dropSQL = `
-      DROP TABLE IF EXISTS slots;
-      DROP TABLE IF EXISTS agendamentos;
-      DROP TABLE IF EXISTS clientes;
-      DROP TABLE IF EXISTS servicos;
-      DROP TABLE IF EXISTS usuarios;
-      DROP TABLE IF EXISTS tenants;
-    `;
-    const statements = dropSQL.split(';').map(s => s.trim()).filter(Boolean);
-    for (const sql of statements) {
-      await pool.query(sql);
+    if (isPostgres) {
+      const dropSQLPg = `
+        DROP TABLE IF EXISTS notificacoes CASCADE;
+        DROP TABLE IF EXISTS dashboard_cache CASCADE;
+        DROP TABLE IF EXISTS audit_logs CASCADE;
+        DROP TABLE IF EXISTS slots CASCADE;
+        DROP TABLE IF EXISTS agendamentos CASCADE;
+        DROP TABLE IF EXISTS clientes CASCADE;
+        DROP TABLE IF EXISTS servicos CASCADE;
+        DROP TABLE IF EXISTS configuracoes CASCADE;
+        DROP TABLE IF EXISTS usuarios CASCADE;
+        DROP TABLE IF EXISTS tenants CASCADE;
+      `;
+      const statementsPg = dropSQLPg.split(';').map(s => s.trim()).filter(Boolean);
+      for (const sql of statementsPg) {
+        await pool.query(sql);
+      }
+    } else {
+      const dropSQL = `
+        DROP TABLE IF EXISTS notificacoes;
+        DROP TABLE IF EXISTS dashboard_cache;
+        DROP TABLE IF EXISTS audit_logs;
+        DROP TABLE IF EXISTS slots;
+        DROP TABLE IF EXISTS agendamentos;
+        DROP TABLE IF EXISTS clientes;
+        DROP TABLE IF EXISTS servicos;
+        DROP TABLE IF EXISTS configuracoes;
+        DROP TABLE IF EXISTS usuarios;
+        DROP TABLE IF EXISTS tenants;
+      `;
+      const statements = dropSQL.split(';').map(s => s.trim()).filter(Boolean);
+      for (const sql of statements) {
+        await pool.query(sql);
+      }
     }
 
     console.log('✅ Tabelas removidas com sucesso');

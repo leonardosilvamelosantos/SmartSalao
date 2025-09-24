@@ -21,8 +21,8 @@ class AgendamentoValidationService {
         return { valid: false, error: 'Configurações não encontradas' };
       }
 
-      const { start_at, duracao_min } = agendamentoData;
-      const dataAgendamento = new Date(start_at);
+      const { data_agendamento, duracao_min } = agendamentoData;
+      const dataAgendamento = new Date(data_agendamento);
       const diaSemana = this.getDiaSemana(dataAgendamento);
       const horario = this.formatarHorario(dataAgendamento);
 
@@ -39,7 +39,7 @@ class AgendamentoValidationService {
         horario_agendamento: horario,
         horario_abertura: configuracoes.horario_abertura,
         horario_fechamento: configuracoes.horario_fechamento,
-        start_at_original: start_at,
+        data_agendamento_original: data_agendamento,
         data_agendamento: dataAgendamento.toISOString(),
         data_agendamento_local: dataAgendamento.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
       });
@@ -65,7 +65,7 @@ class AgendamentoValidationService {
       }
 
       // Validar conflitos de horário
-      const conflito = await this.verificarConflito(userId, start_at, duracao_min);
+      const conflito = await this.verificarConflito(userId, data_agendamento, duracao_min);
       if (conflito) {
         return { valid: false, error: 'Já existe um agendamento neste horário' };
       }
@@ -226,20 +226,20 @@ class AgendamentoValidationService {
   /**
    * Verificar conflito de horário
    */
-  async verificarConflito(userId, start_at, duracao_min) {
+  async verificarConflito(userId, data_agendamento, duracao_min) {
     try {
-      const end_at = new Date(new Date(start_at).getTime() + duracao_min * 60000);
+      const end_at = new Date(new Date(data_agendamento).getTime() + duracao_min * 60000);
       
       const conflitos = await this.agendamentoModel.query(`
         SELECT COUNT(*) as count FROM agendamentos 
         WHERE id_usuario = ? 
         AND status IN ('confirmed', 'pending')
         AND (
-          (start_at < ? AND end_at > ?) OR
-          (start_at < ? AND end_at > ?) OR
-          (start_at >= ? AND end_at <= ?)
+          (data_agendamento < ? AND end_at > ?) OR
+          (data_agendamento < ? AND end_at > ?) OR
+          (data_agendamento >= ? AND end_at <= ?)
         )
-      `, [userId, start_at, start_at, end_at, end_at, start_at, end_at]);
+      `, [userId, data_agendamento, data_agendamento, end_at, end_at, data_agendamento, end_at]);
 
       return parseInt(conflitos[0]?.count || 0) > 0;
     } catch (error) {
@@ -257,7 +257,7 @@ class AgendamentoValidationService {
         SELECT COUNT(*) as count FROM agendamentos 
         WHERE id_usuario = ? 
         AND status IN ('confirmed', 'pending')
-        AND start_at = ?
+        AND data_agendamento = ?
       `, [userId, datetime.toISOString()]);
 
       return parseInt(conflitos[0]?.count || 0) === 0;

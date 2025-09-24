@@ -67,9 +67,9 @@ class Usuario extends BaseModel {
     let query = `
       SELECT
         u.*,
-        GROUP_CONCAT(s.id_servico || '|' || s.nome_servico || '|' || s.duracao_min || '|' || s.valor) as servicos
+        GROUP_CONCAT(s.id_servico || '|' || s.nome_servico || '|' || s.duracao_min || '|' || s.preco) as servicos
       FROM ${tablePrefix}usuarios u
-      LEFT JOIN ${tablePrefix}servicos s ON u.id_usuario = s.id_usuario
+      LEFT JOIN ${tablePrefix}servicos s ON u.id_usuario = a.id_usuario
       WHERE u.id_usuario = $1
     `;
     const values = [id];
@@ -135,7 +135,7 @@ class Usuario extends BaseModel {
         u.*,
         COUNT(DISTINCT s.id_servico) as total_servicos
       FROM usuarios u
-      LEFT JOIN servicos s ON u.id_usuario = s.id_usuario
+      LEFT JOIN servicos s ON u.id_usuario = a.id_usuario
       GROUP BY u.id_usuario
       ORDER BY u.created_at DESC
       LIMIT $1 OFFSET $2

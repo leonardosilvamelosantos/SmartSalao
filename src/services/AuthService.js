@@ -148,10 +148,10 @@ class AuthService {
         const r = await pool.query('SELECT COUNT(*) as c FROM usuarios WHERE id_tenant = $1', [tenantId]);
         currentCount = parseInt(r.rows[0].c || 0);
       } else if (resourceType === 'servicos') {
-        const r = await pool.query('SELECT COUNT(*) as c FROM servicos s JOIN usuarios u ON s.id_usuario = u.id_usuario WHERE u.id_tenant = $1', [tenantId]);
+        const r = await pool.query('SELECT COUNT(*) as c FROM servicos s JOIN usuarios u ON a.id_usuario = u.id_usuario WHERE u.id_tenant = $1', [tenantId]);
         currentCount = parseInt(r.rows[0].c || 0);
       } else if (resourceType === 'agendamentos_mes') {
-        const r = await pool.query("SELECT COUNT(*) as c FROM agendamentos a JOIN usuarios u ON a.id_usuario = u.id_usuario WHERE u.id_tenant = $1 AND DATE_TRUNC('month', a.start_at) = DATE_TRUNC('month', NOW())", [tenantId]);
+        const r = await pool.query("SELECT COUNT(*) as c FROM agendamentos a JOIN usuarios u ON a.id_usuario = u.id_usuario WHERE u.id_tenant = $1 AND DATE_TRUNC('month', a.data_agendamento) = DATE_TRUNC('month', NOW())", [tenantId]);
         currentCount = parseInt(r.rows[0].c || 0);
       } else if (resourceType === 'api_requests_dia') {
         // Se tiver tabela de usage no futuro, contar a partir dela; por ora, não bloquear

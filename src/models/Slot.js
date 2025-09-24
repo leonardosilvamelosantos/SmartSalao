@@ -210,7 +210,7 @@ class Slot extends BaseModel {
           ROW_NUMBER() OVER (ORDER BY s.start_at) as row_num,
           s.start_at - (ROW_NUMBER() OVER (ORDER BY s.start_at) * INTERVAL '${usuario.intervalo_min} minutes') as grp
         FROM slots s
-        WHERE s.id_usuario = $1
+        WHERE a.id_usuario = $1
         AND s.start_at >= $2
         AND s.start_at <= $3
         AND s.status = 'free'

@@ -253,7 +253,7 @@ class DashboardService {
         COALESCE(AVG(CASE WHEN a.status = 'completed' THEN s.valor END), 0) as average_revenue
       FROM servicos s
       LEFT JOIN agendamentos a ON s.id_servico = a.id_servico
-      WHERE s.id_usuario = ?
+      WHERE a.id_usuario = ?
       GROUP BY s.id_servico, s.nome_servico
       ORDER BY total_revenue DESC
       LIMIT 10
@@ -276,8 +276,8 @@ class DashboardService {
         c.nome as client_name,
         c.whatsapp,
         COUNT(a.id_agendamento) as appointments_count,
-        MAX(a.start_at) as last_appointment,
-        COALESCE(SUM(CASE WHEN a.status = 'completed' THEN s.valor END), 0) as total_spent
+        MAX(a.data_agendamento) as last_appointment,
+        COALESCE(SUM(CASE WHEN a.status = 'completed' THEN s.preco END), 0) as total_spent
       FROM clientes c
       LEFT JOIN agendamentos a ON c.id_cliente = a.id_cliente
       LEFT JOIN servicos s ON a.id_servico = s.id_servico

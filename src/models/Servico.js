@@ -90,9 +90,9 @@ class Servico extends BaseModel {
         WHERE a.id_servico = s.id_servico
         AND a.status = 'confirmed'
         AND (
-          (a.start_at <= ? AND a.end_at > ?) OR
-          (a.start_at < ? AND a.end_at >= ?) OR
-          (a.start_at >= ? AND a.end_at <= ?)
+          (a.data_agendamento <= ? AND a.end_at > ?) OR
+          (a.data_agendamento < ? AND a.end_at >= ?) OR
+          (a.data_agendamento >= ? AND a.end_at <= ?)
         )
       )
       ORDER BY s.nome_servico
@@ -112,7 +112,7 @@ class Servico extends BaseModel {
         AVG(a.status = 'completed') as taxa_conclusao
       FROM servicos s
       LEFT JOIN agendamentos a ON s.id_servico = a.id_servico
-      WHERE s.id_usuario = ?
+      WHERE a.id_usuario = ?
       GROUP BY s.id_servico
       ORDER BY total_agendamentos DESC
       LIMIT ?

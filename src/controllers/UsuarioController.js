@@ -289,7 +289,7 @@ class UsuarioController {
           COUNT(DISTINCT a.id_agendamento) as total_agendamentos,
           COUNT(DISTINCT CASE WHEN a.status = 'completed' THEN a.id_agendamento END) as agendamentos_concluidos
         FROM usuarios u
-        LEFT JOIN servicos s ON u.id_usuario = s.id_usuario
+        LEFT JOIN servicos s ON u.id_usuario = a.id_usuario
         LEFT JOIN clientes c ON u.id_usuario = c.id_usuario
         LEFT JOIN agendamentos a ON u.id_usuario = a.id_usuario
         WHERE u.id_usuario = $1

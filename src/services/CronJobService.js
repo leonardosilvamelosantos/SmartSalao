@@ -267,7 +267,7 @@ class CronJobService {
         // Verificar se o slot já existe
         const existingSlot = await Slot.query(`
           SELECT id_slot FROM slots
-          WHERE id_usuario = ? AND start_at = ? AND status = 'booked'
+          WHERE id_usuario = ? AND data_agendamento = ? AND status = 'booked'
         `, [idUsuario, slotStartUTC]);
 
         // Só criar se não existir nenhum slot (mesmo que livre)
@@ -275,14 +275,14 @@ class CronJobService {
           // Verificar se existe slot livre para não sobrescrever
           const existingFreeSlot = await Slot.query(`
             SELECT id_slot FROM slots
-            WHERE id_usuario = ? AND start_at = ? AND status = 'free'
+            WHERE id_usuario = ? AND data_agendamento = ? AND status = 'free'
           `, [idUsuario, slotStartUTC]);
 
           if (existingFreeSlot.length === 0) {
             try {
               await Slot.create({
                 id_usuario: idUsuario,
-                start_at: slotStartUTC,
+                data_agendamento: slotStartUTC,
                 end_at: slotEndUTC,
                 status: 'free'
               });
@@ -342,7 +342,7 @@ class CronJobService {
     // Remover slots livres e bloqueados antigos
     const slotsDeleted = await Slot.query(`
       DELETE FROM slots
-      WHERE start_at < ?
+      WHERE data_agendamento < ?
       AND status IN ('free', 'blocked')
       AND id_agendamento IS NULL
     `, [thirtyDaysAgo]);

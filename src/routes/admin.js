@@ -326,7 +326,6 @@ router.post('/users', authenticateToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Nome, email e senha são obrigatórios' });
     }
 
-    // Verificar email único
     const exists = await pool.query('SELECT 1 FROM usuarios WHERE email = $1', [email]);
     if (exists.rows && exists.rows.length > 0) {
       return res.status(409).json({ success: false, message: 'Email já cadastrado' });
@@ -334,51 +333,80 @@ router.post('/users', authenticateToken, async (req, res) => {
 
     const senha_hash = await bcrypt.hash(senha, parseInt(process.env.BCRYPT_ROUNDS) || 12);
     const phone = whatsapp || telefone || null;
-    let tenantId = id_tenant || req.user?.tenant_id || 1;
 
-    // Determinar se pode criar tenant baseado no nível de admin
-    const canCreateTenant = canUserCreateTenant(req.user, admin_level, tipo);
-    
-    // Se create_tenant for true e o usuário pode criar tenant, criar um novo tenant
-    if (create_tenant && canCreateTenant && !id_tenant) {
-      try {
-        const TenantProvisioningService = require('../services/TenantProvisioningService');
-        const provisioningService = new TenantProvisioningService();
-        
-        // Criar tenant com dados do usuário
-        const tenantData = {
-          name: nome,
-          email: email,
-          phone: phone || '+5511999999999',
-          plan: 'basico'
-        };
+    // Estratégia de tenant
+    // Regra: se não vier id_tenant e create_tenant=false, NÃO usar tenant do usuário logado
+    // para evitar violar FK. Vamos definir depois (tenant = id_usuario).
+    let tenantId = id_tenant || null;
 
-        console.log(`🚀 Criando tenant automaticamente para usuário: ${nome} (${admin_level || 'admin'})`);
-        const tenantResult = await provisioningService.provisionTenant(tenantData);
-        tenantId = tenantResult.tenant.id_tenant;
-        
-        // console.log(`✅ Tenant ${tenantId} criado automaticamente para usuário ${nome}`); // Otimizado - log removido para reduzir spam
-      } catch (tenantError) {
-        console.error('Erro ao criar tenant automaticamente:', tenantError);
-        // Continuar com tenant padrão se falhar
-        tenantId = 1;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Criar usuário inicialmente com tenant provisório (null) para evitar FK
+      const userInsert = await client.query(
+        'INSERT INTO usuarios (id_tenant, nome, email, whatsapp, senha_hash, tipo, ativo, timezone) VALUES ($1, $2, $3, $4, $5, $6, true, $7) RETURNING id_usuario',
+        [null, nome, email, phone, senha_hash, (tipo === 'admin' ? 'admin' : 'barbeiro'), 'America/Sao_Paulo']
+      );
+      const newUserId = userInsert.rows[0].id_usuario;
+
+      // Se create_tenant=true e permitido, cria tenant novo via serviço existente
+      const canCreateTenant = canUserCreateTenant(req.user, admin_level, tipo);
+      if (create_tenant && canCreateTenant && !id_tenant) {
+        try {
+          const TenantProvisioningService = require('../services/TenantProvisioningService');
+          const provisioningService = new TenantProvisioningService();
+          const tenantResult = await provisioningService.provisionTenant({
+            name: nome,
+            email: email,
+            phone: phone || '+5511999999999',
+            plan: 'basico'
+          });
+          tenantId = tenantResult.tenant.id_tenant;
+        } catch (tenantError) {
+          console.error('Erro ao criar tenant automaticamente:', tenantError);
+          tenantId = 1;
+        }
+      } else if (!id_tenant) {
+        // Regra solicitada: cada novo usuário tem um tenant com mesmo ID do usuário
+        // Criar tenant com id_tenant = newUserId
+        await client.query(
+          `INSERT INTO tenants (id_tenant, nome_tenant, nome, email, dominio, status, config_tenant, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, 'ativo', '{}'::jsonb, NOW(), NOW())
+           ON CONFLICT (id_tenant) DO NOTHING`,
+          [newUserId, nome, nome, email, null]
+        );
+        tenantId = newUserId;
       }
+
+      // Atualizar usuário com tenant definitivo = tenantId
+      await client.query(
+        'UPDATE usuarios SET id_tenant = $1 WHERE id_usuario = $2',
+        [tenantId, newUserId]
+      );
+
+      // Garantir preenchimento de nome/email do tenant criado/definido
+      await client.query(
+        `UPDATE tenants SET 
+           nome = COALESCE(nome, $2), 
+           nome_tenant = COALESCE(nome_tenant, $2), 
+           email = COALESCE(email, $3)
+         WHERE id_tenant = $1`,
+        [tenantId, nome, email]
+      );
+
+      await client.query('COMMIT');
+
+      const sel = await pool.query('SELECT id_usuario, id_tenant, nome, email, whatsapp, tipo, ativo, created_at FROM usuarios WHERE id_usuario = $1', [newUserId]);
+      await logAudit(req, { acao: 'ADMIN_CREATE_USER', entidade: 'usuarios', id_entidade: sel.rows?.[0]?.id_usuario, dados: { email, id_tenant: tenantId, tenant_created: create_tenant || (!id_tenant && tenantId === newUserId) } });
+      return res.status(201).json({ success: true, data: sel.rows[0] });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      console.error('Erro ao criar usuário admin:', e);
+      return res.status(500).json({ success: false, message: 'Erro interno do servidor' });
+    } finally {
+      client.release();
     }
-
-    // Determinar admin_level para inserção
-    let finalAdminLevel = null;
-    if (tipo === 'admin') {
-      finalAdminLevel = admin_level || 'local';
-    }
-
-    await pool.query(
-      'INSERT INTO usuarios (id_tenant, nome, email, whatsapp, senha_hash, tipo, ativo, timezone) VALUES ($1, $2, $3, $4, $5, $6, true, $7)',
-      [tenantId, nome, email, phone, senha_hash, (tipo === 'admin' ? 'admin' : 'barbeiro'), 'America/Sao_Paulo']
-    );
-
-    const sel = await pool.query('SELECT id_usuario, id_tenant, nome, email, whatsapp, tipo, ativo, created_at FROM usuarios WHERE email = $1', [email]);
-    await logAudit(req, { acao: 'ADMIN_CREATE_USER', entidade: 'usuarios', id_entidade: sel.rows?.[0]?.id_usuario, dados: { email, id_tenant: tenantId, tenant_created: create_tenant } });
-    return res.status(201).json({ success: true, data: sel.rows[0] });
 
   } catch (error) {
     console.error('Erro ao criar usuário admin:', error);
@@ -796,7 +824,7 @@ router.get('/:barberId/clients',
           c.*,
           COUNT(a.id_agendamento) as total_appointments,
           COUNT(a.id_agendamento) FILTER (WHERE a.status = 'completed') as completed_appointments,
-          MAX(a.start_at) as last_appointment,
+          MAX(a.data_agendamento) as last_appointment,
           COALESCE(SUM(a.valor_total) FILTER (WHERE a.status = 'completed'), 0) as total_spent
         FROM clientes c
         LEFT JOIN agendamentos a ON c.id_cliente = a.id_cliente
@@ -890,7 +918,7 @@ router.get('/:barberId/reports/appointments',
 
       const query = `
         SELECT
-          DATE_TRUNC($4, a.start_at) as period,
+          DATE_TRUNC($4, a.data_agendamento) as period,
           COUNT(*) as total_appointments,
           COUNT(*) FILTER (WHERE a.status = 'confirmed') as confirmed,
           COUNT(*) FILTER (WHERE a.status = 'completed') as completed,
@@ -898,8 +926,8 @@ router.get('/:barberId/reports/appointments',
           COALESCE(SUM(a.valor_total) FILTER (WHERE a.status = 'completed'), 0) as revenue
         FROM agendamentos a
         WHERE a.id_usuario = $1
-          AND DATE(a.start_at) BETWEEN $2 AND $3
-        GROUP BY DATE_TRUNC($4, a.start_at)
+          AND DATE(a.data_agendamento) BETWEEN $2 AND $3
+        GROUP BY DATE_TRUNC($4, a.data_agendamento)
         ORDER BY period ASC
       `;
 

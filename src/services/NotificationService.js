@@ -11,23 +11,23 @@ class NotificationService {
     this.templates = {
       booking_created: {
         title: '✅ Agendamento Confirmado',
-        body: (booking) => `Olá! Seu agendamento foi confirmado.\n\n📅 Data: ${new Date(booking.start_at).toLocaleDateString('pt-BR')}\n🕐 Horário: ${new Date(booking.start_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n💇 Serviço: ${booking.servico_nome}\n💰 Valor: R$ ${booking.valor}\n\nObrigado pela preferência!`
+        body: (booking) => `Olá! Seu agendamento foi confirmado.\n\n📅 Data: ${new Date(booking.data_agendamento).toLocaleDateString('pt-BR')}\n🕐 Horário: ${new Date(booking.data_agendamento).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n💇 Serviço: ${booking.servico_nome}\n💰 Valor: R$ ${booking.valor}\n\nObrigado pela preferência!`
       },
       booking_cancelled: {
         title: '❌ Agendamento Cancelado',
-        body: (booking) => `Olá! Seu agendamento foi cancelado.\n\n📅 Data: ${new Date(booking.start_at).toLocaleDateString('pt-BR')}\n🕐 Horário: ${new Date(booking.start_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n💇 Serviço: ${booking.servico_nome}\n\nEntre em contato para reagendar.`
+        body: (booking) => `Olá! Seu agendamento foi cancelado.\n\n📅 Data: ${new Date(booking.data_agendamento).toLocaleDateString('pt-BR')}\n🕐 Horário: ${new Date(booking.data_agendamento).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n💇 Serviço: ${booking.servico_nome}\n\nEntre em contato para reagendar.`
       },
       booking_reminder_24h: {
         title: '🔔 Lembrete: Agendamento Amanhã',
-        body: (booking) => `Olá! Você tem um agendamento marcado para amanhã.\n\n📅 Data: ${new Date(booking.start_at).toLocaleDateString('pt-BR')}\n🕐 Horário: ${new Date(booking.start_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n💇 Serviço: ${booking.servico_nome}\n📍 Local: ${booking.usuario_nome || 'Confirmar local'}\n\nEstamos te aguardando!`
+        body: (booking) => `Olá! Você tem um agendamento marcado para amanhã.\n\n📅 Data: ${new Date(booking.data_agendamento).toLocaleDateString('pt-BR')}\n🕐 Horário: ${new Date(booking.data_agendamento).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n💇 Serviço: ${booking.servico_nome}\n📍 Local: ${booking.usuario_nome || 'Confirmar local'}\n\nEstamos te aguardando!`
       },
       booking_reminder_2h: {
         title: '🔔 Lembrete: Agendamento em 2 horas',
-        body: (booking) => `Olá! Você tem um agendamento em 2 horas.\n\n📅 Data: ${new Date(booking.start_at).toLocaleDateString('pt-BR')}\n🕐 Horário: ${new Date(booking.start_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n💇 Serviço: ${booking.servico_nome}\n📍 Local: ${booking.usuario_nome || 'Confirmar local'}\n\nNão se esqueça!`
+        body: (booking) => `Olá! Você tem um agendamento em 2 horas.\n\n📅 Data: ${new Date(booking.data_agendamento).toLocaleDateString('pt-BR')}\n🕐 Horário: ${new Date(booking.data_agendamento).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n💇 Serviço: ${booking.servico_nome}\n📍 Local: ${booking.usuario_nome || 'Confirmar local'}\n\nNão se esqueça!`
       },
       booking_reminder_30m: {
         title: '🔔 Lembrete: Agendamento em 30 minutos',
-        body: (booking) => `Olá! Você tem um agendamento em 30 minutos.\n\n📅 Data: ${new Date(booking.start_at).toLocaleDateString('pt-BR')}\n🕐 Horário: ${new Date(booking.start_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n💇 Serviço: ${booking.servico_nome}\n📍 Local: ${booking.usuario_nome || 'Confirmar local'}\n\nChegaremos em breve!`
+        body: (booking) => `Olá! Você tem um agendamento em 30 minutos.\n\n📅 Data: ${new Date(booking.data_agendamento).toLocaleDateString('pt-BR')}\n🕐 Horário: ${new Date(booking.data_agendamento).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n💇 Serviço: ${booking.servico_nome}\n📍 Local: ${booking.usuario_nome || 'Confirmar local'}\n\nChegaremos em breve!`
       }
     };
   }
@@ -139,15 +139,15 @@ class NotificationService {
           c.whatsapp as cliente_whatsapp,
           s.nome_servico,
           s.duracao_min,
-          s.valor,
+          s.preco,
           u.nome as usuario_nome
         FROM agendamentos a
         JOIN clientes c ON a.id_cliente = c.id_cliente
         JOIN servicos s ON a.id_servico = s.id_servico
         JOIN usuarios u ON a.id_usuario = u.id_usuario
         WHERE a.status = 'confirmed'
-        AND a.start_at >= $1
-        AND a.start_at < $2
+        AND a.data_agendamento >= $1
+        AND a.data_agendamento < $2
         AND NOT EXISTS (
           SELECT 1 FROM notificacoes n
           WHERE n.id_agendamento = a.id_agendamento
@@ -265,7 +265,7 @@ class NotificationService {
       const mockBooking = {
         cliente_nome: 'Cliente Teste',
         cliente_whatsapp: whatsapp,
-        start_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // Amanhã
+        data_agendamento: new Date(Date.now() + 24 * 60 * 60 * 1000), // Amanhã
         servico_nome: 'Corte de Cabelo',
         valor: 25.00,
         usuario_nome: 'Barbearia Teste'

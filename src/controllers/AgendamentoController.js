@@ -218,24 +218,24 @@ class AgendamentoController {
       }
 
       // Se está mudando data/hora ou serviço, verificar disponibilidade
-      if (updateData.start_at || updateData.id_servico) {
+      if (updateData.data_agendamento || updateData.id_servico) {
         const checkData = {
           id_usuario: userId,
-          start_at: updateData.start_at || existingAgendamento.start_at,
+          data_agendamento: updateData.data_agendamento || existingAgendamento.data_agendamento,
           id_servico: updateData.id_servico || existingAgendamento.id_servico
         };
 
         await Agendamento.checkAvailability(
           checkData.id_usuario,
-          checkData.start_at,
+          checkData.data_agendamento,
           checkData.id_servico
         );
 
         // Recalcular end_at se necessário
-        if (updateData.start_at || updateData.id_servico) {
+        if (updateData.data_agendamento || updateData.id_servico) {
           const servicoId = updateData.id_servico || existingAgendamento.id_servico;
           const servico = await Servico.findById(servicoId);
-          const startAt = new Date(updateData.start_at || existingAgendamento.start_at);
+          const startAt = new Date(updateData.data_agendamento || existingAgendamento.data_agendamento);
 
           updateData.end_at = new Date(startAt.getTime() + servico.duracao_min * 60000);
         }
@@ -498,8 +498,8 @@ class AgendamentoController {
           COUNT(CASE WHEN status = 'confirmed' THEN 1 END) as confirmados,
           COUNT(CASE WHEN status = 'completed' THEN 1 END) as concluidos,
           COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelados,
-          AVG(CASE WHEN status = 'completed' THEN s.valor END) as receita_media,
-          SUM(CASE WHEN status = 'completed' THEN s.valor END) as receita_total
+          AVG(CASE WHEN status = 'completed' THEN s.preco END) as receita_media,
+          SUM(CASE WHEN status = 'completed' THEN s.preco END) as receita_total
         FROM agendamentos a
         LEFT JOIN servicos s ON a.id_servico = s.id_servico
         WHERE a.id_usuario = $1
@@ -515,8 +515,8 @@ class AgendamentoController {
         SELECT COUNT(*) as agendamentos_hoje
         FROM agendamentos
         WHERE id_usuario = $1
-        AND start_at >= $2
-        AND start_at < $3
+        AND data_agendamento >= $2
+        AND data_agendamento < $3
         AND status = 'confirmed'
       `, [userId, today, tomorrow]);
 

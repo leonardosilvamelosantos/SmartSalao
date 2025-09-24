@@ -68,5 +68,23 @@ const ApiClient = (() => {
 })();
 
 window.ApiClient = ApiClient;
-
+// Compat: expor helper global "api(path, method='GET', body)"
+// Ex.: api('/api/admin/users'), api('/api/admin/cache/clear','POST')
+window.api = function(path, method = 'GET', body = null) {
+  const m = (typeof method === 'string' ? method : 'GET').toUpperCase();
+  switch (m) {
+    case 'GET':
+      return ApiClient.get(path);
+    case 'POST':
+      return ApiClient.post(path, body || {});
+    case 'PUT':
+      return ApiClient.put(path, body || {});
+    case 'PATCH':
+      return ApiClient.patch(path, body || {});
+    case 'DELETE':
+      return ApiClient.delete(path);
+    default:
+      return ApiClient.get(path);
+  }
+};
 
