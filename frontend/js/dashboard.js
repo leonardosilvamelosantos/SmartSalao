@@ -234,6 +234,11 @@ class DashboardManager {
                 // console.log('🚀 Primeira inicialização do dashboard...'); // Otimizado - log removido
                 await this.loadMetrics(true); // Forçar na primeira vez
                 this.isInitialized = true;
+                
+                // Mostrar notificação de sucesso
+                if (window.toastSystem) {
+                    window.toastSystem.success('Dashboard carregado com sucesso!');
+                }
             } else {
                 console.log('🔄 Dashboard já inicializado, pulando métricas...');
             }
@@ -247,6 +252,11 @@ class DashboardManager {
         } catch (error) {
             console.error('Erro ao carregar dados do dashboard:', error);
             this.showOfflineMode();
+            
+            // Mostrar notificação de erro
+            if (window.toastSystem) {
+                window.toastSystem.error('Erro ao carregar dados do dashboard');
+            }
         } finally {
             // Esconder loading states
             this.hideLoadingStates();

@@ -45,7 +45,12 @@ const ApiClient = (() => {
       
       if (!res.ok) {
         if (res.status === 401) {
-          alert('Sessão expirada. Faça login novamente.');
+          // Usar notificação toast em vez de alert
+          if (window.toastSystem) {
+            window.toastSystem.error('Sessão expirada. Faça login novamente.');
+          } else {
+            alert('Sessão expirada. Faça login novamente.');
+          }
           try { localStorage.removeItem('barbeiros-token'); localStorage.removeItem('barbeiros-user'); } catch(_){}
           if (!location.pathname.includes('login')) location.href = '/frontend/pages/login';
         }
@@ -54,6 +59,12 @@ const ApiClient = (() => {
       return data;
     } catch (error) {
       console.error(`❌ [API] Erro na requisição:`, error);
+      
+      // Mostrar notificação de erro se disponível
+      if (window.toastSystem && error.message) {
+        window.toastSystem.error(error.message);
+      }
+      
       throw error;
     }
   }

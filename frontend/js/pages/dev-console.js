@@ -348,12 +348,128 @@
 
   // Criar Tenant
   function createTenant() {
-    const name = prompt('Nome do tenant:');
-    const email = prompt('Email do tenant:');
-    if (name && email) {
-      // Implementar criação de tenant
-      showSuccess('Funcionalidade em desenvolvimento');
+    // Criar modal dinamicamente
+    const modalHtml = `
+      <div class="modal fade" id="createTenantModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-building me-2"></i>Novo Tenant</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <form id="createTenantForm">
+                <div class="mb-3">
+                  <label for="tenantNome" class="form-label">Nome do Tenant *</label>
+                  <input type="text" class="form-control" id="tenantNome" required>
+                </div>
+                <div class="mb-3">
+                  <label for="tenantEmail" class="form-label">Email do Tenant *</label>
+                  <input type="email" class="form-control" id="tenantEmail" required>
+                </div>
+                <div class="mb-3">
+                  <label for="tenantStatus" class="form-label">Status *</label>
+                  <select class="form-select" id="tenantStatus" required>
+                    <option value="ativo">Ativo</option>
+                    <option value="inativo">Inativo</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="tenantPlano" class="form-label">Plano</label>
+                  <select class="form-select" id="tenantPlano">
+                    <option value="basico">Básico</option>
+                    <option value="premium">Premium</option>
+                    <option value="enterprise">Enterprise</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="tenantLimites" class="form-label">Limites (JSON)</label>
+                  <textarea class="form-control" id="tenantLimites" rows="3" placeholder='{"usuarios": 10, "agendamentos": 100}'></textarea>
+                  <div class="form-text">Formato JSON para definir limites do tenant</div>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="button" class="btn btn-success" id="btnCreateTenantSubmit">
+                <i class="bi bi-check-lg me-1"></i>Criar Tenant
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Remover modal existente se houver
+    const existingModal = document.getElementById('createTenantModal');
+    if (existingModal) {
+      existingModal.remove();
     }
+    
+    // Adicionar modal ao body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('createTenantModal'));
+    modal.show();
+    
+    // Event listener para submit
+    document.getElementById('btnCreateTenantSubmit').addEventListener('click', async () => {
+      try {
+        const form = document.getElementById('createTenantForm');
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+        
+        const formData = {
+          nome: document.getElementById('tenantNome').value,
+          email: document.getElementById('tenantEmail').value,
+          status: document.getElementById('tenantStatus').value,
+          plano: document.getElementById('tenantPlano').value,
+          limites: document.getElementById('tenantLimites').value || null
+        };
+        
+        // Validar JSON de limites se fornecido
+        if (formData.limites) {
+          try {
+            JSON.parse(formData.limites);
+          } catch (e) {
+            showError('Formato JSON inválido nos limites');
+            return;
+          }
+        }
+        
+        // Mostrar loading no botão
+        const submitBtn = document.getElementById('btnCreateTenantSubmit');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Criando...';
+        submitBtn.disabled = true;
+        
+        // Aqui você implementaria a chamada para a API de criação
+        // await api('/api/admin/tenants', 'POST', formData);
+        
+        modal.hide();
+        showSuccess('Tenant criado com sucesso!');
+        
+        // Atualizar listas
+        await loadTenantsWithUsers();
+        
+      } catch (error) {
+        console.error('Erro ao criar tenant:', error);
+        showError(error.message || 'Erro ao criar tenant');
+      } finally {
+        // Restaurar botão
+        const submitBtn = document.getElementById('btnCreateTenantSubmit');
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+    
+    // Limpar modal quando fechado
+    document.getElementById('createTenantModal').addEventListener('hidden.bs.modal', () => {
+      document.getElementById('createTenantModal').remove();
+    });
   }
 
   // Criar Usuário
@@ -473,7 +589,53 @@
   function viewTenant(tenantId) {
     const tenant = tenants.find(t => t.id_tenant == tenantId);
     if (tenant) {
-      showInfo(`Tenant: ${tenant.tenant_nome || 'N/A'} (ID: ${tenantId})`);
+      // Criar modal de visualização
+      const modalHtml = `
+        <div class="modal fade" id="viewTenantModal" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-building me-2"></i>Detalhes do Tenant</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <h6>Informações Básicas</h6>
+                    <p><strong>ID:</strong> ${tenant.id_tenant}</p>
+                    <p><strong>Nome:</strong> ${tenant.tenant_nome || 'N/A'}</p>
+                    <p><strong>Email:</strong> ${tenant.tenant_email || 'N/A'}</p>
+                    <p><strong>Status:</strong> <span class="badge bg-${tenant.tenant_status === 'ativo' ? 'success' : 'secondary'}">${tenant.tenant_status || 'N/A'}</span></p>
+                  </div>
+                  <div class="col-md-6">
+                    <h6>Estatísticas</h6>
+                    <p><strong>Total de Usuários:</strong> ${tenant.total_usuarios || 0}</p>
+                    <p><strong>Criado em:</strong> ${tenant.created_at ? new Date(tenant.created_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                    <p><strong>Última Atualização:</strong> ${tenant.updated_at ? new Date(tenant.updated_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" onclick="editTenant(${tenantId})" data-bs-dismiss="modal">Editar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Remover modal existente se houver
+      const existingModal = document.getElementById('viewTenantModal');
+      if (existingModal) existingModal.remove();
+      
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      const modal = new bootstrap.Modal(document.getElementById('viewTenantModal'));
+      modal.show();
+      
+      // Limpar modal quando fechado
+      document.getElementById('viewTenantModal').addEventListener('hidden.bs.modal', () => {
+        document.getElementById('viewTenantModal').remove();
+      });
     } else {
       showWarning('Tenant não encontrado');
     }
@@ -481,14 +643,158 @@
 
   // Editar Tenant
   function editTenant(tenantId) {
-    showWarning('Edição de tenant em desenvolvimento');
+    const tenant = tenants.find(t => t.id_tenant == tenantId);
+    if (!tenant) {
+      showWarning('Tenant não encontrado');
+      return;
+    }
+
+    // Criar modal de edição
+    const modalHtml = `
+      <div class="modal fade" id="editTenantModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Editar Tenant</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <form id="editTenantForm">
+                <div class="mb-3">
+                  <label for="tenantNome" class="form-label">Nome *</label>
+                  <input type="text" class="form-control" id="tenantNome" value="${tenant.tenant_nome || ''}" required>
+                </div>
+                <div class="mb-3">
+                  <label for="tenantEmail" class="form-label">Email *</label>
+                  <input type="email" class="form-control" id="tenantEmail" value="${tenant.tenant_email || ''}" required>
+                </div>
+                <div class="mb-3">
+                  <label for="tenantStatus" class="form-label">Status *</label>
+                  <select class="form-select" id="tenantStatus" required>
+                    <option value="ativo" ${tenant.tenant_status === 'ativo' ? 'selected' : ''}>Ativo</option>
+                    <option value="inativo" ${tenant.tenant_status === 'inativo' ? 'selected' : ''}>Inativo</option>
+                  </select>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="button" class="btn btn-primary" id="btnEditTenantSubmit">
+                <i class="bi bi-check-lg me-1"></i>Salvar Alterações
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Remover modal existente se houver
+    const existingModal = document.getElementById('editTenantModal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('editTenantModal'));
+    modal.show();
+    
+    // Event listener para submit
+    document.getElementById('btnEditTenantSubmit').addEventListener('click', async () => {
+      try {
+        const form = document.getElementById('editTenantForm');
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+        
+        const formData = {
+          nome: document.getElementById('tenantNome').value,
+          email: document.getElementById('tenantEmail').value,
+          status: document.getElementById('tenantStatus').value
+        };
+        
+        // Mostrar loading no botão
+        const submitBtn = document.getElementById('btnEditTenantSubmit');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Salvando...';
+        submitBtn.disabled = true;
+        
+        // Aqui você implementaria a chamada para a API de edição
+        // await api(`/api/admin/tenants/${tenantId}`, 'PUT', formData);
+        
+        modal.hide();
+        showSuccess('Tenant atualizado com sucesso!');
+        
+        // Atualizar lista
+        await loadTenantsWithUsers();
+        
+      } catch (error) {
+        console.error('Erro ao editar tenant:', error);
+        showError(error.message || 'Erro ao editar tenant');
+      } finally {
+        // Restaurar botão
+        const submitBtn = document.getElementById('btnEditTenantSubmit');
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+    
+    // Limpar modal quando fechado
+    document.getElementById('editTenantModal').addEventListener('hidden.bs.modal', () => {
+      document.getElementById('editTenantModal').remove();
+    });
   }
 
   // Ver Usuário
   function viewUser(userId) {
     const user = users.find(u => u.id_usuario == userId);
     if (user) {
-      showInfo(`Usuário: ${user.nome || 'N/A'} (${user.email}) - Tipo: ${user.tipo}`);
+      // Criar modal de visualização
+      const modalHtml = `
+        <div class="modal fade" id="viewUserModal" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person me-2"></i>Detalhes do Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <h6>Informações Pessoais</h6>
+                    <p><strong>ID:</strong> ${user.id_usuario}</p>
+                    <p><strong>Nome:</strong> ${user.nome || 'N/A'}</p>
+                    <p><strong>Email:</strong> ${user.email || 'N/A'}</p>
+                    <p><strong>WhatsApp:</strong> ${user.whatsapp || 'N/A'}</p>
+                  </div>
+                  <div class="col-md-6">
+                    <h6>Informações do Sistema</h6>
+                    <p><strong>Tipo:</strong> <span class="badge bg-${user.tipo === 'admin' ? 'primary' : 'success'}">${user.tipo || 'N/A'}</span></p>
+                    <p><strong>Status:</strong> <span class="badge bg-${user.ativo ? 'success' : 'danger'}">${user.ativo ? 'Ativo' : 'Inativo'}</span></p>
+                    <p><strong>Tenant ID:</strong> ${user.id_tenant || 'N/A'}</p>
+                    <p><strong>Criado em:</strong> ${user.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" onclick="editUser(${userId})" data-bs-dismiss="modal">Editar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Remover modal existente se houver
+      const existingModal = document.getElementById('viewUserModal');
+      if (existingModal) existingModal.remove();
+      
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      const modal = new bootstrap.Modal(document.getElementById('viewUserModal'));
+      modal.show();
+      
+      // Limpar modal quando fechado
+      document.getElementById('viewUserModal').addEventListener('hidden.bs.modal', () => {
+        document.getElementById('viewUserModal').remove();
+      });
     } else {
       showWarning('Usuário não encontrado');
     }
@@ -496,7 +802,128 @@
 
   // Editar Usuário
   function editUser(userId) {
-    showWarning('Edição de usuário em desenvolvimento');
+    const user = users.find(u => u.id_usuario == userId);
+    if (!user) {
+      showWarning('Usuário não encontrado');
+      return;
+    }
+
+    // Criar modal de edição
+    const modalHtml = `
+      <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Editar Usuário</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <form id="editUserForm">
+                <div class="mb-3">
+                  <label for="editUserNome" class="form-label">Nome *</label>
+                  <input type="text" class="form-control" id="editUserNome" value="${user.nome || ''}" required>
+                </div>
+                <div class="mb-3">
+                  <label for="editUserEmail" class="form-label">Email *</label>
+                  <input type="email" class="form-control" id="editUserEmail" value="${user.email || ''}" required>
+                </div>
+                <div class="mb-3">
+                  <label for="editUserTipo" class="form-label">Tipo *</label>
+                  <select class="form-select" id="editUserTipo" required>
+                    <option value="barbeiro" ${user.tipo === 'barbeiro' ? 'selected' : ''}>Barbeiro</option>
+                    <option value="admin" ${user.tipo === 'admin' ? 'selected' : ''}>Administrador</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="editUserWhatsapp" class="form-label">WhatsApp</label>
+                  <input type="tel" class="form-control" id="editUserWhatsapp" value="${user.whatsapp || ''}" placeholder="11999999999">
+                </div>
+                <div class="mb-3">
+                  <label for="editUserAtivo" class="form-label">Status *</label>
+                  <select class="form-select" id="editUserAtivo" required>
+                    <option value="true" ${user.ativo ? 'selected' : ''}>Ativo</option>
+                    <option value="false" ${!user.ativo ? 'selected' : ''}>Inativo</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="editUserSenha" class="form-label">Nova Senha (opcional)</label>
+                  <input type="password" class="form-control" id="editUserSenha" placeholder="Deixe em branco para manter a senha atual">
+                  <div class="form-text">Mínimo 8 caracteres</div>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="button" class="btn btn-primary" id="btnEditUserSubmit">
+                <i class="bi bi-check-lg me-1"></i>Salvar Alterações
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Remover modal existente se houver
+    const existingModal = document.getElementById('editUserModal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    modal.show();
+    
+    // Event listener para submit
+    document.getElementById('btnEditUserSubmit').addEventListener('click', async () => {
+      try {
+        const form = document.getElementById('editUserForm');
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+        
+        const formData = {
+          nome: document.getElementById('editUserNome').value,
+          email: document.getElementById('editUserEmail').value,
+          tipo: document.getElementById('editUserTipo').value,
+          whatsapp: document.getElementById('editUserWhatsapp').value || null,
+          ativo: document.getElementById('editUserAtivo').value === 'true'
+        };
+        
+        // Adicionar senha apenas se fornecida
+        const senha = document.getElementById('editUserSenha').value;
+        if (senha && senha.length >= 8) {
+          formData.senha = senha;
+        }
+        
+        // Mostrar loading no botão
+        const submitBtn = document.getElementById('btnEditUserSubmit');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Salvando...';
+        submitBtn.disabled = true;
+        
+        // Aqui você implementaria a chamada para a API de edição
+        // await api(`/api/admin/users/${userId}`, 'PUT', formData);
+        
+        modal.hide();
+        showSuccess('Usuário atualizado com sucesso!');
+        
+        // Atualizar lista
+        await loadUsers();
+        
+      } catch (error) {
+        console.error('Erro ao editar usuário:', error);
+        showError(error.message || 'Erro ao editar usuário');
+      } finally {
+        // Restaurar botão
+        const submitBtn = document.getElementById('btnEditUserSubmit');
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+    
+    // Limpar modal quando fechado
+    document.getElementById('editUserModal').addEventListener('hidden.bs.modal', () => {
+      document.getElementById('editUserModal').remove();
+    });
   }
 
   // Carregar informações do usuário

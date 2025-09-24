@@ -110,8 +110,19 @@ class NotificationSystem {
             this.addAvisosSistema(avisosSistema);
 
             this.render();
+            
+            // Mostrar notificação de sucesso se houver atualizações
+            if (window.toastSystem && (agendamentos.length > 0 || clientesVIP.length > 0 || avisosSistema.length > 0)) {
+                window.toastSystem.info('Notificações atualizadas');
+            }
         } catch (error) {
             console.error('Erro ao atualizar notificações:', error);
+            
+            // Mostrar notificação de erro
+            if (window.toastSystem) {
+                window.toastSystem.error('Erro ao atualizar notificações');
+            }
+            
             // Em caso de erro, mostrar notificações existentes
             this.render();
         }

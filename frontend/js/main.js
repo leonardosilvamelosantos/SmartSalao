@@ -183,6 +183,11 @@ class BarbeirosApp {
         if (window.notificationSystem) {
             window.notificationSystem.reinitialize();
         }
+
+        // Mostrar notificação de login bem-sucedido
+        if (window.toastSystem && this.user.nome) {
+            window.toastSystem.success(`Bem-vindo, ${this.user.nome}!`);
+        }
     }
 
     // Verificar se o token é válido
