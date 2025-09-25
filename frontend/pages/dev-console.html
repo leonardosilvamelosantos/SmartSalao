@@ -136,6 +136,9 @@
           <button class="list-group-item list-group-item-action" data-section="users">
             <i class="bi bi-people me-2"></i>Usuários
           </button>
+          <button class="list-group-item list-group-item-action" data-section="limits">
+            <i class="bi bi-graph-up me-2"></i>Limites de Uso
+          </button>
           <button class="list-group-item list-group-item-action" data-section="audit">
             <i class="bi bi-shield-check me-2"></i>Auditoria
           </button>
@@ -273,6 +276,130 @@
                 </tr>
               </thead>
               <tbody id="usersTableBody">
+                <tr><td colspan="7" class="text-center">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="section-limits" class="section" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4><i class="bi bi-graph-up me-2"></i>Gerenciar Limites de Uso</h4>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-primary btn-sm" id="btnRefreshLimits">
+                <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+              </button>
+              <button class="btn btn-success btn-sm" id="btnSetLimits">
+                <i class="bi bi-sliders me-1"></i>Definir Limites
+              </button>
+            </div>
+          </div>
+          
+          <!-- Filtros -->
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                <select class="form-select" id="userFilter">
+                  <option value="">Todos os usuários</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-building"></i></span>
+                <select class="form-select" id="tenantFilter">
+                  <option value="">Todos os tenants</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" id="limitsSearch" placeholder="Buscar por usuário...">
+              </div>
+            </div>
+          </div>
+
+          <!-- Cards de Resumo -->
+          <div class="row mb-4">
+            <div class="col-md-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                      <i class="bi bi-people text-primary fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                      <div class="fw-bold text-muted small">Usuários com Limites</div>
+                      <div class="h4 mb-0" id="kpiUsersWithLimits">-</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                      <i class="bi bi-calendar-check text-success fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                      <div class="fw-bold text-muted small">Limite Agendamentos</div>
+                      <div class="h4 mb-0" id="kpiAgendamentosLimit">-</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                      <i class="bi bi-person-plus text-info fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                      <div class="fw-bold text-muted small">Limite Usuários</div>
+                      <div class="h4 mb-0" id="kpiUsuariosLimit">-</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                      <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                      <div class="fw-bold text-muted small">Próximos ao Limite</div>
+                      <div class="h4 mb-0" id="kpiNearLimit">-</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabela de Limites -->
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>Tenant</th>
+                  <th>Limite Agendamentos</th>
+                  <th>Limite Usuários</th>
+                  <th>Uso Atual</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="limitsTableBody">
                 <tr><td colspan="7" class="text-center">Carregando...</td></tr>
               </tbody>
             </table>

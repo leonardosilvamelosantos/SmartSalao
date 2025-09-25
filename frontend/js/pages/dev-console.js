@@ -11,6 +11,7 @@
   let tenants = [];
   let users = [];
   let auditLogs = [];
+  let limitsData = [];
 
   // Elementos DOM
   const sections = document.querySelectorAll('.section');
@@ -39,12 +40,17 @@
     document.getElementById('btnRefreshOverview')?.addEventListener('click', loadOverview);
     document.getElementById('btnRefreshTenants')?.addEventListener('click', loadTenantsWithUsers);
     document.getElementById('btnRefreshUsers')?.addEventListener('click', loadUsers);
+    document.getElementById('btnRefreshLimits')?.addEventListener('click', loadLimits);
+    document.getElementById('btnSetLimits')?.addEventListener('click', setLimits);
     document.getElementById('btnRefreshAudit')?.addEventListener('click', loadAuditLogs);
     document.getElementById('btnCreateTenant')?.addEventListener('click', createTenant);
     document.getElementById('btnCreateUser')?.addEventListener('click', createUser);
     document.getElementById('btnClearCache')?.addEventListener('click', clearCache);
     document.getElementById('btnHealth')?.addEventListener('click', checkHealth);
     document.getElementById('auditSearch')?.addEventListener('input', debounce(filterAuditLogs, 300));
+    document.getElementById('limitsSearch')?.addEventListener('input', debounce(filterLimits, 300));
+    document.getElementById('userFilter')?.addEventListener('change', filterLimits);
+    document.getElementById('tenantFilter')?.addEventListener('change', filterLimits);
   }
 
   // Navegação entre seções
@@ -83,6 +89,9 @@
         break;
       case 'users':
         loadUsers();
+        break;
+      case 'limits':
+        loadLimits();
         break;
       case 'audit':
         loadAuditLogs();
@@ -1031,11 +1040,593 @@
     };
   }
 
+  // Carregar Limites
+  async function loadLimits() {
+    try {
+      showLoading('section-limits');
+      
+      // Simular dados de limites (em produção, viria da API)
+      const mockLimits = [
+        {
+          id: 1,
+          userId: 1,
+          userName: 'Admin Sistema',
+          tenantId: 1,
+          tenantName: 'Tenant Padrão',
+          limiteAgendamentos: 100,
+          limiteUsuarios: 10,
+          usoAgendamentos: 45,
+          usoUsuarios: 3,
+          status: 'normal',
+          lastUpdated: new Date().toISOString()
+        },
+        {
+          id: 2,
+          userId: 2,
+          userName: 'João Silva',
+          tenantId: 2,
+          tenantName: 'Barbearia do João',
+          limiteAgendamentos: 50,
+          limiteUsuarios: 5,
+          usoAgendamentos: 48,
+          usoUsuarios: 4,
+          status: 'warning',
+          lastUpdated: new Date().toISOString()
+        },
+        {
+          id: 3,
+          userId: 3,
+          userName: 'Maria Santos',
+          tenantId: 3,
+          tenantName: 'Salão da Maria',
+          limiteAgendamentos: 200,
+          limiteUsuarios: 20,
+          usoAgendamentos: 15,
+          usoUsuarios: 2,
+          status: 'normal',
+          lastUpdated: new Date().toISOString()
+        }
+      ];
+      
+      limitsData = mockLimits;
+      
+      // Atualizar KPIs
+      updateLimitsKPIs();
+      
+      // Atualizar filtros
+      updateFilters();
+      
+      // Renderizar tabela
+      renderLimitsTable();
+      
+    } catch (error) {
+      console.error('Erro ao carregar limites:', error);
+      showError('Erro ao carregar dados de limites');
+    } finally {
+      hideLoading('section-limits');
+    }
+  }
+
+  // Atualizar KPIs de Limites
+  function updateLimitsKPIs() {
+    const usersWithLimits = limitsData.length;
+    const totalAgendamentosLimit = limitsData.reduce((sum, item) => sum + item.limiteAgendamentos, 0);
+    const totalUsuariosLimit = limitsData.reduce((sum, item) => sum + item.limiteUsuarios, 0);
+    const nearLimit = limitsData.filter(item => {
+      const agendamentosPercent = (item.usoAgendamentos / item.limiteAgendamentos) * 100;
+      const usuariosPercent = (item.usoUsuarios / item.limiteUsuarios) * 100;
+      return agendamentosPercent >= 80 || usuariosPercent >= 80;
+    }).length;
+
+    document.getElementById('kpiUsersWithLimits').textContent = usersWithLimits;
+    document.getElementById('kpiAgendamentosLimit').textContent = totalAgendamentosLimit.toLocaleString();
+    document.getElementById('kpiUsuariosLimit').textContent = totalUsuariosLimit.toLocaleString();
+    document.getElementById('kpiNearLimit').textContent = nearLimit;
+  }
+
+  // Atualizar Filtros
+  function updateFilters() {
+    // Filtro de usuários
+    const userFilter = document.getElementById('userFilter');
+    if (userFilter) {
+      const uniqueUsers = [...new Set(limitsData.map(item => item.userName))];
+      userFilter.innerHTML = '<option value="">Todos os usuários</option>' +
+        uniqueUsers.map(user => `<option value="${user}">${user}</option>`).join('');
+    }
+
+    // Filtro de tenants
+    const tenantFilter = document.getElementById('tenantFilter');
+    if (tenantFilter) {
+      const uniqueTenants = [...new Set(limitsData.map(item => item.tenantName))];
+      tenantFilter.innerHTML = '<option value="">Todos os tenants</option>' +
+        uniqueTenants.map(tenant => `<option value="${tenant}">${tenant}</option>`).join('');
+    }
+  }
+
+  // Renderizar Tabela de Limites
+  function renderLimitsTable() {
+    const tbody = document.getElementById('limitsTableBody');
+    if (!tbody) return;
+
+    if (limitsData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Nenhum limite encontrado</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = limitsData.map(item => {
+      const agendamentosPercent = Math.round((item.usoAgendamentos / item.limiteAgendamentos) * 100);
+      const usuariosPercent = Math.round((item.usoUsuarios / item.limiteUsuarios) * 100);
+      
+      const statusBadge = item.status === 'warning' ? 
+        '<span class="badge bg-warning">Atenção</span>' : 
+        '<span class="badge bg-success">Normal</span>';
+
+      return `
+        <tr>
+          <td>
+            <div class="d-flex align-items-center">
+              <i class="bi bi-person-circle me-2"></i>
+              <div>
+                <div class="fw-bold">${item.userName}</div>
+                <small class="text-muted">ID: ${item.userId}</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex align-items-center">
+              <i class="bi bi-building me-2"></i>
+              <div>
+                <div class="fw-bold">${item.tenantName}</div>
+                <small class="text-muted">ID: ${item.tenantId}</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex align-items-center">
+              <div class="progress me-2" style="width: 60px; height: 8px;">
+                <div class="progress-bar ${agendamentosPercent >= 80 ? 'bg-warning' : 'bg-success'}" 
+                     style="width: ${Math.min(agendamentosPercent, 100)}%"></div>
+              </div>
+              <div>
+                <div class="fw-bold">${item.usoAgendamentos}/${item.limiteAgendamentos}</div>
+                <small class="text-muted">${agendamentosPercent}%</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex align-items-center">
+              <div class="progress me-2" style="width: 60px; height: 8px;">
+                <div class="progress-bar ${usuariosPercent >= 80 ? 'bg-warning' : 'bg-success'}" 
+                     style="width: ${Math.min(usuariosPercent, 100)}%"></div>
+              </div>
+              <div>
+                <div class="fw-bold">${item.usoUsuarios}/${item.limiteUsuarios}</div>
+                <small class="text-muted">${usuariosPercent}%</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="text-center">
+              <div class="fw-bold">${item.usoAgendamentos + item.usoUsuarios}</div>
+              <small class="text-muted">total</small>
+            </div>
+          </td>
+          <td>${statusBadge}</td>
+          <td>
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-primary" onclick="editLimits(${item.id})" title="Editar Limites">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-outline-info" onclick="viewLimits(${item.id})" title="Ver Detalhes">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Filtrar Limites
+  function filterLimits() {
+    const searchTerm = document.getElementById('limitsSearch')?.value.toLowerCase() || '';
+    const userFilter = document.getElementById('userFilter')?.value || '';
+    const tenantFilter = document.getElementById('tenantFilter')?.value || '';
+
+    let filteredData = limitsData;
+
+    if (searchTerm) {
+      filteredData = filteredData.filter(item => 
+        item.userName.toLowerCase().includes(searchTerm) ||
+        item.tenantName.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    if (userFilter) {
+      filteredData = filteredData.filter(item => item.userName === userFilter);
+    }
+
+    if (tenantFilter) {
+      filteredData = filteredData.filter(item => item.tenantName === tenantFilter);
+    }
+
+    // Renderizar dados filtrados
+    const tbody = document.getElementById('limitsTableBody');
+    if (!tbody) return;
+
+    if (filteredData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Nenhum resultado encontrado</td></tr>';
+      return;
+    }
+
+    // Temporariamente substituir dados para renderização
+    const originalData = limitsData;
+    limitsData = filteredData;
+    renderLimitsTable();
+    limitsData = originalData;
+  }
+
+  // Definir Limites
+  function setLimits() {
+    // Criar modal para definir limites
+    const modalHtml = `
+      <div class="modal fade" id="setLimitsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-sliders me-2"></i>Definir Limites de Uso</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <form id="setLimitsForm">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="selectUser" class="form-label">Selecionar Usuário *</label>
+                      <select class="form-select" id="selectUser" required>
+                        <option value="">Escolha um usuário...</option>
+                        ${users.map(user => `<option value="${user.id_usuario}">${user.nome} (${user.email})</option>`).join('')}
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="selectTenant" class="form-label">Tenant</label>
+                      <select class="form-select" id="selectTenant" disabled>
+                        <option value="">Selecione um usuário primeiro</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="limiteAgendamentos" class="form-label">Limite de Agendamentos *</label>
+                      <input type="number" class="form-control" id="limiteAgendamentos" min="1" max="10000" required>
+                      <div class="form-text">Número máximo de agendamentos permitidos</div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="limiteUsuarios" class="form-label">Limite de Usuários *</label>
+                      <input type="number" class="form-control" id="limiteUsuarios" min="1" max="1000" required>
+                      <div class="form-text">Número máximo de usuários permitidos</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="observacoes" class="form-label">Observações</label>
+                  <textarea class="form-control" id="observacoes" rows="3" placeholder="Observações sobre os limites definidos..."></textarea>
+                </div>
+
+                <div class="alert alert-info">
+                  <i class="bi bi-info-circle me-2"></i>
+                  <strong>Importante:</strong> Os limites definidos aqui serão aplicados imediatamente ao usuário selecionado.
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="button" class="btn btn-success" id="btnSetLimitsSubmit">
+                <i class="bi bi-check-lg me-1"></i>Definir Limites
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Remover modal existente se houver
+    const existingModal = document.getElementById('setLimitsModal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('setLimitsModal'));
+    modal.show();
+    
+    // Event listener para mudança de usuário
+    document.getElementById('selectUser').addEventListener('change', (e) => {
+      const userId = e.target.value;
+      const tenantSelect = document.getElementById('selectTenant');
+      
+      if (userId) {
+        const user = users.find(u => u.id_usuario == userId);
+        if (user && user.id_tenant) {
+          const tenant = tenants.find(t => t.id_tenant == user.id_tenant);
+          if (tenant) {
+            tenantSelect.innerHTML = `<option value="${tenant.id_tenant}">${tenant.tenant_nome || tenant.nome_tenant}</option>`;
+            tenantSelect.disabled = false;
+          }
+        }
+      } else {
+        tenantSelect.innerHTML = '<option value="">Selecione um usuário primeiro</option>';
+        tenantSelect.disabled = true;
+      }
+    });
+    
+    // Event listener para submit
+    document.getElementById('btnSetLimitsSubmit').addEventListener('click', async () => {
+      try {
+        const form = document.getElementById('setLimitsForm');
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+        
+        const formData = {
+          userId: document.getElementById('selectUser').value,
+          tenantId: document.getElementById('selectTenant').value,
+          limiteAgendamentos: parseInt(document.getElementById('limiteAgendamentos').value),
+          limiteUsuarios: parseInt(document.getElementById('limiteUsuarios').value),
+          observacoes: document.getElementById('observacoes').value
+        };
+        
+        // Mostrar loading no botão
+        const submitBtn = document.getElementById('btnSetLimitsSubmit');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Definindo...';
+        submitBtn.disabled = true;
+        
+        // Aqui você implementaria a chamada para a API
+        // await api('/api/admin/limits', 'POST', formData);
+        
+        modal.hide();
+        showSuccess('Limites definidos com sucesso!');
+        
+        // Atualizar lista
+        await loadLimits();
+        
+      } catch (error) {
+        console.error('Erro ao definir limites:', error);
+        showError(error.message || 'Erro ao definir limites');
+      } finally {
+        // Restaurar botão
+        const submitBtn = document.getElementById('btnSetLimitsSubmit');
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+    
+    // Limpar modal quando fechado
+    document.getElementById('setLimitsModal').addEventListener('hidden.bs.modal', () => {
+      document.getElementById('setLimitsModal').remove();
+    });
+  }
+
+  // Editar Limites
+  function editLimits(limitId) {
+    const limit = limitsData.find(l => l.id === limitId);
+    if (!limit) {
+      showWarning('Limite não encontrado');
+      return;
+    }
+
+    // Criar modal de edição
+    const modalHtml = `
+      <div class="modal fade" id="editLimitsModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Editar Limites</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <form id="editLimitsForm">
+                <div class="mb-3">
+                  <label class="form-label">Usuário</label>
+                  <input type="text" class="form-control" value="${limit.userName}" readonly>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Tenant</label>
+                  <input type="text" class="form-control" value="${limit.tenantName}" readonly>
+                </div>
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="editLimiteAgendamentos" class="form-label">Limite de Agendamentos *</label>
+                      <input type="number" class="form-control" id="editLimiteAgendamentos" 
+                             value="${limit.limiteAgendamentos}" min="1" max="10000" required>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="editLimiteUsuarios" class="form-label">Limite de Usuários *</label>
+                      <input type="number" class="form-control" id="editLimiteUsuarios" 
+                             value="${limit.limiteUsuarios}" min="1" max="1000" required>
+                    </div>
+                  </div>
+                </div>
+                <div class="alert alert-warning">
+                  <i class="bi bi-exclamation-triangle me-2"></i>
+                  <strong>Atenção:</strong> Alterar os limites pode afetar o funcionamento do sistema.
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <button type="button" class="btn btn-primary" id="btnEditLimitsSubmit">
+                <i class="bi bi-check-lg me-1"></i>Salvar Alterações
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Remover modal existente se houver
+    const existingModal = document.getElementById('editLimitsModal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('editLimitsModal'));
+    modal.show();
+    
+    // Event listener para submit
+    document.getElementById('btnEditLimitsSubmit').addEventListener('click', async () => {
+      try {
+        const form = document.getElementById('editLimitsForm');
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+        
+        const formData = {
+          limiteAgendamentos: parseInt(document.getElementById('editLimiteAgendamentos').value),
+          limiteUsuarios: parseInt(document.getElementById('editLimiteUsuarios').value)
+        };
+        
+        // Mostrar loading no botão
+        const submitBtn = document.getElementById('btnEditLimitsSubmit');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Salvando...';
+        submitBtn.disabled = true;
+        
+        // Aqui você implementaria a chamada para a API
+        // await api(`/api/admin/limits/${limitId}`, 'PUT', formData);
+        
+        modal.hide();
+        showSuccess('Limites atualizados com sucesso!');
+        
+        // Atualizar lista
+        await loadLimits();
+        
+      } catch (error) {
+        console.error('Erro ao editar limites:', error);
+        showError(error.message || 'Erro ao editar limites');
+      } finally {
+        // Restaurar botão
+        const submitBtn = document.getElementById('btnEditLimitsSubmit');
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+    
+    // Limpar modal quando fechado
+    document.getElementById('editLimitsModal').addEventListener('hidden.bs.modal', () => {
+      document.getElementById('editLimitsModal').remove();
+    });
+  }
+
+  // Ver Detalhes dos Limites
+  function viewLimits(limitId) {
+    const limit = limitsData.find(l => l.id === limitId);
+    if (!limit) {
+      showWarning('Limite não encontrado');
+      return;
+    }
+
+    const agendamentosPercent = Math.round((limit.usoAgendamentos / limit.limiteAgendamentos) * 100);
+    const usuariosPercent = Math.round((limit.usoUsuarios / limit.limiteUsuarios) * 100);
+
+    // Criar modal de visualização
+    const modalHtml = `
+      <div class="modal fade" id="viewLimitsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-eye me-2"></i>Detalhes dos Limites</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <h6>Informações do Usuário</h6>
+                  <p><strong>Nome:</strong> ${limit.userName}</p>
+                  <p><strong>ID:</strong> ${limit.userId}</p>
+                  <p><strong>Tenant:</strong> ${limit.tenantName}</p>
+                </div>
+                <div class="col-md-6">
+                  <h6>Status Atual</h6>
+                  <p><strong>Status:</strong> <span class="badge bg-${limit.status === 'warning' ? 'warning' : 'success'}">${limit.status === 'warning' ? 'Atenção' : 'Normal'}</span></p>
+                  <p><strong>Última Atualização:</strong> ${new Date(limit.lastUpdated).toLocaleString('pt-BR')}</p>
+                </div>
+              </div>
+              
+              <hr>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <h6>Limite de Agendamentos</h6>
+                  <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                      <span>Uso Atual</span>
+                      <span>${limit.usoAgendamentos}/${limit.limiteAgendamentos}</span>
+                    </div>
+                    <div class="progress">
+                      <div class="progress-bar ${agendamentosPercent >= 80 ? 'bg-warning' : 'bg-success'}" 
+                           style="width: ${Math.min(agendamentosPercent, 100)}%"></div>
+                    </div>
+                    <small class="text-muted">${agendamentosPercent}% utilizado</small>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <h6>Limite de Usuários</h6>
+                  <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                      <span>Uso Atual</span>
+                      <span>${limit.usoUsuarios}/${limit.limiteUsuarios}</span>
+                    </div>
+                    <div class="progress">
+                      <div class="progress-bar ${usuariosPercent >= 80 ? 'bg-warning' : 'bg-success'}" 
+                           style="width: ${Math.min(usuariosPercent, 100)}%"></div>
+                    </div>
+                    <small class="text-muted">${usuariosPercent}% utilizado</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+              <button type="button" class="btn btn-primary" onclick="editLimits(${limitId})" data-bs-dismiss="modal">Editar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Remover modal existente se houver
+    const existingModal = document.getElementById('viewLimitsModal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('viewLimitsModal'));
+    modal.show();
+    
+    // Limpar modal quando fechado
+    document.getElementById('viewLimitsModal').addEventListener('hidden.bs.modal', () => {
+      document.getElementById('viewLimitsModal').remove();
+    });
+  }
+
   // Funções globais para uso em onclick
   window.viewTenant = viewTenant;
   window.editTenant = editTenant;
   window.viewUser = viewUser;
   window.editUser = editUser;
+  window.editLimits = editLimits;
+  window.viewLimits = viewLimits;
 
   // Inicializar quando DOM estiver pronto
   if (document.readyState === 'loading') {
