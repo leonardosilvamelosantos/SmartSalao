@@ -42,7 +42,8 @@ class ToastNotificationSystem {
             success: 'bi-check-circle-fill text-success',
             error: 'bi-exclamation-triangle-fill text-danger',
             warning: 'bi-exclamation-triangle-fill text-warning',
-            info: 'bi-info-circle-fill text-info'
+            info: 'bi-info-circle-fill text-info',
+            gold: 'bi-star-fill text-warning'
         };
         
         const title = options.title || this.getDefaultTitle(type);
@@ -81,7 +82,8 @@ class ToastNotificationSystem {
             success: 'Sucesso',
             error: 'Erro',
             warning: 'Atenção',
-            info: 'Informação'
+            info: 'Informação',
+            gold: 'Importante'
         };
         return titles[type] || 'Sistema';
     }
@@ -101,6 +103,10 @@ class ToastNotificationSystem {
 
     info(message, duration = 5000, options = {}) {
         return this.showToast(message, 'info', duration, options);
+    }
+
+    gold(message, duration = 6000, options = {}) {
+        return this.showToast(message, 'gold', duration, options);
     }
 
     // Método para mostrar notificações de API
@@ -141,3 +147,4 @@ window.showSuccess = (message, duration, options) => toastSystem?.success(messag
 window.showError = (message, duration, options) => toastSystem?.error(message, duration, options);
 window.showWarning = (message, duration, options) => toastSystem?.warning(message, duration, options);
 window.showInfo = (message, duration, options) => toastSystem?.info(message, duration, options);
+window.showGold = (message, duration, options) => toastSystem?.gold(message, duration, options);

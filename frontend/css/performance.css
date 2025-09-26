@@ -1,0 +1,310 @@
+/**
+ * CSS de Otimização de Performance
+ * Implementa otimizações visuais e de carregamento
+ */
+
+/* Otimizações de Renderização - Aplicadas apenas em elementos específicos */
+.card, .btn, .modal, .navbar, .sidebar {
+    /* Forçar aceleração de hardware apenas em elementos interativos */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Otimizações de Imagens */
+img {
+    /* Melhorar renderização de imagens - removido para evitar desfoque em mobile */
+    /* image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    image-rendering: optimize-contrast; */
+    
+    /* Prevenir layout shift */
+    height: auto;
+    max-width: 100%;
+    
+    /* Otimizar decodificação */
+    content-visibility: auto;
+    contain: layout style paint;
+}
+
+/* Placeholder para imagens em carregamento */
+img[loading="lazy"] {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Otimizações de Layout - Removidas para evitar problemas em mobile */
+/* .container, .row, .col {
+    will-change: transform;
+    contain: layout;
+} */
+
+/* Cards e elementos interativos */
+.card, .btn, .modal {
+    /* Otimizar animações */
+    will-change: transform, opacity;
+    transform: translateZ(0);
+}
+
+/* Animações otimizadas */
+.animated-card {
+    /* Usar transform em vez de mudanças de propriedades */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    will-change: transform;
+}
+
+.animated-card:hover {
+    transform: translateY(-2px) translateZ(0);
+}
+
+/* Otimizações de Scroll */
+.scroll-container {
+    /* Melhorar performance de scroll */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    
+    /* Otimizar repaint */
+    contain: layout style paint;
+}
+
+/* Otimizações de Fontes */
+@font-face {
+    font-family: 'Inter';
+    font-display: swap; /* Evitar FOIT */
+    src: url('https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2') format('woff2');
+}
+
+/* Otimizações de CSS Grid e Flexbox */
+.grid-container {
+    /* Usar CSS Grid para layouts complexos */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    
+    /* Otimizar repaint */
+    contain: layout;
+}
+
+.flex-container {
+    /* Usar Flexbox para layouts simples */
+    display: flex;
+    flex-wrap: wrap;
+    
+    /* Otimizar repaint */
+    contain: layout;
+}
+
+/* Otimizações de Modal */
+.modal {
+    /* Usar transform para animações */
+    transform: translateZ(0);
+    will-change: transform, opacity;
+}
+
+.modal.fade .modal-dialog {
+    transform: translate(0, -50px);
+    transition: transform 0.3s ease-out;
+}
+
+.modal.show .modal-dialog {
+    transform: translate(0, 0);
+}
+
+/* Otimizações de Toast/Notificações */
+.toast-container {
+    /* Usar transform para posicionamento */
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+.toast {
+    /* Otimizar animações de entrada/saída */
+    transform: translateX(100%);
+    transition: transform 0.3s ease-out;
+    will-change: transform;
+}
+
+.toast.show {
+    transform: translateX(0);
+}
+
+/* Otimizações de Tabelas */
+.table-responsive {
+    /* Melhorar performance de scroll horizontal */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    
+    /* Otimizar repaint */
+    contain: layout;
+}
+
+.table {
+    /* Otimizar renderização de tabelas */
+    table-layout: fixed;
+    width: 100%;
+}
+
+/* Otimizações de Formulários */
+.form-control {
+    /* Melhorar performance de input */
+    will-change: border-color, box-shadow;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    /* Usar transform para focus */
+    transform: translateZ(0);
+}
+
+/* Otimizações de Botões */
+.btn {
+    /* Otimizar hover e active states */
+    will-change: transform, background-color;
+    transition: transform 0.1s ease, background-color 0.15s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px) translateZ(0);
+}
+
+.btn:active {
+    transform: translateY(0) translateZ(0);
+}
+
+/* Otimizações de Loading States */
+.loading {
+    /* Usar CSS para animações de loading */
+    position: relative;
+    overflow: hidden;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* Otimizações de Dark Mode */
+.dark-mode {
+    /* Otimizar transições de tema */
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Otimizações de Mobile */
+@media (max-width: 768px) {
+    /* Reduzir animações em mobile */
+    .animated-card {
+        transition: none;
+    }
+    
+    .animated-card:hover {
+        transform: none;
+    }
+    
+    /* Otimizar scroll em mobile */
+    .scroll-container {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+    
+    /* Remover transformações que podem causar desfoque */
+    * {
+        transform: none !important;
+        backface-visibility: visible !important;
+        perspective: none !important;
+    }
+    
+    /* Manter apenas transforms essenciais para funcionalidade */
+    .card, .btn, .modal, .navbar, .sidebar {
+        transform: translateZ(0);
+        backface-visibility: hidden;
+    }
+    
+    /* Correções específicas para evitar desfoque */
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+    
+    /* Melhorar renderização de texto */
+    h1, h2, h3, h4, h5, h6, p, span, div {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    /* Corrigir renderização de imagens */
+    img {
+        image-rendering: auto;
+        -webkit-image-rendering: auto;
+    }
+}
+
+/* Otimizações de Print */
+@media print {
+    /* Remover animações na impressão */
+    * {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+    }
+    
+    /* Otimizar para impressão */
+    .no-print {
+        display: none !important;
+    }
+}
+
+/* Otimizações de Acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+    /* Respeitar preferência de movimento reduzido */
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* Otimizações de Contraste */
+@media (prefers-contrast: high) {
+    /* Melhorar contraste quando solicitado */
+    .card {
+        border: 2px solid currentColor;
+    }
+    
+    .btn {
+        border: 2px solid currentColor;
+    }
+}
+
+/* Otimizações de Densidade de Pixel */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    /* Otimizar para telas de alta resolução - removido para evitar desfoque */
+    /* img {
+        image-rendering: -webkit-optimize-contrast;
+    } */
+}
+

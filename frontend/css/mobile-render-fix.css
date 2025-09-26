@@ -1,0 +1,95 @@
+/**
+ * Correções específicas para renderização em mobile
+ * Resolve problemas de desfoque e esticamento
+ */
+
+/* Correções gerais para mobile */
+@media (max-width: 768px) {
+    /* Forçar renderização nítida */
+    * {
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+        text-rendering: optimizeLegibility !important;
+    }
+    
+    /* Corrigir renderização de imagens */
+    img {
+        image-rendering: auto !important;
+        -webkit-image-rendering: auto !important;
+        image-rendering: crisp-edges !important;
+    }
+    
+    /* Melhorar renderização de texto */
+    body, html {
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+        text-rendering: optimizeLegibility !important;
+    }
+    
+    /* Corrigir renderização de elementos específicos */
+    .card, .btn, .navbar, .sidebar {
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+    }
+    
+    /* Remover transformações que podem causar desfoque */
+    .card:hover, .btn:hover {
+        transform: none !important;
+    }
+    
+    /* Corrigir renderização de ícones */
+    .bi, i {
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+    }
+}
+
+/* Correções específicas para telas muito pequenas */
+@media (max-width: 480px) {
+    /* Forçar renderização ainda mais nítida */
+    * {
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+        text-rendering: optimizeLegibility !important;
+    }
+    
+    /* Corrigir renderização de imagens em telas pequenas */
+    img {
+        image-rendering: auto !important;
+        -webkit-image-rendering: auto !important;
+    }
+    
+    /* Melhorar contraste em telas pequenas */
+    .card {
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    /* Corrigir renderização de texto pequeno */
+    .small, .text-muted {
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+    }
+}
+
+/* Correções para dispositivos de alta resolução */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    /* Melhorar renderização em telas Retina */
+    * {
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+    }
+    
+    img {
+        image-rendering: auto !important;
+        -webkit-image-rendering: auto !important;
+    }
+}
+
+/* Correções para orientação landscape */
+@media (max-width: 768px) and (orientation: landscape) {
+    /* Melhorar renderização em landscape */
+    * {
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+    }
+}

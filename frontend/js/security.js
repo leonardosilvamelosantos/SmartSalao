@@ -34,8 +34,8 @@
                     return;
                 }
                 
-                // Verificar campos obrigatórios (userId e tenantId)
-                if (!payload.userId || !payload.tenantId) {
+                // Verificar se tem pelo menos um dos campos necessários (mais flexível)
+                if (!payload.userId && !payload.id) {
                     clearAuthData();
                     return;
                 }
@@ -66,6 +66,34 @@
         }
     }
     
+    // ===========================================
+    // ANOTAÇÃO DE SEGURANÇA - INTERCEPTAÇÃO 401
+    // ===========================================
+    // 
+    // ALTERAÇÕES IMPLEMENTADAS PARA CORRIGIR LOGOUT INDEVIDO:
+    // 
+    // 1. ANTES: Qualquer resposta 401 causava logout forçado
+    // 2. AGORA: Só força logout em casos específicos de segurança
+    // 
+    // LÓGICA DE SEGURANÇA ATUAL:
+    // - Requisições SEM token: NÃO força logout (pode ser rota pública ou erro de cliente)
+    // - Requisições COM token válido mas 401: NÃO força logout (pode ser erro temporário/permissão)
+    // - Requisições COM token expirado: FORÇA logout (segurança)
+    // - Requisições COM token malformado: FORÇA logout (segurança)
+    // 
+    // RISCOS MITIGADOS:
+    // ✅ Evita logout por requisições malformadas do cliente
+    // ✅ Evita logout por erros temporários de rede/servidor
+    // ✅ Mantém segurança para tokens realmente inválidos
+    // ✅ Preserva experiência do usuário
+    // 
+    // MONITORAMENTO:
+    // - Logs detalhados para auditoria
+    // - Verificação de expiração de token
+    // - Validação de estrutura JWT
+    // 
+    // ===========================================
+
     // Função para interceptar erros de autenticação
     function setupAuthErrorHandling() {
         // Interceptar fetch requests para detectar erros 401
@@ -73,7 +101,39 @@
         window.fetch = function(...args) {
             return originalFetch.apply(this, args).then(response => {
                 if (response.status === 401) {
-                    console.log('🔒 Erro 401 detectado, forçando logout...');
+                    const url = args[0];
+                    const options = args[1] || {};
+                    const authHeader = options.headers?.Authorization || options.headers?.['authorization'];
+                    
+                    console.log('🔒 Erro 401 detectado:', url, 'Token presente:', !!authHeader);
+                    
+                    // Se não há token na requisição, não forçar logout
+                    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                        console.log('🔒 Requisição sem token, não forçando logout');
+                        return response;
+                    }
+                    
+                    const token = authHeader.substring(7);
+                    
+                    // Verificar se o token é válido antes de forçar logout
+                    try {
+                        const parts = token.split('.');
+                        if (parts.length === 3) {
+                            const payload = JSON.parse(atob(parts[1]));
+                            const now = Math.floor(Date.now() / 1000);
+                            
+                            // Se o token não expirou, não forçar logout
+                            if (payload.exp && payload.exp > now) {
+                                console.log('🔒 Token válido mas recebeu 401, pode ser erro temporário - não forçando logout');
+                                return response;
+                            }
+                        }
+                    } catch (error) {
+                        console.log('🔒 Token inválido, forçando logout');
+                    }
+                    
+                    // Só forçar logout se realmente necessário
+                    console.log('🔒 Forçando logout devido a erro 401');
                     forceLogout();
                 }
                 return response;

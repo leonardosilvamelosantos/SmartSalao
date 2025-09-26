@@ -35,13 +35,8 @@ class ConfiguracaoService {
 
   async updateConfiguracoes(userId, data) {
     try {
-      console.log('🔧 ConfiguracaoService.updateConfiguracoes - Iniciando');
-      console.log('👤 UserId:', userId);
-      console.log('📝 Data recebida:', data);
-      
       // Verificar se configurações existem
       const existingConfig = await this.configuracaoModel.findBy({ id_usuario: userId });
-      console.log('🔍 Configurações existentes:', existingConfig);
       
       const configData = {
         id_usuario: userId,
@@ -74,9 +69,7 @@ class ConfiguracaoService {
         await this.configuracaoModel.update(existingConfig[0].id_configuracao, configData);
       } else {
         // Criar novas configurações
-        console.log('➕ Criando novas configurações');
-        // created_at e updated_at serão definidos automaticamente pelo BaseModel
-        const newId = await this.configuracaoModel.create(configData);
+        await this.configuracaoModel.create(configData);
       }
 
       // Se há alteração de senha

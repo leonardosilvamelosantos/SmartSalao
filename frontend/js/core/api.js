@@ -45,11 +45,18 @@ const ApiClient = (() => {
       
       if (!res.ok) {
         if (res.status === 401) {
+          // Verificar se a requisição tinha token antes de forçar logout
+          const authHeader = headers['Authorization'] || headers['authorization'];
+          if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            console.log('🔒 ApiClient: 401 sem token, não forçando logout');
+            throw new Error(data.message || `Erro ${res.status}`);
+          }
+          
           // Usar notificação toast em vez de alert
           if (window.toastSystem) {
             window.toastSystem.error('Sessão expirada. Faça login novamente.');
           } else {
-            alert('Sessão expirada. Faça login novamente.');
+            window.notificationManager?.showWarning('Sessão expirada. Faça login novamente.');
           }
           try { localStorage.removeItem('barbeiros-token'); localStorage.removeItem('barbeiros-user'); } catch(_){}
           if (!location.pathname.includes('login')) location.href = '/frontend/pages/login';

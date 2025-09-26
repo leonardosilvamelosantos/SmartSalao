@@ -429,9 +429,17 @@ class WhatsAppPage {
             const value = (input?.value || '').trim();
             if (value) {
                 try { localStorage.setItem('whatsapp-test-number', value); } catch (_) {}
-                this.showAlert('info', `Número de teste atualizado: ${value}`);
+                if (window.showInfo) {
+                    window.showInfo(`Número de teste atualizado: ${value}`);
+                } else {
+                    this.showAlert('info', `Número de teste atualizado: ${value}`);
+                }
             } else {
-                this.showAlert('error', 'Informe um número de teste válido');
+                if (window.showError) {
+                    window.showError('Informe um número de teste válido');
+                } else {
+                    this.showAlert('error', 'Informe um número de teste válido');
+                }
             }
         });
 
@@ -506,12 +514,20 @@ class WhatsAppPage {
             console.error('Erro ao carregar tenants:', error);
 
             if (error.message && error.message.includes('Token')) {
-                this.showAlert('error', 'Sua sessão expirou. Faça login novamente.');
+                if (window.showError) {
+                    window.showError('Sua sessão expirou. Faça login novamente.');
+                } else {
+                    this.showAlert('error', 'Sua sessão expirou. Faça login novamente.');
+                }
                 setTimeout(() => {
                     window.location.href = '../pages/login.html';
                 }, 3000);
             } else {
-                this.showAlert('error', 'Erro ao carregar tenants. Verifique sua conexão.');
+                if (window.showError) {
+                    window.showError('Erro ao carregar tenants. Verifique sua conexão.');
+                } else {
+                    this.showAlert('error', 'Erro ao carregar tenants. Verifique sua conexão.');
+                }
             }
         }
     }
@@ -768,12 +784,20 @@ class WhatsAppPage {
 
             await this.api.delete(`/api/whatsapp-v2/instances/${this.currentTenant}/disconnect`);
 
-            this.showAlert('success', 'Conexão parada com sucesso');
+            if (window.showSuccess) {
+                window.showSuccess('Conexão parada com sucesso');
+            } else {
+                this.showAlert('success', 'Conexão parada com sucesso');
+            }
             this.updateConnectionStatus();
 
         } catch (error) {
             console.error('Erro ao desconectar:', error);
-            this.showAlert('error', 'Erro ao desconectar');
+            if (window.showError) {
+                window.showError('Erro ao desconectar');
+            } else {
+                this.showAlert('error', 'Erro ao desconectar');
+            }
         } finally {
             this.setButtonLoading('btnDisconnect', false);
         }
@@ -788,12 +812,20 @@ class WhatsAppPage {
 
             await this.api.delete(`/api/whatsapp-v2/instances/${this.currentTenant}/disconnect`);
 
-            this.showAlert('success', 'Conexão reiniciada com sucesso');
+            if (window.showSuccess) {
+                window.showSuccess('Conexão reiniciada com sucesso');
+            } else {
+                this.showAlert('success', 'Conexão reiniciada com sucesso');
+            }
             this.updateConnectionStatus();
 
         } catch (error) {
             console.error('Erro ao reiniciar:', error);
-            this.showAlert('error', 'Erro ao reiniciar conexão');
+            if (window.showError) {
+                window.showError('Erro ao reiniciar conexão');
+            } else {
+                this.showAlert('error', 'Erro ao reiniciar conexão');
+            }
         } finally {
             this.setButtonLoading('btnRestart', false);
         }
@@ -812,12 +844,20 @@ class WhatsAppPage {
 
             await this.api.delete(`/api/whatsapp-v2/instances/${this.currentTenant}/disconnect`);
 
-            this.showAlert('success', 'Logout realizado com sucesso');
+            if (window.showSuccess) {
+                window.showSuccess('Logout realizado com sucesso');
+            } else {
+                this.showAlert('success', 'Logout realizado com sucesso');
+            }
             this.updateConnectionStatus();
 
         } catch (error) {
             console.error('Erro no logout:', error);
-            this.showAlert('error', 'Erro no logout');
+            if (window.showError) {
+                window.showError('Erro no logout');
+            } else {
+                this.showAlert('error', 'Erro no logout');
+            }
         } finally {
             this.setButtonLoading('btnLogout', false);
         }
@@ -1035,7 +1075,11 @@ class WhatsAppPage {
                 message: message
             });
 
-            this.showAlert('success', 'Mensagem enviada com sucesso');
+            if (window.showSuccess) {
+                window.showSuccess('Mensagem enviada com sucesso');
+            } else {
+                this.showAlert('success', 'Mensagem enviada com sucesso');
+            }
             messageInput.value = '';
 
             // Adicionar à lista de mensagens

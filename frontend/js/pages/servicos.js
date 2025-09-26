@@ -21,61 +21,44 @@ class ServicosPage {
         
         // Se não há dados em cache, carregar agora
         console.log('🔄 Página de serviços: Carregando dados da API...');
-        const content = document.getElementById('servicos-content');
-        if (!content) return;
-        content.innerHTML = '<div class="text-center"><i class="bi bi-arrow-clockwise" style="font-size: 3rem;"></i><p class="mt-2">Carregando serviços...</p></div>';
 
         try {
             const response = await this.app.apiRequest('/api/servicos');
+            console.log('📊 Resposta da API de serviços:', response);
+            
             if (response.success) {
                 this.data = response.data || [];
                 window.servicosData = this.data; // Armazenar em cache global
+                console.log('✅ Dados de serviços carregados:', this.data.length, 'itens');
                 this.render();
             } else {
-                content.innerHTML = '<div class="text-center text-muted"><i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i><p class="mt-2">Erro ao carregar serviços</p></div>';
+                console.error('❌ Erro na API de serviços:', response.message);
+                this.app.showError('Erro ao carregar serviços: ' + (response.message || 'Erro desconhecido'));
             }
         } catch (error) {
-            console.error('Erro ao carregar serviços:', error);
-            content.innerHTML = '<div class="text-center text-muted"><i class="bi bi-wifi-off" style="font-size: 3rem;"></i><p class="mt-2">Erro de conexão</p></div>';
+            console.error('❌ Erro ao carregar serviços:', error);
+            this.app.showError('Erro de conexão ao carregar serviços');
         }
     }
 
     render() {
-        const content = document.getElementById('servicos-content');
-        if (!this.data || this.data.length === 0) {
-            content.innerHTML = '<div class="text-center text-muted"><i class="bi bi-wrench" style="font-size: 3rem;"></i><p class="mt-2">Nenhum serviço cadastrado</p></div>';
-            return;
+        console.log('🔄 Renderizando serviços:', this.data?.length || 0, 'itens');
+        
+        // Atualizar métricas
+        if (typeof atualizarMetricasServicos === 'function') {
+            atualizarMetricasServicos(this.data);
         }
-
-        const html = `
-            <div class="row">
-                ${this.data.map(servico => `
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <h5 class="card-title">${servico.nome_servico}</h5>
-                                <p class="card-text text-muted">${servico.descricao || 'Sem descrição'}</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="h6 text-primary">R$ ${servico.valor.toFixed(2)}</span>
-                                    <span class="badge bg-secondary">${servico.duracao_min} min</span>
-                                </div>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <div class="btn-group w-100">
-                                    <button class="btn btn-outline-primary btn-sm" onclick="servicosPage.editar(${servico.id_servico})">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm" onclick="servicosPage.excluir(${servico.id_servico})">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-        content.innerHTML = html;
+        
+        // Renderizar na tabela
+        if (typeof renderizarServicosTabela === 'function') {
+            renderizarServicosTabela(this.data);
+        } else {
+            console.warn('⚠️ Função renderizarServicosTabela não encontrada');
+        }
+        
+        // Armazenar dados globalmente para uso posterior
+        window.servicosData = this.data || [];
+        console.log('✅ Serviços renderizados e armazenados globalmente');
     }
 
     novo() {
@@ -126,7 +109,7 @@ class ServicosPage {
         const data = Object.fromEntries(formData);
         
         if (!data.nome_servico || !data.duracao_servico || !data.valor_servico) {
-            alert('Nome, duração e valor são obrigatórios!');
+            window.notificationManager?.showWarning('Nome, duração e valor são obrigatórios!');
             return;
         }
 
@@ -156,7 +139,8 @@ class ServicosPage {
     }
 
     async excluir(id) {
-        if (!confirm('Tem certeza que deseja excluir este serviço?')) return;
+        const confirmed = await window.notificationManager?.confirmDelete('este serviço');
+        if (!confirmed) return;
 
         try {
             const response = await this.app.apiRequest(`/api/servicos/${id}`, {

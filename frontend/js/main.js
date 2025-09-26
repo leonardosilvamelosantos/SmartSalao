@@ -26,16 +26,90 @@ class BarbeirosApp {
     }
 
     async init() {
+        // Aguardar o sistema de roteamento de autenticação
+        this.waitForAuthRouter();
+    }
+
+    // Aguardar o sistema de roteamento de autenticação
+    waitForAuthRouter() {
+        // Se o AuthRouter já está disponível, inicializar
+        if (window.authRouter) {
+            this.initializeApp();
+            return;
+        }
+
+        // Aguardar o evento de autenticação
+        window.addEventListener('auth:authenticated', (event) => {
+            console.log('🔐 Evento de autenticação recebido:', event.detail);
+            this.initializeApp();
+        });
+
+        // Aguardar o evento de página de login
+        window.addEventListener('auth:login-page', (event) => {
+            console.log('🔐 Evento de página de login recebido');
+            // Não inicializar a aplicação se estiver na página de login
+        });
+
+        // Timeout de segurança
+        setTimeout(() => {
+            if (!this.isInitialized) {
+                console.warn('⚠️ Timeout na inicialização, tentando inicializar mesmo assim...');
+                this.initializeApp();
+            }
+        }, 5000);
+    }
+
+    // Inicializar aplicação (chamado após autenticação confirmada)
+    async initializeApp() {
+        if (this.isInitialized) return;
+        
+        console.log('🚀 Inicializando aplicação...');
+        this.isInitialized = true;
+
         // Limpar dados de autenticação inválidos na inicialização
         this.clearInvalidAuthData();
         this.checkAuth();
+        
+        // Configurar eventos críticos primeiro (reduzir FID)
         this.setupEventListeners();
         
-        // Carregar dados do dashboard
+        // Carregar dados essenciais primeiro
         await this.loadDashboardData();
         
-        // Carregar dados de todas as páginas em background para melhor UX
-        this.loadAllPagesData();
+        // Deferir carregamento pesado para reduzir FID
+        requestIdleCallback(() => {
+            this.preloadServices();
+            this.loadAllPagesData();
+        });
+        
+        // Listener para quando dashboardManager estiver pronto
+        window.addEventListener('dashboardManager:ready', () => {
+            console.log('🎯 DashboardManager pronto! Recarregando agendamentos...');
+            if (window.dashboardManager) {
+                window.dashboardManager.loadProximosAgendamentos();
+            }
+        });
+    }
+
+    // Pré-carregar serviços
+    async preloadServices() {
+        try {
+            console.log('🔄 Pré-carregando dados de serviços...');
+            const response = await this.apiRequest('/api/servicos');
+            
+            if (response.success) {
+                console.log('✅ Serviços pré-carregados:', response.data?.length || 0, 'itens');
+                // Armazenar dados globalmente para uso posterior
+                window.servicosData = response.data || [];
+                return response.data;
+            } else {
+                console.warn('⚠️ Erro ao pré-carregar serviços:', response.message);
+                return [];
+            }
+        } catch (error) {
+            console.warn('⚠️ Erro ao pré-carregar serviços:', error);
+            return [];
+        }
     }
 
     // Carregar dados de todas as páginas em background
@@ -138,60 +212,8 @@ class BarbeirosApp {
         return modal;
     }
 
-    // Limpar dados de autenticação inválidos
-    clearInvalidAuthData() {
-        const token = localStorage.getItem('barbeiros-token');
-        const user = localStorage.getItem('barbeiros-user');
-        
-        // Se não há token ou usuário, ou se são strings "null", limpar tudo
-        if (!token || !user || token === 'null' || user === 'null' || token === 'undefined' || user === 'undefined') {
-            this.clearAuthData();
-            return;
-        }
-        
-        // Atualizar this.token antes de verificar
-        this.token = token;
-        this.user = JSON.parse(user);
-        
-        // Verificar se o token é válido
-        if (!this.isValidToken()) {
-            this.clearAuthData();
-        }
-    }
-
-    // Verificar autenticação
-    checkAuth() {
-        this.token = localStorage.getItem('barbeiros-token');
-        this.user = JSON.parse(localStorage.getItem('barbeiros-user') || 'null');
-
-        // Verificar se o token é válido (não null, undefined ou string "null")
-        if (!this.token || this.token === 'null' || this.token === 'undefined' || !this.user || !this.isValidToken()) {
-            // Limpar dados de autenticação inválidos
-            this.clearAuthData();
-            // Redirecionar para login se não estiver autenticado
-            window.location.href = 'pages/login.html';
-            return;
-        }
-
-        // Atualizar nome do usuário na interface
-        const userNameElement = document.getElementById('user-name');
-        if (userNameElement && this.user.nome) {
-            userNameElement.textContent = this.user.nome;
-        }
-
-        // Reinicializar sistema de notificações se estiver autenticado
-        if (window.notificationSystem) {
-            window.notificationSystem.reinitialize();
-        }
-
-        // Mostrar notificação de login bem-sucedido
-        if (window.toastSystem && this.user.nome) {
-            window.toastSystem.success(`Bem-vindo, ${this.user.nome}!`);
-        }
-    }
-
-    // Verificar se o token é válido
-    isValidToken() {
+    // Verificar se o token é válido (versão silenciosa para evitar logs duplicados)
+    isValidTokenSilent() {
         if (!this.token || this.token === 'null' || this.token === 'undefined') {
             return false;
         }
@@ -212,13 +234,120 @@ class BarbeirosApp {
                 return false;
             }
             
-            // Verificar se tem os campos necessários (userId e tenantId)
-            if (!payload.userId || !payload.tenantId) {
+            // Verificar se tem pelo menos um dos campos necessários (mais flexível)
+            if (!payload.userId && !payload.id) {
                 return false;
             }
             
             return true;
         } catch (error) {
+            return false;
+        }
+    }
+
+    // Limpar dados de autenticação inválidos
+    clearInvalidAuthData() {
+        const token = localStorage.getItem('barbeiros-token');
+        const user = localStorage.getItem('barbeiros-user');
+        
+        // Se não há token ou usuário, ou se são strings "null", limpar tudo
+        if (!token || !user || token === 'null' || user === 'null' || token === 'undefined' || user === 'undefined') {
+            this.clearAuthData();
+            return;
+        }
+        
+        // Atualizar this.token antes de verificar
+        this.token = token;
+        this.user = JSON.parse(user);
+        
+        // Verificar se o token é válido (sem logs duplicados)
+        if (!this.isValidTokenSilent()) {
+            this.clearAuthData();
+        }
+    }
+
+    // Verificar autenticação
+    checkAuth() {
+        // Se já verificamos recentemente, pular verificação duplicada
+        if (this.lastAuthCheck && Date.now() - this.lastAuthCheck < 1000) {
+            return;
+        }
+        
+        this.token = localStorage.getItem('barbeiros-token');
+        this.user = JSON.parse(localStorage.getItem('barbeiros-user') || 'null');
+
+        console.log('🔒 Verificando autenticação...');
+        console.log('🔒 Token encontrado:', !!this.token, this.token ? this.token.substring(0, 50) + '...' : 'null');
+        console.log('🔒 Usuário encontrado:', !!this.user, this.user ? this.user.nome : 'null');
+
+        // Verificar se o token é válido (não null, undefined ou string "null")
+        if (!this.token || this.token === 'null' || this.token === 'undefined' || !this.user || !this.isValidToken()) {
+            console.log('🔒 Token ou usuário inválido, redirecionando para login');
+            // Limpar dados de autenticação inválidos
+            this.clearAuthData();
+            // Redirecionar para login se não estiver autenticado
+            window.location.href = 'pages/login.html';
+            return;
+        }
+
+        // Marcar timestamp da verificação
+        this.lastAuthCheck = Date.now();
+
+        // Atualizar nome do usuário na interface
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement && this.user.nome) {
+            userNameElement.textContent = this.user.nome;
+        }
+
+        // Reinicializar sistema de notificações se estiver autenticado
+        if (window.notificationSystem) {
+            window.notificationSystem.reinitialize();
+        }
+
+        // Mostrar notificação de login bem-sucedido
+        if (window.toastSystem && this.user.nome) {
+            window.toastSystem.success(`Bem-vindo, ${this.user.nome}!`);
+        }
+    }
+
+    // Verificar se o token é válido (versão com logs para debug)
+    isValidToken() {
+        console.log('🔍 Verificando validade do token...');
+        
+        if (!this.token || this.token === 'null' || this.token === 'undefined') {
+            console.log('❌ Token não encontrado ou inválido');
+            return false;
+        }
+        
+        try {
+            // Verificar se o token tem a estrutura básica de JWT
+            const parts = this.token.split('.');
+            if (parts.length !== 3) {
+                console.log('❌ Token não tem estrutura JWT válida');
+                return false;
+            }
+            
+            // Decodificar o payload (sem verificar assinatura)
+            const payload = JSON.parse(atob(parts[1]));
+            console.log('🔍 Payload do token:', payload);
+            
+            // Verificar se não expirou
+            const now = Math.floor(Date.now() / 1000);
+            if (payload.exp && payload.exp < now) {
+                console.log('❌ Token expirado. Exp:', payload.exp, 'Now:', now);
+                return false;
+            }
+            
+            // Verificar se tem pelo menos um dos campos necessários (mais flexível)
+            if (!payload.userId && !payload.id) {
+                console.log('❌ Token não tem userId ou id. userId:', payload.userId, 'id:', payload.id);
+                return false;
+            }
+            
+            console.log('✅ Token válido');
+            return true;
+        } catch (error) {
+            console.log('❌ Erro ao decodificar token:', error);
             return false;
         }
     }
@@ -279,20 +408,48 @@ class BarbeirosApp {
     // Carregar dados do dashboard
     async loadDashboardData() {
         try {
+            console.log('🔄 Main.js: Carregando dados do dashboard...');
             const response = await this.apiRequest('/api/dashboard');
 
             if (response.success) {
+                console.log('✅ Main.js: Dados do dashboard carregados:', response.data);
                 this.updateDashboardMetrics(response.data);
             } else {
+                console.error('❌ Main.js: Erro na resposta da API:', response);
                 this.showError('Erro ao carregar dados do dashboard');
             }
         } catch (error) {
-            console.error('Erro no dashboard:', error);
+            console.error('❌ Main.js: Erro no dashboard:', error);
             this.showError('Erro de conexão com o servidor');
         }
 
         // Carregar nome do estabelecimento
         await this.loadEstablishmentName();
+        
+        // Carregar agendamentos do dashboard se dashboardManager estiver disponível
+        if (window.dashboardManager) {
+            console.log('🔄 Main.js: Carregando agendamentos via dashboardManager...');
+            await window.dashboardManager.loadProximosAgendamentos();
+        } else {
+            console.warn('⚠️ Main.js: dashboardManager não está disponível, aguardando...');
+            // Aguardar mais tempo e tentar novamente
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (window.dashboardManager) {
+                console.log('✅ Main.js: dashboardManager agora disponível, carregando agendamentos...');
+                await window.dashboardManager.loadProximosAgendamentos();
+            } else {
+                console.error('❌ Main.js: dashboardManager ainda não disponível após aguardar');
+                // Tentar criar dashboardManager manualmente
+                console.log('🔧 Main.js: Tentando criar dashboardManager manualmente...');
+                if (window.DashboardManager) {
+                    window.dashboardManager = new window.DashboardManager(this);
+                    console.log('✅ Main.js: dashboardManager criado manualmente');
+                    await window.dashboardManager.loadProximosAgendamentos();
+                } else {
+                    console.error('❌ Main.js: DashboardManager class não está disponível');
+                }
+            }
+        }
     }
 
     // Atualizar métricas do dashboard
@@ -346,25 +503,100 @@ class BarbeirosApp {
 
     // Carregar dados dos serviços
     async loadServicosData() {
-        const content = document.getElementById('servicos-content');
-        content.innerHTML = '<div class="text-center"><i class="bi bi-arrow-clockwise" style="font-size: 3rem;"></i><p class="mt-2">Carregando serviços...</p></div>';
-
+        console.log('🔄 Carregando dados de serviços...');
+        
+        // Verificar se já temos dados pré-carregados
+        if (window.servicosData && window.servicosData.length > 0) {
+            console.log('✅ Usando dados pré-carregados de serviços:', window.servicosData.length, 'itens');
+            this.renderServicos(window.servicosData);
+            
+            // Forçar atualização da interface se estiver na página de serviços
+            if (this.currentPage === 'servicos') {
+                console.log('🔄 Atualizando interface da página de serviços...');
+                // Chamar a função de renderização específica da página
+                if (typeof renderizarServicosTabela === 'function') {
+                    console.log('🔄 Chamando renderizarServicosTabela...');
+                    renderizarServicosTabela(window.servicosData);
+                } else {
+                    console.warn('⚠️ Função renderizarServicosTabela não encontrada');
+                }
+                if (typeof atualizarMetricasServicos === 'function') {
+                    console.log('🔄 Chamando atualizarMetricasServicos...');
+                    atualizarMetricasServicos(window.servicosData);
+                } else {
+                    console.warn('⚠️ Função atualizarMetricasServicos não encontrada');
+                }
+            }
+            return;
+        }
+        
         try {
             const response = await this.apiRequest('/api/servicos');
+            console.log('📊 Resposta da API de serviços:', response);
 
             if (response.success) {
+                console.log('✅ Dados de serviços carregados:', response.data?.length || 0, 'itens');
                 this.renderServicos(response.data);
+                
+                // Armazenar dados globalmente
+                window.servicosData = response.data || [];
+                
+                // Forçar atualização da interface se estiver na página de serviços
+                if (this.currentPage === 'servicos') {
+                    console.log('🔄 Atualizando interface da página de serviços...');
+                    // Chamar a função de renderização específica da página
+                    if (typeof renderizarServicosTabela === 'function') {
+                        console.log('🔄 Chamando renderizarServicosTabela...');
+                        renderizarServicosTabela(response.data);
+                    } else {
+                        console.warn('⚠️ Função renderizarServicosTabela não encontrada');
+                    }
+                    if (typeof atualizarMetricasServicos === 'function') {
+                        console.log('🔄 Chamando atualizarMetricasServicos...');
+                        atualizarMetricasServicos(response.data);
+                    } else {
+                        console.warn('⚠️ Função atualizarMetricasServicos não encontrada');
+                    }
+                }
             } else {
-                content.innerHTML = '<div class="text-center text-muted"><i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i><p class="mt-2">Erro ao carregar serviços</p></div>';
+                console.error('❌ Erro na API de serviços:', response.message);
+                this.showError('Erro ao carregar serviços: ' + (response.message || 'Erro desconhecido'));
             }
         } catch (error) {
-            console.error('Erro ao carregar serviços:', error);
-            content.innerHTML = '<div class="text-center text-muted"><i class="bi bi-wifi-off" style="font-size: 3rem;"></i><p class="mt-2">Erro de conexão</p></div>';
+            console.error('❌ Erro ao carregar serviços:', error);
+            this.showError('Erro de conexão ao carregar serviços');
         }
     }
 
     // Renderizar lista de serviços
     renderServicos(servicos) {
+        console.log('🔄 Renderizando serviços:', servicos?.length || 0, 'itens');
+        
+        // Atualizar métricas
+        if (typeof atualizarMetricasServicos === 'function') {
+            atualizarMetricasServicos(servicos);
+        }
+        
+        // Renderizar na visualização padrão (grade)
+        if (servicosViewMode === 'cards') {
+            if (typeof renderizarServicosCards === 'function') {
+                renderizarServicosCards(servicos);
+            } else {
+                console.warn('⚠️ Função renderizarServicosCards não encontrada');
+            }
+        } else {
+            if (typeof renderizarServicosTabela === 'function') {
+                renderizarServicosTabela(servicos);
+            } else {
+                console.warn('⚠️ Função renderizarServicosTabela não encontrada');
+            }
+        }
+        
+        // Armazenar dados globalmente para uso posterior
+        window.servicosData = servicos || [];
+        console.log('✅ Serviços renderizados e armazenados globalmente');
+        return;
+        
         const content = document.getElementById('servicos-content');
 
         if (!servicos || servicos.length === 0) {
@@ -513,7 +745,7 @@ class BarbeirosApp {
         }
     }
 
-    // Renderizar agenda
+    // Renderizar agenda - OTIMIZADO PARA MOBILE
     renderAgenda(agendamentos) {
         console.log('🎨 main.js renderAgenda chamada com:', agendamentos?.length || 0, 'agendamentos');
         const content = document.getElementById('agenda-content');
@@ -557,47 +789,149 @@ class BarbeirosApp {
             <div class="agenda-day mb-4">
                 <h5 class="mb-3">
                     <i class="bi bi-calendar-day me-2"></i>${data}
+                    <span class="badge bg-primary ms-2">${agendamentosDoDia.length} agendamento(s)</span>
                 </h5>
                 <div class="agenda-items">
-                    ${agendamentosDoDia.map(agendamento => `
-                        <div class="agenda-item p-3 mb-2 border rounded">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="d-flex align-items-center">
-                                    <div class="me-3">
-                                        <div class="badge bg-${agendamento.status === 'confirmed' ? 'success' : agendamento.status === 'pending' ? 'warning' : 'secondary'}">
-                                            ${agendamento.status === 'confirmed' ? 'Confirmado' : agendamento.status === 'pending' ? 'Pendente' : 'Cancelado'}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-1">${agendamento.cliente_nome || 'Cliente'}</h6>
-                                        <p class="mb-1 text-muted small">${agendamento.nome_servico || 'Serviço'}</p>
-                                        <div class="d-flex align-items-center">
-                                            <i class="bi bi-clock me-1 text-muted"></i>
-                                            <small class="text-muted">${new Date(agendamento.start_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo'})}</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" onclick="editarAgendamento(${agendamento.id_agendamento})">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-outline-success" onclick="confirmarAgendamento(${agendamento.id_agendamento})">
-                                            <i class="bi bi-check-circle"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" onclick="cancelarAgendamento(${agendamento.id_agendamento})">
-                                            <i class="bi bi-x-circle"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
+                    ${agendamentosDoDia.map(agendamento => this.renderAppointmentCard(agendamento)).join('')}
                 </div>
             </div>
         `).join('');
 
         content.innerHTML = html;
+    }
+
+    // Renderizar card de agendamento individual - OTIMIZADO PARA MOBILE
+    renderAppointmentCard(agendamento) {
+        const statusClass = agendamento.status === 'confirmed' ? 'confirmed' : 
+                           agendamento.status === 'pending' ? 'pending' : 'cancelled';
+        
+        const statusText = agendamento.status === 'confirmed' ? 'Confirmado' : 
+                          agendamento.status === 'pending' ? 'Pendente' : 'Cancelado';
+        
+        const statusIcon = agendamento.status === 'confirmed' ? 'bi-check-circle-fill' : 
+                          agendamento.status === 'pending' ? 'bi-clock-fill' : 'bi-x-circle-fill';
+        
+        const time = new Date(agendamento.start_at).toLocaleTimeString('pt-BR', {
+            hour: '2-digit', 
+            minute: '2-digit', 
+            timeZone: 'America/Sao_Paulo'
+        });
+
+        return `
+            <div class="appointment-item">
+                <!-- Status indicator -->
+                <div class="appointment-status ${statusClass}"></div>
+                
+                <!-- Conteúdo principal -->
+                <div class="appointment-content">
+                    <!-- Header com informações principais -->
+                    <div class="appointment-header">
+                        <div class="appointment-info">
+                            <div class="appointment-client">${agendamento.cliente_nome || 'Cliente'}</div>
+                            <div class="appointment-service">${agendamento.nome_servico || 'Serviço'}</div>
+                        </div>
+                        
+                        <div class="appointment-right-info">
+                            <div class="appointment-time">
+                                <i class="bi bi-clock me-1"></i>${time}
+                            </div>
+                            <!-- Status badge -->
+                            <div class="badge bg-${agendamento.status === 'confirmed' ? 'success' : agendamento.status === 'pending' ? 'warning' : 'secondary'} d-flex align-items-center">
+                                <i class="bi ${statusIcon} me-1"></i>${statusText}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Ações - OTIMIZADAS PARA MOBILE -->
+                    <div class="appointment-actions">
+                        <div class="btn-group">
+                            <button class="btn btn-edit" onclick="editarAgendamento(${agendamento.id_agendamento})" title="Editar agendamento">
+                                <i class="bi bi-pencil"></i>
+                                <span class="d-none d-sm-inline">Editar</span>
+                            </button>
+                            <button class="btn btn-reschedule" onclick="reagendarAgendamento(${agendamento.id_agendamento})" title="Reagendar">
+                                <i class="bi bi-arrow-repeat"></i>
+                                <span class="d-none d-sm-inline">Reagendar</span>
+                            </button>
+                            <button class="btn btn-cancel" onclick="cancelarAgendamento(${agendamento.id_agendamento})" title="Cancelar">
+                                <i class="bi bi-x-circle"></i>
+                                <span class="d-none d-sm-inline">Cancelar</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Botão de deletar separado -->
+                <button class="appointment-delete" onclick="deletarAgendamento(${agendamento.id_agendamento})" title="Deletar agendamento">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+    }
+
+    // Filtrar agenda por status - FUNÇÃO MOBILE OTIMIZADA
+    filtrarAgendaPorStatus(status) {
+        console.log('🔍 Filtrando agenda por status:', status);
+        
+        // Atualizar ícones ativos
+        const navIcons = document.querySelectorAll('.navbar-secondary .nav-icon');
+        navIcons.forEach(icon => icon.classList.remove('active'));
+        
+        // Encontrar e ativar o ícone correspondente
+        const targetIcon = Array.from(navIcons).find(icon => {
+            const onclick = icon.getAttribute('onclick');
+            return onclick && onclick.includes(`'${status}'`);
+        });
+        
+        if (targetIcon) {
+            targetIcon.classList.add('active');
+        }
+        
+        // Aplicar filtro se houver dados carregados
+        if (window.agendaData && window.agendaData.length > 0) {
+            let agendamentosFiltrados = window.agendaData;
+            
+            if (status !== 'all') {
+                agendamentosFiltrados = window.agendaData.filter(agendamento => agendamento.status === status);
+            }
+            
+            this.renderAgenda(agendamentosFiltrados);
+        }
+    }
+
+    // Método para ordenar serviços
+    ordenarServicos(ordenacao) {
+        console.log('Ordenando serviços por:', ordenacao);
+        
+        if (!this.servicosData || this.servicosData.length === 0) {
+            console.warn('Nenhum serviço para ordenar');
+            return;
+        }
+
+        let servicosOrdenados = [...this.servicosData];
+
+        switch (ordenacao) {
+            case 'nome':
+                servicosOrdenados.sort((a, b) => (a.nome_servico || '').localeCompare(b.nome_servico || ''));
+                break;
+            case 'valor':
+                servicosOrdenados.sort((a, b) => parseFloat(a.valor || 0) - parseFloat(b.valor || 0));
+                break;
+            case 'duracao':
+                servicosOrdenados.sort((a, b) => parseInt(a.duracao_min || 0) - parseInt(b.duracao_min || 0));
+                break;
+            case 'popularidade':
+                // Ordenar por número de agendamentos (implementar quando tiver dados)
+                servicosOrdenados.sort((a, b) => (b.popularidade || 0) - (a.popularidade || 0));
+                break;
+            default:
+                console.warn('Tipo de ordenação não reconhecido:', ordenacao);
+                return;
+        }
+
+        this.servicosData = servicosOrdenados;
+        this.renderServicos();
+        console.log('Serviços ordenados com sucesso');
     }
 
     // Carregar dados dos usuários
@@ -690,11 +1024,22 @@ class BarbeirosApp {
 
     // API Request helper
     async apiRequest(endpoint, options = {}) {
+        console.log('🌐 API Request:', endpoint, 'Token presente:', !!this.token);
+        console.log('🌐 Token completo:', this.token ? this.token.substring(0, 50) + '...' : 'null');
+        
         // Verificar se o token é válido antes de enviar
         if (!this.token || this.token === 'null' || this.token === 'undefined') {
-            this.clearAuthData();
-            window.location.href = 'pages/login.html';
-            return { success: false, message: 'Token inválido' };
+            console.log('❌ Token inválido, tentando buscar do localStorage');
+            const tokenFromStorage = localStorage.getItem('barbeiros-token');
+            if (tokenFromStorage && tokenFromStorage !== 'null' && tokenFromStorage !== 'undefined') {
+                console.log('🔄 Token encontrado no localStorage, atualizando this.token');
+                this.token = tokenFromStorage;
+            } else {
+                console.log('❌ Token não encontrado em lugar nenhum, redirecionando para login');
+                this.clearAuthData();
+                window.location.href = 'pages/login.html';
+                return { success: false, message: 'Token inválido' };
+            }
         }
 
         // Se o segundo parâmetro for uma string, tratar como método HTTP
@@ -711,9 +1056,29 @@ class BarbeirosApp {
         };
 
         const mergedOptions = { ...defaultOptions, ...options };
+        
+        console.log('🌐 Headers finais:', mergedOptions.headers);
+        console.log('🌐 Body:', mergedOptions.body);
 
-        const response = await fetch(`${this.apiUrl}${endpoint}`, mergedOptions);
-        return await response.json();
+        try {
+            const response = await fetch(`${this.apiUrl}${endpoint}`, mergedOptions);
+            const data = await response.json();
+            
+            console.log('📡 API Response:', response.status, data);
+            
+            // Se receber 401, limpar auth e redirecionar
+            if (response.status === 401) {
+                console.log('🔒 Token expirado ou inválido (401), redirecionando para login');
+                this.clearAuthData();
+                window.location.href = 'pages/login.html';
+                return { success: false, message: 'Token expirado' };
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('❌ Erro na requisição API:', error);
+            throw error;
+        }
     }
 
     // Logout
@@ -725,16 +1090,32 @@ class BarbeirosApp {
 
     // Mostrar erro
     showError(message) {
-        // Implementar toast ou modal de erro
         console.error(message);
-        alert(message); // Temporário
+        if (window.notificationManager) {
+            window.notificationManager.showError(message);
+        } else {
+            alert(message); // Fallback
+        }
     }
 
     // Mostrar sucesso
     showSuccess(message) {
-        // Implementar toast ou modal de sucesso
         console.log(message);
-        alert(message); // Temporário
+        if (window.notificationManager) {
+            window.notificationManager.showSuccess(message);
+        } else {
+            alert(message); // Fallback
+        }
+    }
+
+    // Mostrar notificação dourada (importante/neutra)
+    showGold(message) {
+        console.log(message);
+        if (window.notificationManager) {
+            window.notificationManager.showGold(message);
+        } else {
+            alert(message); // Fallback
+        }
     }
 
     // Fechar modal
@@ -754,52 +1135,115 @@ class BarbeirosApp {
 
 // Funções globais para os onclicks
 function showPage(pageName) {
+    // Fechar sidebar mobile se estiver aberta
+    if (window.innerWidth < 992) {
+        closeMobileSidebar();
+    }
+    
     if (window.barbeirosApp) {
         window.barbeirosApp.showPage(pageName);
     }
 }
 
 function logout() {
-    if (window.barbeirosApp) {
+    // Usar o sistema de roteamento para logout
+    if (window.authRouter) {
+        window.authRouter.logout();
+    } else if (window.barbeirosApp) {
         window.barbeirosApp.logout();
+    } else {
+        // Fallback: limpar dados e redirecionar
+        localStorage.removeItem('barbeiros-token');
+        localStorage.removeItem('barbeiros-user');
+        localStorage.removeItem('barbeiros-tenant');
+        window.location.href = 'pages/login.html';
     }
 }
 
 // Função para fechar sidebar mobile
 function closeMobileSidebar() {
+    console.log('🔄 Fechando sidebar mobile...');
+    
     const sidebarCollapse = document.getElementById('sidebarCollapse');
     const overlay = document.getElementById('sidebarOverlay');
-    const sidebar = document.getElementById('sidebar');
     
+    // Fechar collapse do Bootstrap
     if (sidebarCollapse && sidebarCollapse.classList.contains('show')) {
+        console.log('✅ Fechando collapse da sidebar');
         const bsCollapse = new bootstrap.Collapse(sidebarCollapse, {
             toggle: false
         });
         bsCollapse.hide();
     }
     
+    // Remover overlay
     if (overlay) {
+        console.log('✅ Removendo overlay');
         overlay.classList.remove('show');
+        overlay.style.display = 'none';
+        overlay.style.opacity = '0';
     }
     
-    if (sidebar) {
-        sidebar.classList.remove('show');
-    }
+    // Forçar reflow para garantir que as mudanças sejam aplicadas
+    document.body.offsetHeight;
+    
+    console.log('✅ Sidebar mobile fechada');
 }
 
 // Função para abrir sidebar mobile
 function openMobileSidebar() {
+    console.log('🔄 Abrindo sidebar mobile...');
     const overlay = document.getElementById('sidebarOverlay');
     if (overlay) {
         overlay.classList.add('show');
+        console.log('✅ Overlay adicionado');
     }
 }
+
+// Função de emergência para limpar overlay
+function clearSidebarOverlay() {
+    console.log('🚨 Limpeza de emergência do overlay...');
+    const overlay = document.getElementById('sidebarOverlay');
+    const sidebarCollapse = document.getElementById('sidebarCollapse');
+    
+    if (overlay) {
+        overlay.classList.remove('show');
+        overlay.style.display = 'none';
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
+        console.log('✅ Overlay limpo');
+    }
+    
+    // Função global para limpar overlay (pode ser chamada de qualquer lugar)
+    window.clearOverlay = clearSidebarOverlay;
+    
+    if (sidebarCollapse) {
+        sidebarCollapse.classList.remove('show');
+        console.log('✅ Sidebar collapse limpo');
+    }
+    
+    // Forçar reflow
+    document.body.offsetHeight;
+    console.log('✅ Limpeza de emergência concluída');
+}
+
+// Adicionar função global para limpeza de emergência
+window.clearSidebarOverlay = clearSidebarOverlay;
 
 // Gerenciar eventos da sidebar mobile
 document.addEventListener('DOMContentLoaded', function() {
     const sidebarCollapse = document.getElementById('sidebarCollapse');
     const overlay = document.getElementById('sidebarOverlay');
     const sidebar = document.getElementById('sidebar');
+    
+    // Garantir que o overlay esteja oculto no carregamento inicial
+    if (overlay) {
+        overlay.classList.remove('show');
+        overlay.style.display = 'none';
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
+        console.log('✅ Overlay inicializado como oculto');
+    }
     
     if (sidebarCollapse) {
         sidebarCollapse.addEventListener('show.bs.collapse', function() {
@@ -819,7 +1263,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 sidebar.classList.remove('show');
             }
         });
+        
+        // Garantir que o overlay seja completamente removido quando o collapse for fechado
+        sidebarCollapse.addEventListener('hidden.bs.collapse', function() {
+            if (overlay) {
+                overlay.classList.remove('show');
+                overlay.style.display = 'none';
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+                console.log('✅ Overlay completamente removido');
+            }
+        });
     }
+    
+    // Limpeza adicional após um pequeno delay para garantir que tudo esteja carregado
+    setTimeout(() => {
+        if (overlay && overlay.classList.contains('show')) {
+            overlay.classList.remove('show');
+            overlay.style.display = 'none';
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+            console.log('✅ Limpeza adicional do overlay aplicada');
+        }
+    }, 100);
     
     // Fechar sidebar ao clicar no overlay
     if (overlay) {
@@ -843,10 +1309,14 @@ function novoAgendamento() {
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="cliente_id" class="form-label">Cliente Cadastrado</label>
-                        <select class="form-control" id="cliente_id" name="cliente_id">
-                            <option value="">Selecione um cliente...</option>
-                        </select>
-                        <small class="form-text text-muted">Ou preencha o nome manualmente abaixo</small>
+                        <div class="position-relative">
+                            <input type="text" class="form-control" id="cliente_search" placeholder="Digite para buscar cliente..." autocomplete="off">
+                            <select class="form-control d-none" id="cliente_id" name="cliente_id">
+                                <option value="">Selecione um cliente...</option>
+                            </select>
+                            <div id="cliente_dropdown" class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto; display: none;"></div>
+                        </div>
+                        <small class="form-text text-muted">Digite para buscar ou preencha o nome manualmente abaixo</small>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="servico_id" class="form-label">Serviço</label>
@@ -914,12 +1384,19 @@ function novoAgendamento() {
     // Carregar clientes e serviços
     carregarClientesSelect();
     carregarServicosSelect();
-    carregarHorariosSelect();
     configurarCamposCliente();
 
     // Definir data mínima como hoje
     const hoje = new Date().toISOString().split('T')[0];
-    document.getElementById('data_agendamento').min = hoje;
+    const dataInput = document.getElementById('data_agendamento');
+    dataInput.min = hoje;
+    dataInput.value = hoje; // Definir data padrão como hoje
+    
+    // Carregar horários para hoje
+    carregarHorariosSelect();
+    
+    // Carregar horários quando a data mudar
+    dataInput.addEventListener('change', carregarHorariosSelect);
 }
 
 function novoCliente() {
@@ -1113,10 +1590,74 @@ function novoServico() {
 // Funções auxiliares para os modais
 function configurarCamposCliente() {
     const clienteSelect = document.getElementById('cliente_id');
+    const clienteSearch = document.getElementById('cliente_search');
+    const clienteDropdown = document.getElementById('cliente_dropdown');
     const nomeManualInput = document.getElementById('nome_cliente_manual');
     const telefoneManualInput = document.getElementById('telefone_cliente_manual');
 
     if (!clienteSelect || !nomeManualInput) return;
+
+    // Array para armazenar todos os clientes
+    let todosClientes = [];
+
+    // Configurar busca de clientes
+    if (clienteSearch && clienteDropdown) {
+        clienteSearch.addEventListener('input', function() {
+            const termo = this.value.toLowerCase().trim();
+            
+            if (termo.length < 2) {
+                clienteDropdown.style.display = 'none';
+                clienteSelect.value = '';
+                return;
+            }
+
+            // Filtrar clientes
+            const clientesFiltrados = todosClientes.filter(cliente => 
+                cliente.nome.toLowerCase().includes(termo) ||
+                (cliente.whatsapp && cliente.whatsapp.includes(termo)) ||
+                (cliente.email && cliente.email.toLowerCase().includes(termo))
+            );
+
+            // Mostrar dropdown com resultados
+            if (clientesFiltrados.length > 0) {
+                clienteDropdown.innerHTML = clientesFiltrados.map(cliente => `
+                    <div class="dropdown-item" data-id="${cliente.id_cliente}" data-nome="${cliente.nome}" style="cursor: pointer;">
+                        <div class="fw-bold">${cliente.nome}</div>
+                        ${cliente.whatsapp ? `<small class="text-muted">${cliente.whatsapp}</small>` : ''}
+                        ${cliente.email ? `<small class="text-muted d-block">${cliente.email}</small>` : ''}
+                    </div>
+                `).join('');
+                clienteDropdown.style.display = 'block';
+            } else {
+                clienteDropdown.innerHTML = '<div class="dropdown-item text-muted">Nenhum cliente encontrado</div>';
+                clienteDropdown.style.display = 'block';
+            }
+        });
+
+        // Selecionar cliente do dropdown
+        clienteDropdown.addEventListener('click', function(e) {
+            const item = e.target.closest('.dropdown-item[data-id]');
+            if (item) {
+                const id = item.dataset.id;
+                const nome = item.dataset.nome;
+                
+                clienteSearch.value = nome;
+                clienteSelect.value = id;
+                clienteDropdown.style.display = 'none';
+                
+                // Desabilitar campos manuais
+                if (nomeManualInput) nomeManualInput.disabled = true;
+                if (telefoneManualInput) telefoneManualInput.disabled = true;
+            }
+        });
+
+        // Esconder dropdown ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (!clienteSearch.contains(e.target) && !clienteDropdown.contains(e.target)) {
+                clienteDropdown.style.display = 'none';
+            }
+        });
+    }
 
     // Função para atualizar estado dos campos
     function atualizarCampos() {
@@ -1138,9 +1679,11 @@ function configurarCamposCliente() {
         if (nomePreenchido) {
             // Se nome foi preenchido manualmente, desabilitar select
             clienteSelect.disabled = true;
+            if (clienteSearch) clienteSearch.disabled = true;
         } else {
             // Se nome não foi preenchido, habilitar select
             clienteSelect.disabled = false;
+            if (clienteSearch) clienteSearch.disabled = false;
         }
     }
 
@@ -1150,18 +1693,85 @@ function configurarCamposCliente() {
 
     // Configurar estado inicial
     atualizarCampos();
+
+    // Função para carregar todos os clientes
+    async function carregarTodosClientes() {
+        try {
+            const response = await window.barbeirosApp.apiRequest('/api/clientes');
+            if (response.success && response.data) {
+                todosClientes = response.data;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar clientes para busca:', error);
+        }
+    }
+
+    // Carregar clientes quando o modal abrir
+    carregarTodosClientes();
 }
 
-function carregarHorariosSelect() {
+async function carregarHorariosSelect() {
     const select = document.getElementById('hora_agendamento');
-    if (!select) return;
+    const dataInput = document.getElementById('data_agendamento');
+    if (!select || !dataInput) return;
 
     // Limpar opções existentes (exceto a primeira)
     select.innerHTML = '<option value="">Selecione um horário...</option>';
 
-    // Gerar horários de 15 em 15 minutos das 06:00 às 22:00
-    for (let hora = 6; hora <= 22; hora++) {
+    // Obter data selecionada
+    const dataSelecionada = dataInput.value;
+    if (!dataSelecionada) return;
+
+    try {
+        // Usar a API para carregar slots disponíveis
+        const response = await window.barbeirosApp.apiRequest(`/api/agendamentos/slots/${dataSelecionada}`);
+        
+        if (response.success && response.data) {
+            response.data.forEach(slot => {
+                const option = document.createElement('option');
+                option.value = slot.horario;
+                option.textContent = slot.horario;
+                option.disabled = !slot.disponivel;
+                if (!slot.disponivel) {
+                    option.textContent += ' (Indisponível)';
+                }
+                select.appendChild(option);
+            });
+        } else {
+            // Fallback: gerar horários localmente se API falhar
+            console.warn('API de slots falhou, usando fallback local');
+            carregarHorariosSelectFallback();
+        }
+    } catch (error) {
+        console.error('Erro ao carregar slots:', error);
+        // Fallback: gerar horários localmente se API falhar
+        carregarHorariosSelectFallback();
+    }
+}
+
+// Função fallback para gerar horários localmente (múltiplos de 15 minutos)
+function carregarHorariosSelectFallback() {
+    const select = document.getElementById('hora_agendamento');
+    const dataInput = document.getElementById('data_agendamento');
+    if (!select || !dataInput) return;
+
+    // Obter data selecionada
+    const dataSelecionada = dataInput.value;
+    const hoje = new Date().toISOString().split('T')[0];
+    const agora = new Date();
+    const horaAtual = agora.getHours();
+    const minutoAtual = agora.getMinutes();
+
+    // Gerar horários de 15 em 15 minutos das 08:00 às 18:00 (horário padrão)
+    for (let hora = 8; hora <= 18; hora++) {
         for (let minuto = 0; minuto < 60; minuto += 15) {
+            // Se for hoje, verificar se o horário já passou
+            if (dataSelecionada === hoje) {
+                if (hora < horaAtual || (hora === horaAtual && minuto <= minutoAtual)) {
+                    continue; // Pular horários já passados
+                }
+            }
+
             const horaStr = hora.toString().padStart(2, '0');
             const minutoStr = minuto.toString().padStart(2, '0');
             const valor = `${horaStr}:${minutoStr}`;
@@ -1230,7 +1840,7 @@ async function salvarAgendamento() {
 
     if (!clienteElement || !servicoElement || !dataElement || !horaElement || !modal) {
         console.error('Elementos do formulário de agendamento não encontrados');
-        alert('Erro: Formulário não está carregado corretamente. Tente novamente.');
+        window.notificationManager?.showError('Erro: Formulário não está carregado corretamente. Tente novamente.');
         return;
     }
 
@@ -1254,7 +1864,7 @@ async function salvarAgendamento() {
 
     // Validar se pelo menos um tipo de cliente foi preenchido
     if (!cliente_id && !nome_manual) {
-        alert('Selecione um cliente cadastrado ou digite o nome do cliente!');
+        window.notificationManager?.showWarning('Selecione um cliente cadastrado ou digite o nome do cliente!');
         salvandoAgendamento = false;
         // Restaurar botão
         const salvarBtn = document.querySelector('button[onclick="salvarAgendamento()"]');
@@ -1266,7 +1876,7 @@ async function salvarAgendamento() {
     }
 
     if (!servico_id || !data || !hora) {
-        alert('Preencha todos os campos obrigatórios!');
+        window.notificationManager?.showWarning('Preencha todos os campos obrigatórios!');
         salvandoAgendamento = false;
         // Restaurar botão
         const salvarBtn = document.querySelector('button[onclick="salvarAgendamento()"]');
@@ -1283,15 +1893,20 @@ async function salvarAgendamento() {
     // Isso garante que 17:30 local seja enviado como 17:30
     const [ano, mes, dia] = data.split('-');
     const [horaNum, minutoNum] = hora.split(':');
+    
+    // Criar data no timezone local sem conversão automática
     const dataObj = new Date(ano, mes - 1, dia, parseInt(horaNum), parseInt(minutoNum), 0);
-    const start_at = dataObj.toISOString();
+    
+    // Formatar para ISO string mantendo o horário local
+    const start_at = `${data}T${hora}:00`;
     
     console.log('🕐 Conversão de horário:', {
         data: data,
         hora: hora,
         dataObj: dataObj,
         start_at: start_at,
-        horaLocal: dataObj.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+        horaLocal: dataObj.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+        formatoEnviado: `${data}T${hora}:00`
     });
 
     const editingId = modal.dataset.editingId;
@@ -1417,7 +2032,7 @@ async function salvarCliente() {
 
     if (!nomeElement || !whatsappElement || !modal) {
         console.error('Elementos do formulário de cliente não encontrados');
-        alert('Erro: Formulário não está carregado corretamente. Tente novamente.');
+        window.notificationManager?.showError('Erro: Formulário não está carregado corretamente. Tente novamente.');
         return;
     }
 
@@ -1445,13 +2060,13 @@ async function salvarCliente() {
 
     // Validar WhatsApp
     if (whatsapp && !validarTelefone(whatsapp)) {
-        alert('WhatsApp inválido! Use apenas números.');
+        window.notificationManager?.showWarning('WhatsApp inválido! Use apenas números.');
         return;
     }
 
     // Validar email se fornecido
     if (email && !validarEmail(email)) {
-        alert('Email inválido!');
+        window.notificationManager?.showWarning('Email inválido!');
         return;
     }
 
@@ -1514,7 +2129,7 @@ async function salvarServico() {
 
     if (!nomeElement || !duracaoElement || !valorElement || !ativoElement || !modal) {
         console.error('Elementos do formulário não encontrados');
-        alert('Erro: Formulário não está carregado corretamente. Tente novamente.');
+        window.notificationManager?.showError('Erro: Formulário não está carregado corretamente. Tente novamente.');
         return;
     }
 
@@ -1525,7 +2140,7 @@ async function salvarServico() {
     const ativo = ativoElement.checked;
 
     if (!nome || !duracao || !valor) {
-        alert('Nome, duração e valor são obrigatórios!');
+        window.notificationManager?.showWarning('Nome, duração e valor são obrigatórios!');
         return;
     }
 
@@ -1572,17 +2187,25 @@ async function salvarServico() {
                 console.warn('Erro ao limpar dados do modal:', cleanupError);
             }
 
-            // Recarregar serviços se estiver na página
-            console.log('Página atual:', window.barbeirosApp.currentPage);
-            
-            // Sempre recarregar dados de serviços após criar um serviço
-            console.log('Recarregando dados de serviços...');
-            await window.barbeirosApp.loadServicosData();
-            
-            // Forçar atualização da interface se estiver na página de serviços
+            // Atualizar interface imediatamente se estiver na página de serviços
             if (window.barbeirosApp.currentPage === 'servicos') {
-                // Simular navegação para a página de serviços para atualizar a interface
-                window.barbeirosApp.showPage('servicos');
+                console.log('🔄 Atualizando interface imediatamente...');
+                // Recarregar dados e atualizar interface
+                await window.barbeirosApp.loadServicosData();
+                
+                // Forçar atualização da tabela de serviços
+                setTimeout(() => {
+                    if (typeof renderizarServicosTabela === 'function' && window.servicosData) {
+                        console.log('🔄 Forçando atualização da tabela de serviços...');
+                        renderizarServicosTabela(window.servicosData);
+                    }
+                }, 200);
+            } else {
+                // Recarregar dados em background
+                console.log('🔄 Recarregando dados em background...');
+                setTimeout(() => {
+                    window.barbeirosApp.loadServicosData();
+                }, 100);
             }
             
             // Atualizar métricas do dashboard sem recarregar a página
@@ -1642,28 +2265,99 @@ function editarServico(id) {
     bsModal.show();
 }
 
-async function excluirServico(id) {
-    if (confirm('Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita.')) {
-        console.log('Excluir serviço:', id);
+function excluirServico(id) {
+    console.log('🔍 Função excluirServico chamada para ID:', id);
+    console.log('🔍 Tipo do ID:', typeof id);
+    console.log('🔍 Valor do ID:', id);
+    
+    // Verificar se o ID é válido
+    if (!id || isNaN(id)) {
+        console.error('❌ ID inválido:', id);
+        alert('Erro: ID do serviço inválido');
+        return;
+    }
+    
+    // Usar confirm nativo - deve ser síncrono para garantir que aguarde a confirmação
+    if (!confirm('Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita.')) {
+        console.log('❌ Exclusão cancelada pelo usuário');
+        return;
+    }
+    
+    console.log('✅ Exclusão confirmada pelo usuário, prosseguindo...');
+    
+    // Executar exclusão de forma assíncrona APÓS a confirmação
+    executarExclusao(id);
+}
 
-        try {
-            const response = await window.barbeirosApp.apiRequest(`/api/servicos/${id}`, {
-                method: 'DELETE'
-            });
+async function executarExclusao(id) {
+    console.log('Excluir serviço:', id);
 
-            if (response.success) {
-                window.barbeirosApp.showSuccess('Serviço excluído com sucesso!');
-                // Recarregar serviços se estiver na página
-                if (window.barbeirosApp.currentPage === 'servicos') {
-                    window.barbeirosApp.loadServicosData();
-                }
-            } else {
-                window.barbeirosApp.showError(response.message || 'Erro ao excluir serviço');
+    try {
+        const response = await window.barbeirosApp.apiRequest(`/api/servicos/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.success) {
+            window.barbeirosApp.showSuccess('Serviço excluído com sucesso!');
+            
+            // Remover o serviço da interface imediatamente (tanto tabela quanto cards)
+            const servicoRow = document.querySelector(`tr[data-servico-id="${id}"]`);
+            const servicoCard = document.querySelector(`.servico-card[data-servico-id="${id}"]`);
+            
+            if (servicoRow) {
+                // Remoção instantânea da tabela com animação
+                servicoRow.classList.add('removing');
+                setTimeout(() => {
+                    servicoRow.remove();
+                }, 200);
             }
-        } catch (error) {
-            console.error('Erro ao excluir serviço:', error);
-            window.barbeirosApp.showError('Erro de conexão');
+            
+            if (servicoCard) {
+                // Remoção instantânea dos cards com animação
+                servicoCard.classList.add('removing');
+                setTimeout(() => {
+                    servicoCard.remove();
+                    // Reorganizar cards após remoção
+                    reorganizarCards();
+                }, 200);
+            }
+            
+            // Atualizar dados globais imediatamente
+            if (window.servicosData) {
+                window.servicosData = window.servicosData.filter(s => s.id_servico != id);
+                
+                // Atualizar métricas
+                if (typeof atualizarMetricasServicos === 'function') {
+                    atualizarMetricasServicos(window.servicosData);
+                }
+                
+                // Atualizar contador
+                const contador = document.getElementById('contador-servicos');
+                if (contador) {
+                    contador.textContent = window.servicosData.length;
+                }
+            }
+            
+            // Verificar se precisa mostrar estado vazio
+            setTimeout(() => {
+                const tbody = document.getElementById('servicos-table-body');
+                const cardsContainer = document.getElementById('servicos-cards-container');
+                
+                if (servicosViewMode === 'table' && tbody && tbody.children.length === 0) {
+                    const emptyState = document.getElementById('servicos-empty-table');
+                    if (emptyState) emptyState.style.display = 'block';
+                } else if (servicosViewMode === 'cards' && cardsContainer && cardsContainer.children.length === 0) {
+                    const emptyState = document.getElementById('servicos-empty-cards');
+                    if (emptyState) emptyState.style.display = 'block';
+                }
+            }, 250);
+            
+        } else {
+            window.barbeirosApp.showError(response.message || 'Erro ao excluir serviço');
         }
+    } catch (error) {
+        console.error('Erro ao excluir serviço:', error);
+        window.barbeirosApp.showError('Erro de conexão');
     }
 }
 
@@ -1747,7 +2441,8 @@ function editarCliente(id) {
 }
 
 async function excluirCliente(id) {
-    if (!confirm('Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.')) {
+    const confirmed = await window.notificationManager?.confirmDelete('este cliente');
+    if (!confirmed) {
         return;
     }
 
@@ -1836,7 +2531,8 @@ function editarUsuario(id) {
 }
 
 async function excluirUsuario(id) {
-    if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) {
+    const confirmed = await window.notificationManager?.confirmDelete('este usuário');
+    if (!confirmed) {
         return;
     }
 
@@ -1874,7 +2570,7 @@ async function salvarUsuario() {
 
     if (!nomeElement || !emailElement || !senhaElement || !tipoElement || !modal) {
         console.error('Elementos do formulário de usuário não encontrados');
-        alert('Erro: Formulário não está carregado corretamente. Tente novamente.');
+        window.notificationManager?.showError('Erro: Formulário não está carregado corretamente. Tente novamente.');
         return;
     }
 
@@ -2012,6 +2708,11 @@ function editarAgendamento(id) {
         const servicoElement = document.getElementById('servico_id');
         const dataElement = document.getElementById('data_agendamento');
         const horaElement = document.getElementById('hora_agendamento');
+
+        // Recarregar horários quando a data mudar
+        if (dataElement) {
+            dataElement.addEventListener('change', carregarHorariosSelect);
+        }
         const observacoesElement = document.getElementById('observacoes');
         const modalTitle = document.getElementById('formModalTitle');
         const modal = document.getElementById('formModal');
@@ -2048,7 +2749,8 @@ function confirmarAgendamento(id) {
 }
 
 async function cancelarAgendamento(id) {
-    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) {
+    const confirmed = await window.notificationManager?.confirmCancel('este agendamento');
+    if (!confirmed) {
         return;
     }
 
@@ -2083,12 +2785,42 @@ async function cancelarAgendamento(id) {
 
 // === VARIÁVEIS GLOBAIS PARA CACHE DE DADOS ===
 let servicosData = []; // Cache dos dados dos serviços
-let servicosViewMode = localStorage.getItem('servicosViewMode') || 'table'; // 'table' ou 'cards'
+let servicosViewMode = localStorage.getItem('servicosViewMode') || 'cards'; // 'table' ou 'cards'
 let clientesData = []; // Cache dos dados dos clientes
 let agendaData = []; // Cache dos dados dos agendamentos
 let usuariosData = []; // Cache dos dados dos usuários
 
 // === FUNÇÕES ESPECÍFICAS PARA PÁGINA DE SERVIÇOS ===
+
+// Reorganizar cards após exclusão para evitar espaços vazios
+function reorganizarCards() {
+    if (servicosViewMode === 'cards' && window.servicosData) {
+        console.log('🔄 Reorganizando cards após exclusão...');
+        
+        const container = document.getElementById('servicos-cards-container');
+        if (!container) return;
+        
+        // Adicionar efeito visual de reorganização nos cards existentes
+        const existingCards = container.querySelectorAll('.servico-card');
+        existingCards.forEach(card => {
+            card.classList.add('reorganizing');
+        });
+        
+        // Pequeno delay para permitir que a animação de remoção termine
+        setTimeout(() => {
+            // Re-renderizar cards com os dados atualizados
+            renderizarServicosCards(window.servicosData);
+            
+            // Remover efeito de reorganização após renderização
+            setTimeout(() => {
+                const newCards = container.querySelectorAll('.servico-card');
+                newCards.forEach(card => {
+                    card.classList.remove('reorganizing');
+                });
+            }, 100);
+        }, 100);
+    }
+}
 
 // Renderizar serviços em tabela
 function renderizarServicosTabela(servicos) {
@@ -2104,7 +2836,7 @@ function renderizarServicosTabela(servicos) {
     emptyState.style.display = 'none';
 
     tbody.innerHTML = servicos.map(servico => `
-        <tr>
+        <tr data-servico-id="${servico.id_servico}">
             <td>
                 <div>
                     <div class="servico-nome">${servico.nome_servico}</div>
@@ -2164,7 +2896,7 @@ function renderizarServicosCards(servicos) {
 
     container.innerHTML = servicos.map(servico => `
         <div class="col-xl-3 col-lg-4 col-md-6">
-            <div class="servico-card">
+            <div class="servico-card" data-servico-id="${servico.id_servico}">
                 <div class="servico-card-header">
                     <h5>${servico.nome_servico}</h5>
                 </div>
@@ -2219,7 +2951,9 @@ function filtrarServicos() {
     });
 
     // Aplicar ordenação atual
-    ordenarServicos(filtered, true);
+    if (typeof ordenarServicos === 'function') {
+        ordenarServicos(filtered, true);
+    }
 
     // Renderizar com filtro aplicado
     if (servicosViewMode === 'table') {
@@ -2235,6 +2969,12 @@ function filtrarServicos() {
 // Ordenar serviços
 function ordenarServicos(servicosParaOrdenar, usarFiltroAtual = false) {
     let servicos = usarFiltroAtual ? servicosParaOrdenar : servicosData;
+    
+    if (!servicos || servicos.length === 0) {
+        console.warn('Nenhum serviço para ordenar');
+        return;
+    }
+    
     const criterio = document.getElementById('servico-ordenacao')?.value || 'nome';
 
     servicos.sort((a, b) => {
@@ -2266,16 +3006,16 @@ function toggleVisualizacaoServicos() {
     const tableView = document.getElementById('servicos-table-view');
     const cardsView = document.getElementById('servicos-cards-view');
 
-    if (servicosViewMode === 'table') {
-        servicosViewMode = 'cards';
-        tableView.style.display = 'none';
-        cardsView.style.display = 'block';
-        btnToggle.innerHTML = '<i class="bi bi-list me-1"></i>Tabela';
-    } else {
+    if (servicosViewMode === 'cards') {
         servicosViewMode = 'table';
         cardsView.style.display = 'none';
         tableView.style.display = 'block';
         btnToggle.innerHTML = '<i class="bi bi-grid me-1"></i>Grade';
+    } else {
+        servicosViewMode = 'cards';
+        tableView.style.display = 'none';
+        cardsView.style.display = 'block';
+        btnToggle.innerHTML = '<i class="bi bi-list me-1"></i>Tabela';
     }
 
     try { localStorage.setItem('servicosViewMode', servicosViewMode); } catch (e) {}
@@ -2328,28 +3068,42 @@ function exportarServicos() {
     window.barbeirosApp.showSuccess('Serviços exportados com sucesso!');
 }
 
-// Importar serviços
+// Importar serviços em massa via JSON
 function importarServicos() {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json';
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const dados = JSON.parse(e.target.result);
-                    // Aqui seria implementada a lógica de importação via API
-                    console.log('Dados para importar:', dados);
-                    window.barbeirosApp.showSuccess('Funcionalidade de importação será implementada em breve!');
-                } catch (error) {
-                    console.error('Erro ao importar:', error);
-                    window.barbeirosApp.showError('Arquivo inválido!');
+    input.accept = '.json,application/json';
+    input.onchange = async function(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function(ev) {
+            try {
+                const parsed = JSON.parse(ev.target.result);
+                const payload = Array.isArray(parsed) ? parsed : (parsed.data || []);
+                if (!Array.isArray(payload) || payload.length === 0) {
+                    window.barbeirosApp.showError('Arquivo não contém serviços válidos');
+                    return;
                 }
-            };
-            reader.readAsText(file);
-        }
+                const resp = await window.barbeirosApp.apiRequest('/api/servicos/import', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                if (resp && resp.success) {
+                    window.barbeirosApp.showSuccess(`Importação concluída: ${resp.data?.inseridos || 0} inseridos, ${resp.data?.atualizados || 0} atualizados, ${resp.data?.ignorados || 0} ignorados`);
+                    // Recarregar lista de serviços
+                    if (window.barbeirosApp && typeof window.barbeirosApp.loadServicosData === 'function') {
+                        window.barbeirosApp.loadServicosData();
+                    }
+                } else {
+                    window.barbeirosApp.showError(resp?.message || 'Falha ao importar serviços');
+                }
+            } catch (err) {
+                console.error('Erro ao processar arquivo de serviços:', err);
+                window.barbeirosApp.showError('Arquivo JSON inválido');
+            }
+        };
+        reader.readAsText(file);
     };
     input.click();
 }
@@ -2498,16 +3252,14 @@ function clearAuthOnStartup() {
                     const payload = JSON.parse(atob(parts[1]));
                     const now = Math.floor(Date.now() / 1000);
                     
-                    // Se o token expirou ou não tem campos necessários, limpar
+                    // Se o token expirou, limpar
                     if (payload.exp && payload.exp < now) {
                         console.log('Token expirado, limpando dados de autenticação');
                         localStorage.removeItem('barbeiros-token');
                         localStorage.removeItem('barbeiros-user');
-                    } else if (!payload.userId || !payload.tenantId) {
-                        console.log('Token inválido, limpando dados de autenticação');
-                        localStorage.removeItem('barbeiros-token');
-                        localStorage.removeItem('barbeiros-user');
                     }
+                    // Remover verificação muito restritiva de userId/tenantId
+                    // O token será validado adequadamente pela aplicação principal
                 } else {
                     console.log('Token malformado, limpando dados de autenticação');
                     localStorage.removeItem('barbeiros-token');
@@ -2539,6 +3291,111 @@ function validarTelefone(telefone) {
     return numeros.length >= 10 && numeros.length <= 13;
 }
 
+// Funções de ação para agendamentos - OTIMIZADAS PARA MOBILE
+function editarAgendamento(id) {
+    console.log('✏️ Editando agendamento:', id);
+    // Implementar edição de agendamento
+    alert('Funcionalidade de edição será implementada em breve!');
+}
+
+function reagendarAgendamento(id) {
+    console.log('🔄 Reagendando agendamento:', id);
+    // Implementar reagendamento
+    alert('Funcionalidade de reagendamento será implementada em breve!');
+}
+
+function cancelarAgendamento(id) {
+    console.log('❌ Cancelando agendamento:', id);
+    if (confirm('Tem certeza que deseja cancelar este agendamento?')) {
+        // Implementar cancelamento
+        alert('Funcionalidade de cancelamento será implementada em breve!');
+    }
+}
+
+async function concluirAgendamento(id) {
+    console.log('✅ Concluindo agendamento:', id);
+    if (!confirm('Tem certeza que deseja marcar este agendamento como concluído?')) {
+        return;
+    }
+
+    try {
+        const response = await window.barbeirosApp.apiRequest(`/api/agendamentos/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'completed' })
+        });
+
+        if (response.success) {
+            window.barbeirosApp.showSuccess('Agendamento marcado como concluído!');
+            // Recarregar dados do dashboard
+            if (window.dashboardManager) {
+                window.dashboardManager.loadDashboardData();
+            }
+            // Recarregar agenda se estiver aberta
+            if (window.agendaPage) {
+                window.agendaPage.load(true);
+            }
+        } else {
+            window.barbeirosApp.showError(response.message || 'Erro ao concluir agendamento');
+        }
+    } catch (error) {
+        console.error('Erro ao concluir agendamento:', error);
+        window.barbeirosApp.showError('Erro de conexão');
+    }
+}
+
+function deletarAgendamento(id) {
+    console.log('🗑️ Deletando agendamento:', id);
+    if (confirm('Tem certeza que deseja deletar este agendamento? Esta ação não pode ser desfeita.')) {
+        // Implementar deleção
+        alert('Funcionalidade de deleção será implementada em breve!');
+    }
+}
+
+// Função global para filtrar agenda por status
+function filtrarAgendaPorStatus(status) {
+    if (window.app) {
+        window.app.filtrarAgendaPorStatus(status);
+    }
+}
+
+// Função para ordenar serviços
+function ordenarServicos() {
+    const ordenacao = document.getElementById('servico-ordenacao')?.value || 'nome';
+    console.log('Ordenando serviços por:', ordenacao);
+    
+    if (window.barbeirosApp && typeof window.barbeirosApp.ordenarServicos === 'function') {
+        window.barbeirosApp.ordenarServicos(ordenacao);
+    } else {
+        console.warn('Função de ordenação não disponível');
+    }
+}
+
+
+// Função para atualizar notificações
+function updateNotifications() {
+    if (window.notificationSystem && typeof window.notificationSystem.updateNotifications === 'function') {
+        window.notificationSystem.updateNotifications();
+    } else {
+        console.warn('Sistema de notificações não disponível');
+    }
+}
+
+// Função para limpar todas as notificações
+function clearAllNotifications() {
+    if (window.notificationSystem && typeof window.notificationSystem.clearAll === 'function') {
+        window.notificationSystem.clearAll();
+    } else {
+        console.warn('Sistema de notificações não disponível');
+    }
+}
+
+// Polyfill para requestIdleCallback (reduzir FID)
+if (!window.requestIdleCallback) {
+    window.requestIdleCallback = function(callback) {
+        return setTimeout(callback, 1);
+    };
+}
+
 // Inicializar app quando DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
     // Limpar dados de autenticação inválidos antes de inicializar
@@ -2552,22 +3409,41 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Registrar páginas no router
     if (window.router) {
-        // console.log('🔧 Registrando páginas no router...'); // Otimizado - log removido
-        // console.log('  - clientesPage:', !!window.clientesPage); // Otimizado - log removido
-        // console.log('  - servicosPage:', !!window.servicosPage); // Otimizado - log removido
-        // console.log('  - agendaPage:', !!window.agendaPage); // Otimizado - log removido
-        // console.log('  - usuariosPage:', !!window.usuariosPage); // Otimizado - log removido
-        // console.log('  - configuracoesPage:', !!window.configuracoesPage); // Otimizado - log removido
+        console.log('🔧 Registrando páginas no router...');
+        console.log('  - dashboardPage:', !!window.dashboardPage);
+        console.log('  - clientesPage:', !!window.clientesPage);
+        console.log('  - servicosPage:', !!window.servicosPage);
+        console.log('  - agendaPage:', !!window.agendaPage);
+        console.log('  - usuariosPage:', !!window.usuariosPage);
+        console.log('  - configuracoesPage:', !!window.configuracoesPage);
         
         if (window.configuracoesPage) {
-            // console.log('  - configuracoesPage.load:', typeof window.configuracoesPage.load); // Otimizado - log removido
+            console.log('  - configuracoesPage.load:', typeof window.configuracoesPage.load);
         }
         
-        window.router.registerPage('clientes', window.clientesPage);
-        window.router.registerPage('servicos', window.servicosPage);
-        window.router.registerPage('agenda', window.agendaPage);
-        window.router.registerPage('usuarios', window.usuariosPage);
-        window.router.registerPage('configuracoes', window.configuracoesPage);
+        // Registrar páginas disponíveis
+        if (window.dashboardPage) {
+            window.router.registerPage('dashboard', window.dashboardPage);
+        } else {
+            console.warn('⚠️ dashboardPage não está disponível, será carregado sob demanda');
+        }
+        if (window.clientesPage) {
+            window.router.registerPage('clientes', window.clientesPage);
+        }
+        if (window.servicosPage) {
+            window.router.registerPage('servicos', window.servicosPage);
+        } else {
+            console.warn('⚠️ servicosPage não está disponível, será carregado sob demanda');
+        }
+        if (window.agendaPage) {
+            window.router.registerPage('agenda', window.agendaPage);
+        }
+        if (window.usuariosPage) {
+            window.router.registerPage('usuarios', window.usuariosPage);
+        }
+        if (window.configuracoesPage) {
+            window.router.registerPage('configuracoes', window.configuracoesPage);
+        }
         
         // Registrar página WhatsApp se disponível
         if (window.whatsappPage) {
@@ -2582,6 +3458,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const topSwitch = document.getElementById('autoConfirmTopSwitch');
             if (!topSwitch) return;
 
+            // Aguardar a aplicação estar totalmente inicializada
+            let attempts = 0;
+            while (!window.barbeirosApp || !window.barbeirosApp.token) {
+                if (attempts > 50) { // 5 segundos máximo
+                    console.error('❌ Timeout aguardando inicialização da aplicação');
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+
+            console.log('✅ Aplicação inicializada, configurando auto-confirm');
+
             // Carregar estado atual da configuração
             try {
                 const cfg = await window.barbeirosApp.apiRequest('/api/agendamentos/auto-confirm-status');
@@ -2595,19 +3484,45 @@ document.addEventListener('DOMContentLoaded', () => {
             // Alteração de estado
             topSwitch.addEventListener('change', async (ev) => {
                 const desired = !!ev.target.checked;
+                console.log('🔄 Alterando auto-confirm para:', desired);
+                
+                // Verificar se a aplicação está inicializada
+                if (!window.barbeirosApp) {
+                    console.error('❌ Aplicação não inicializada');
+                    ev.target.checked = !desired; // reverter UI
+                    return;
+                }
+                
+                // Verificar se o token está presente
+                const token = window.barbeirosApp.token || localStorage.getItem('barbeiros-token');
+                console.log('🔑 Token atual:', token ? 'Presente' : 'Ausente');
+                console.log('🔑 Token completo:', token ? token.substring(0, 50) + '...' : 'null');
+                
+                if (!token || token === 'null' || token === 'undefined') {
+                    console.error('❌ Token não encontrado, redirecionando para login');
+                    window.location.href = 'pages/login.html';
+                    return;
+                }
+                
                 try {
-                    await window.barbeirosApp.apiRequest('/api/agendamentos/auto-confirm', {
+                    const response = await window.barbeirosApp.apiRequest('/api/agendamentos/auto-confirm', {
                         method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
                         body: JSON.stringify({ ativo: desired })
                     });
+                    
+                    console.log('✅ Resposta do auto-confirm:', response);
+                    
                     if (window.barbeirosApp?.showSuccess) {
                         window.barbeirosApp.showSuccess(`Auto-agendamento ${desired ? 'ativado' : 'desativado'}`);
                     }
                 } catch (err) {
-                    console.error('Falha ao salvar auto_confirm_whatsapp:', err);
+                    console.error('❌ Falha ao salvar auto_confirm_whatsapp:', err);
                     ev.target.checked = !desired; // reverter UI
                     if (window.barbeirosApp?.showError) {
-                        window.barbeirosApp.showError('Falha ao atualizar auto-agendamento');
+                        window.barbeirosApp.showError('Erro ao alterar configuração: ' + (err.message || 'Erro desconhecido'));
                     }
                 }
             });

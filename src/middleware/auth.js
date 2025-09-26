@@ -15,9 +15,11 @@ const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-    // Log COMPLETAMENTE DESABILITADO para reduzir spam no terminal
-    // if (process.env.LOG_AUTH === 'true' && (req.url.includes('/api/dashboard') || req.url.includes('/api/agendamentos'))) {
-    //       // logger.debug(`Auth middleware - ${req.method} ${req.url}`); // REMOVIDO - spam logs
+    // Log desabilitado para reduzir spam
+    // if (req.url.includes('/auto-confirm')) {
+    //   console.log(`🔧 Auth middleware - ${req.method} ${req.url}`);
+    //   console.log(`🔧 Auth header:`, authHeader);
+    //   console.log(`🔧 Token extraído:`, token ? token.substring(0, 50) + '...' : 'null');
     // }
 
     if (!token) {
@@ -30,7 +32,6 @@ const authenticateToken = async (req, res, next) => {
 
     // Verificar token
     const decoded = await authService.verifyToken(token);
-    // Log reduzido - só mostrar em caso de erro
 
     // Verificar se é um token de acesso
     if (decoded.type !== 'access') {
@@ -54,6 +55,7 @@ const authenticateToken = async (req, res, next) => {
       role: decoded.role,
       permissions: decoded.permissions
     };
+    
 
     // Log COMPLETAMENTE DESABILITADO para reduzir spam no terminal
     // if (process.env.LOG_AUTH === 'true' && (req.url.includes('/api/dashboard') || req.url.includes('/api/agendamentos'))) {

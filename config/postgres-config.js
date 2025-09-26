@@ -1,3 +1,6 @@
+// Carregar variáveis de ambiente primeiro
+require('dotenv').config();
+
 const { Pool } = require('pg');
 
 // ====================
@@ -13,12 +16,23 @@ const useSSL = (() => {
   return false;
 })();
 
+// Validar variáveis de ambiente obrigatórias
+const requiredDbVars = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD'];
+const missingVars = requiredDbVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+  console.error('❌ Variáveis de ambiente do banco de dados não encontradas:');
+  missingVars.forEach(varName => console.error(`   - ${varName}`));
+  console.error('\n💡 Defina essas variáveis no arquivo .env');
+  process.exit(1);
+}
+
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432', 10),
-  database: process.env.DB_NAME || 'agendamento',
-  user: process.env.DB_USER || 'agendamento_user',
-  password: process.env.DB_PASSWORD || 'agendamento_pass_2024',
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT, 10),
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
 
   // Pool de conexões
   max: parseInt(process.env.DB_MAX_CONNECTIONS || '20', 10),

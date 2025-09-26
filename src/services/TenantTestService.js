@@ -131,10 +131,10 @@ class TenantTestService {
 
       for (const clientData of sampleClients) {
         await client.query(`
-          INSERT INTO ${schema}.clientes (id_usuario, nome, whatsapp, email)
-          VALUES ($1, $2, $3, $4)
+          INSERT INTO ${schema}.clientes (id_usuario, nome, whatsapp)
+          VALUES ($1, $2, $3)
           ON CONFLICT (whatsapp) DO NOTHING
-        `, [barberId, clientData.name, clientData.phone, clientData.email]);
+        `, [barberId, clientData.name, clientData.phone]);
       }
 
       // Criar mais serviços

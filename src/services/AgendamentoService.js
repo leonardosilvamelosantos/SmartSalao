@@ -17,18 +17,26 @@ class AgendamentoService {
    */
   async criarAgendamento(userId, agendamentoData) {
     try {
-      console.log('🔍 [DEBUG] AgendamentoService.criarAgendamento chamado com dados:', agendamentoData);
+      // Validar dados obrigatórios
+      if (!agendamentoData.id_cliente && !agendamentoData.nome_cliente_manual) {
+        return { success: false, message: 'ID do cliente ou nome do cliente é obrigatório' };
+      }
       
-      const { id_cliente, id_servico, data_agendamento, observacoes, nome_cliente_manual, telefone_cliente_manual } = agendamentoData;
+      if (!agendamentoData.id_servico) {
+        return { success: false, message: 'ID do serviço é obrigatório' };
+      }
+      
+      if (!agendamentoData.start_at) {
+        return { success: false, message: 'Data/hora de início é obrigatória' };
+      }
+      
+      const { id_cliente, id_servico, data_agendamento, start_at, observacoes, nome_cliente_manual, telefone_cliente_manual } = agendamentoData;
 
       // Buscar dados do serviço para obter duração
-      console.log('🔍 Buscando serviço ID:', id_servico);
       const servico = await this.servicoModel.findById(id_servico);
       if (!servico) {
-        console.log('❌ Serviço não encontrado para ID:', id_servico);
         return { success: false, message: 'Serviço não encontrado' };
       }
-      console.log('✅ Serviço encontrado:', servico);
 
       // Determinar se é cliente cadastrado ou manual
       let clienteId = id_cliente;
@@ -65,7 +73,6 @@ class AgendamentoService {
             id_usuario: userId,
             nome: nome_cliente_manual,
             whatsapp: whatsappCliente,
-            email: '',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
@@ -86,34 +93,21 @@ class AgendamentoService {
       }
 
       // Validar agendamento
-      console.log('🔍 Validando agendamento...');
       const validacao = await this.validationService.validateAgendamento(userId, {
-        data_agendamento,
+        data_agendamento: start_at || data_agendamento,
         duracao_min: servico.duracao_min
       });
 
-      console.log('🔍 Resultado da validação:', validacao);
       if (!validacao.valid) {
-        console.log('❌ Validação falhou:', validacao.error);
         return { success: false, message: validacao.error };
       }
-      console.log('✅ Validação passou');
 
       // Calcular end_at
-      const end_at = new Date(new Date(data_agendamento).getTime() + servico.duracao_min * 60000);
+      const startAt = new Date(start_at || data_agendamento);
+      const end_at = new Date(startAt.getTime() + servico.duracao_min * 60000);
 
       // Garantir que clienteId seja um número
       const clienteIdFinal = typeof clienteId === 'object' ? clienteId.id_cliente : clienteId;
-      
-      // Criar agendamento
-      console.log('📅 Dados do agendamento:', {
-        data_agendamento: data_agendamento,
-        end_at: end_at.toISOString(),
-        data_agendamento_parsed: new Date(data_agendamento),
-        data_agendamento_local: new Date(data_agendamento).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
-        cliente_id: clienteIdFinal,
-        cliente_nome: clienteNome
-      });
       
       // Verificar configurações de auto confirmação
       let statusInicial = 'pending';
@@ -123,13 +117,9 @@ class AgendamentoService {
         const configuracoes = await configService.getConfiguracoes(userId);
         
         if (configuracoes && configuracoes.auto_confirm_whatsapp) {
-          console.log('🤖 Auto confirmação ativa - agendamento será confirmado automaticamente');
           statusInicial = 'confirmed';
-        } else {
-          console.log('⏳ Auto confirmação inativa - agendamento ficará pendente');
         }
       } catch (error) {
-        console.log('⚠️ Erro ao verificar configurações de auto confirmação:', error.message);
         // Em caso de erro, manter como pending
       }
 
@@ -137,22 +127,24 @@ class AgendamentoService {
         id_usuario: userId,
         id_cliente: clienteIdFinal,
         id_servico,
-        data_agendamento,
+        start_at: startAt.toISOString(),
         end_at: end_at.toISOString(),
         status: statusInicial,
-        observacoes: observacoes || '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        observacoes: observacoes || ''
       };
 
-      console.log('🔍 Criando agendamento no banco de dados...');
       const id = await this.agendamentoModel.create(novoAgendamento);
-      console.log('✅ Agendamento criado com ID:', id);
       
       // Buscar agendamento criado com dados relacionados
-      console.log('🔍 Buscando agendamento completo...');
-      const agendamentoCompleto = await this.buscarAgendamentoCompleto(id);
-      console.log('✅ Agendamento completo encontrado:', agendamentoCompleto);
+      const agendamentoId = id.id_agendamento || id;
+      const agendamentoCompleto = await this.buscarAgendamentoCompleto(agendamentoId);
+
+      if (!agendamentoCompleto) {
+        return { 
+          success: false, 
+          message: 'Agendamento criado mas erro ao buscar dados completos'
+        };
+      }
 
       return { 
         success: true, 
@@ -173,9 +165,6 @@ class AgendamentoService {
    */
   async buscarAgendamentos(userId, filtros = {}) {
     try {
-    // Log reduzido para evitar spam
-    // console.log('🔍 [DEBUG] AgendamentoService.buscarAgendamentos chamado');
-      
       const { data_inicio, data_fim, status, cliente_id } = filtros;
       
       let where = 'a.id_usuario = $1';
@@ -183,12 +172,12 @@ class AgendamentoService {
       let p = 2;
 
       if (data_inicio) {
-        where += ` AND a.data_agendamento >= $${p++}`;
+        where += ` AND a.start_at >= $${p++}`;
         params.push(data_inicio);
       }
 
       if (data_fim) {
-        where += ` AND a.data_agendamento <= $${p++}`;
+        where += ` AND a.start_at <= $${p++}`;
         params.push(data_fim);
       }
 
@@ -202,9 +191,6 @@ class AgendamentoService {
         params.push(cliente_id);
       }
 
-      // Log reduzido
-      // console.log('🔍 [DEBUG] Query WHERE:', where);
-
       const agendamentos = await this.agendamentoModel.query(`
         SELECT 
           a.*,
@@ -212,16 +198,13 @@ class AgendamentoService {
           c.whatsapp as cliente_whatsapp,
           s.nome_servico,
           s.duracao_min,
-          s.preco
+          s.valor
         FROM agendamentos a
         JOIN clientes c ON a.id_cliente = c.id_cliente
         JOIN servicos s ON a.id_servico = s.id_servico
         WHERE ${where}
-        ORDER BY a.data_agendamento ASC
+        ORDER BY a.start_at ASC
       `, params);
-
-      // Log reduzido
-      // console.log('🔍 [DEBUG] Resultado da query:', agendamentos.length, 'agendamentos');
 
       return { success: true, data: agendamentos };
     } catch (error) {
@@ -237,17 +220,14 @@ class AgendamentoService {
    */
   async buscarAgendamentoCompleto(id) {
     try {
-      console.log(`🔍 Buscando agendamento completo ID: ${id}`);
-      
       const agendamentos = await this.agendamentoModel.query(`
         SELECT 
           a.*,
           c.nome as cliente_nome,
           c.whatsapp as cliente_whatsapp,
-          c.email as cliente_email,
           s.nome_servico,
           s.duracao_min,
-          s.preco,
+          s.valor,
           s.descricao as servico_descricao
         FROM agendamentos a
         JOIN clientes c ON a.id_cliente = c.id_cliente
@@ -255,7 +235,6 @@ class AgendamentoService {
         WHERE a.id_agendamento = $1
       `, [id]);
 
-      console.log(`🔍 Resultado da busca:`, agendamentos);
       return agendamentos[0] || null;
     } catch (error) {
       console.error('Erro ao buscar agendamento completo:', error);

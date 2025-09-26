@@ -125,7 +125,7 @@ class AgendamentoController {
       }
 
       // Verificar se o cliente existe e pertence ao usuário
-      const cliente = await Cliente.findById(agendamentoData.id_cliente);
+      const cliente = await Cliente.findById(agendamentoData.id_cliente, req.user?.tenant_id);
       if (!cliente || cliente.id_usuario !== userId) {
         return res.status(404).json({
           success: false,
@@ -498,8 +498,8 @@ class AgendamentoController {
           COUNT(CASE WHEN status = 'confirmed' THEN 1 END) as confirmados,
           COUNT(CASE WHEN status = 'completed' THEN 1 END) as concluidos,
           COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelados,
-          AVG(CASE WHEN status = 'completed' THEN s.preco END) as receita_media,
-          SUM(CASE WHEN status = 'completed' THEN s.preco END) as receita_total
+          AVG(CASE WHEN status = 'completed' THEN s.valor END) as receita_media,
+          SUM(CASE WHEN status = 'completed' THEN s.valor END) as receita_total
         FROM agendamentos a
         LEFT JOIN servicos s ON a.id_servico = s.id_servico
         WHERE a.id_usuario = $1

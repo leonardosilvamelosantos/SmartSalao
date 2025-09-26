@@ -144,6 +144,24 @@ class ClienteController {
         return res.status(400).json({ success: false, message: 'Formato inválido. Envie um array de clientes ou { data: [...] }' });
       }
 
+      // Verificar se a tabela tem coluna email
+      const pool = require('../config/database');
+      const isSQLite = pool.isSQLite;
+      
+      let hasEmailColumn = false;
+      if (isSQLite) {
+        // Para SQLite, usar PRAGMA
+        const result = await pool.query("PRAGMA table_info(clientes)");
+        hasEmailColumn = result.rows.some(col => col.name === 'email');
+      } else {
+        // Para PostgreSQL, usar information_schema
+        const result = await pool.query(`
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'clientes' AND column_name = 'email'
+        `);
+        hasEmailColumn = result.rows.length > 0;
+      }
+
       let inseridos = 0;
       let atualizados = 0;
       let ignorados = 0;
@@ -166,7 +184,7 @@ class ClienteController {
           // Atualizar campos simples se vierem preenchidos
           const update = {};
           if (nome && !existente.nome) update.nome = nome;
-          if (email && !existente.email) update.email = email;
+          if (hasEmailColumn && email && !existente.email) update.email = email;
           if (Object.keys(update).length > 0) {
             await Cliente.update(existente.id_cliente, update);
             atualizados++;
@@ -178,13 +196,18 @@ class ClienteController {
           continue;
         }
 
-        // Criar novo
-        const novo = await Cliente.create({
+        // Criar novo - só incluir email se a coluna existir
+        const clienteData = {
           id_usuario: userId,
           nome: nome || null,
-          whatsapp,
-          email: email || null
-        });
+          whatsapp
+        };
+        
+        if (hasEmailColumn && email) {
+          clienteData.email = email;
+        }
+
+        const novo = await Cliente.create(clienteData);
         inseridos++;
         resultados.push({ status: 'inserted', id_cliente: novo.id_cliente || novo.id, whatsapp });
       }

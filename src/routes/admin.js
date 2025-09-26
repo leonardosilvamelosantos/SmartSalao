@@ -705,7 +705,6 @@ router.get('/:barberId/appointments/:appointmentId',
           s.duracao_min,
           c.nome as cliente_nome,
           c.whatsapp as cliente_whatsapp,
-          c.email as cliente_email
         FROM agendamentos a
         JOIN servicos s ON a.id_servico = s.id_servico
         JOIN clientes c ON a.id_cliente = c.id_cliente

@@ -58,6 +58,7 @@ class AuthManager {
 
         if (token && user) {
             // Usuário já autenticado, redirecionar para dashboard
+            console.log('✅ Usuário já autenticado, redirecionando para dashboard...');
             window.location.href = '../index.html';
         }
     }
@@ -195,7 +196,11 @@ class AuthManager {
         localStorage.setItem('barbeiros-user', JSON.stringify(normalizedUser));
 
         // Mostrar mensagem de sucesso
-        this.showAlert('Login realizado com sucesso!', 'success');
+        if (window.showSuccess) {
+            window.showSuccess('Login realizado com sucesso!');
+        } else {
+            this.showAlert('Login realizado com sucesso!', 'success');
+        }
 
         // Redirecionar após um breve delay
         setTimeout(() => {
@@ -205,7 +210,11 @@ class AuthManager {
 
     // Manipular erro de login
     handleLoginError(message) {
-        this.showAlert(message, 'danger');
+        if (window.showError) {
+            window.showError(message);
+        } else {
+            this.showAlert(message, 'danger');
+        }
 
         // Limpar campo de senha em caso de erro
         const passwordField = document.getElementById('password');

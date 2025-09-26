@@ -10,8 +10,18 @@ class ThemeManager {
     }
 
         init() {
-            // Aplicar tema salvo sem transição inicial
-            this.applyTheme(this.currentTheme, false);
+            // Verificar se o tema já foi aplicado pelo script inline
+            const alreadyApplied = document.body.classList.contains('theme-loaded');
+            const dataTheme = document.body.getAttribute('data-theme');
+            
+            if (alreadyApplied && dataTheme) {
+                // Sincronizar com o tema já aplicado pelo script inline
+                this.currentTheme = dataTheme;
+                this.syncWithAppliedTheme();
+            } else {
+                // Aplicar tema salvo sem transição inicial
+                this.applyTheme(this.currentTheme, false);
+            }
 
             // Event listener para o botão de toggle com debounce
             if (this.themeToggle) {
@@ -30,10 +40,24 @@ class ThemeManager {
         localStorage.setItem('barbeiros-theme', theme);
     }
 
+    // Sincronizar com tema já aplicado pelo preloader
+    syncWithAppliedTheme() {
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        this.currentTheme = isDarkMode ? 'dark' : 'light';
+        
+        // Atualizar toggle se existir
+        if (this.themeToggle) {
+            this.themeToggle.checked = isDarkMode;
+        }
+        
+        console.log('🎨 ThemeManager: Sincronizado com tema aplicado:', this.currentTheme);
+    }
+
     applyTheme(theme, withTransition = true) {
         if (this.isTransitioning) return;
         
         const body = document.body;
+        const html = document.documentElement;
         
         // Otimização: usar requestAnimationFrame para mudanças suaves
         if (withTransition) {
@@ -43,11 +67,7 @@ class ThemeManager {
             body.classList.add('theme-transitioning');
             
             requestAnimationFrame(() => {
-                if (theme === 'dark') {
-                    body.classList.add('dark-mode');
-                } else {
-                    body.classList.remove('dark-mode');
-                }
+                this.forceThemeUpdate(theme, html, body);
                 
                 // Remover classe de transição após a animação
                 setTimeout(() => {
@@ -57,16 +77,35 @@ class ThemeManager {
             });
         } else {
             // Aplicação imediata sem transição (para carregamento inicial)
-            if (theme === 'dark') {
-                body.classList.add('dark-mode');
-            } else {
-                body.classList.remove('dark-mode');
-            }
+            this.forceThemeUpdate(theme, html, body);
         }
 
         this.currentTheme = theme;
         this.saveTheme(theme);
         this.updateToggleIcon();
+    }
+    
+    // Função para forçar atualização completa do tema
+    forceThemeUpdate(theme, html, body) {
+        const isDark = theme === 'dark';
+        
+        // Aplicar/remover classes de forma otimizada
+        if (isDark) {
+            html.classList.add('dark-mode');
+            body.classList.add('dark-mode');
+        } else {
+            html.classList.remove('dark-mode');
+            body.classList.remove('dark-mode');
+        }
+        
+        // Aplicar data attributes
+        html.setAttribute('data-theme', theme);
+        body.setAttribute('data-theme', theme);
+        
+        // Disparar evento customizado para outros componentes
+        window.dispatchEvent(new CustomEvent('themeChanged', { 
+            detail: { theme } 
+        }));
     }
 
     debouncedToggleTheme() {
@@ -124,7 +163,20 @@ class ThemeManager {
         updateBrandIcon() {
             const brandLogo = document.getElementById('brand-logo');
             if (brandLogo) {
-                // Animação de saída
+                // Proteger logo base64 - não alterar src nem aplicar animações
+                const isBase64Logo = brandLogo.src.includes('data:image');
+                
+                if (isBase64Logo) {
+                    // Para logo base64, apenas atualizar o título sem animações
+                    if (this.currentTheme === 'dark') {
+                        brandLogo.setAttribute('title', 'SmartSalao - Tema Escuro');
+                    } else {
+                        brandLogo.setAttribute('title', 'SmartSalao - Tema Claro');
+                    }
+                    return; // Evitar animações desnecessárias
+                }
+                
+                // Animação apenas para logos externos (não base64)
                 brandLogo.style.opacity = '0';
                 brandLogo.style.transform = 'scale(0.8) rotate(180deg)';
 

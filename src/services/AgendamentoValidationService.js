@@ -17,13 +17,17 @@ class AgendamentoValidationService {
     try {
       // Buscar configurações do usuário
       const configuracoes = await this.getConfiguracoesUsuario(userId);
+      
       if (!configuracoes) {
         return { valid: false, error: 'Configurações não encontradas' };
       }
 
       const { data_agendamento, duracao_min } = agendamentoData;
+      
       const dataAgendamento = new Date(data_agendamento);
+      
       const diaSemana = this.getDiaSemana(dataAgendamento);
+      
       const horario = this.formatarHorario(dataAgendamento);
 
       // Validar dia da semana
@@ -35,15 +39,6 @@ class AgendamentoValidationService {
       }
 
       // Validar horário de funcionamento
-      console.log('🔍 Validação de horário:', {
-        horario_agendamento: horario,
-        horario_abertura: configuracoes.horario_abertura,
-        horario_fechamento: configuracoes.horario_fechamento,
-        data_agendamento_original: data_agendamento,
-        data_agendamento: dataAgendamento.toISOString(),
-        data_agendamento_local: dataAgendamento.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
-      });
-      
       if (!this.validarHorarioFuncionamento(horario, configuracoes)) {
         return { 
           valid: false, 
@@ -110,8 +105,9 @@ class AgendamentoValidationService {
         const [yy, mm, dd] = data.split('-').map(Number);
         const slotDateTime = new Date(yy, mm - 1, dd, Math.floor(hora / 60), hora % 60, 0, 0);
 
-        // Verificar se slot não está no passado
-        if (slotDateTime > new Date()) {
+        // Verificar se slot não está no passado (considerando minutos)
+        const agora = new Date();
+        if (slotDateTime > agora) {
           // Verificar se slot está disponível
           const disponivel = await this.verificarSlotDisponivel(userId, slotDateTime);
           if (disponivel) {
@@ -154,7 +150,7 @@ class AgendamentoValidationService {
           dias_funcionamento: ['segunda','terca','quarta','quinta','sexta','sabado'],
           horario_abertura: '08:00',
           horario_fechamento: '18:00',
-          intervalo_agendamento: 30
+          intervalo_agendamento: 15
         };
         return defaultConfig;
       }
@@ -174,7 +170,7 @@ class AgendamentoValidationService {
         dias_funcionamento: ['segunda','terca','quarta','quinta','sexta','sabado'],
         horario_abertura: '08:00',
         horario_fechamento: '18:00',
-        intervalo_agendamento: 30,
+        intervalo_agendamento: 15,
         ...config
       };
     } catch (error) {
@@ -184,7 +180,7 @@ class AgendamentoValidationService {
         dias_funcionamento: ['segunda','terca','quarta','quinta','sexta','sabado'],
         horario_abertura: '08:00',
         horario_fechamento: '18:00',
-        intervalo_agendamento: 30
+        intervalo_agendamento: 15
       };
     }
   }
@@ -235,13 +231,15 @@ class AgendamentoValidationService {
         WHERE id_usuario = ? 
         AND status IN ('confirmed', 'pending')
         AND (
-          (data_agendamento < ? AND end_at > ?) OR
-          (data_agendamento < ? AND end_at > ?) OR
-          (data_agendamento >= ? AND end_at <= ?)
+          (start_at < ? AND end_at > ?) OR
+          (start_at < ? AND end_at > ?) OR
+          (start_at >= ? AND end_at <= ?)
         )
       `, [userId, data_agendamento, data_agendamento, end_at, end_at, data_agendamento, end_at]);
 
-      return parseInt(conflitos[0]?.count || 0) > 0;
+      const count = parseInt(conflitos[0]?.count || 0);
+      
+      return count > 0;
     } catch (error) {
       console.error('Erro ao verificar conflito:', error);
       return true; // Em caso de erro, considerar como conflito
@@ -257,7 +255,7 @@ class AgendamentoValidationService {
         SELECT COUNT(*) as count FROM agendamentos 
         WHERE id_usuario = ? 
         AND status IN ('confirmed', 'pending')
-        AND data_agendamento = ?
+        AND start_at = ?
       `, [userId, datetime.toISOString()]);
 
       return parseInt(conflitos[0]?.count || 0) === 0;
@@ -289,14 +287,22 @@ class AgendamentoValidationService {
   }
 
   formatarHorario(date) {
-    // Converter para timezone do Brasil (America/Sao_Paulo) para validação
-    const options = { 
-      timeZone: 'America/Sao_Paulo',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    };
-    return date.toLocaleTimeString('pt-BR', options);
+    try {
+      // Converter para timezone do Brasil (America/Sao_Paulo) para validação
+      const options = { 
+        timeZone: 'America/Sao_Paulo',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      };
+      return date.toLocaleTimeString('pt-BR', options);
+    } catch (error) {
+      console.error('Erro ao formatar horário:', error);
+      // Fallback: usar horário local
+      const hora = date.getHours().toString().padStart(2, '0');
+      const minuto = date.getMinutes().toString().padStart(2, '0');
+      return `${hora}:${minuto}`;
+    }
   }
 
   parseTime(timeString) {

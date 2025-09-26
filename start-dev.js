@@ -38,10 +38,14 @@ if (localIP) {
     console.log('');
 }
 
-// Configurar variáveis de ambiente
-process.env.NODE_ENV = 'development';
-process.env.HOST = '0.0.0.0';
-process.env.PORT = '3000';
+// Configurar variáveis de ambiente (apenas se não estiverem definidas)
+// NODE_ENV será definido pelo .env
+if (!process.env.HOST) {
+    process.env.HOST = '0.0.0.0';
+}
+if (!process.env.PORT) {
+    process.env.PORT = '3000';
+}
 
 // Iniciar o servidor
 const server = spawn('node', ['src/index.js'], {

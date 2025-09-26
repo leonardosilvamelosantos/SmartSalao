@@ -1,0 +1,153 @@
+/* CORREÇÕES MOBILE - FORÇAR ESTILOS DA BARRA DE NAVEGAÇÃO */
+
+/* Reset completo para navbar-secondary */
+.navbar-secondary {
+    all: unset !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    padding: 16px 20px !important;
+    margin-bottom: 20px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    position: relative !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    flex-wrap: wrap !important;
+    gap: 16px !important;
+}
+
+/* Toggle auto-agendamento */
+.navbar-secondary .form-check {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+}
+
+.navbar-secondary .form-check-label {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #374151 !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+}
+
+.navbar-secondary .form-check-input {
+    width: 50px !important;
+    height: 30px !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Container dos ícones */
+.navbar-secondary .nav-icons {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    flex: 1 !important;
+    flex-wrap: wrap !important;
+    min-width: 0 !important;
+}
+
+/* Ícones individuais */
+.navbar-secondary .nav-icon {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 48px !important;
+    height: 48px !important;
+    background: #f9fafb !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    color: #6b7280 !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.navbar-secondary .nav-icon:hover {
+    background: #eff6ff !important;
+    color: #2563eb !important;
+    border-color: #bfdbfe !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.navbar-secondary .nav-icon.active {
+    background: #dbeafe !important;
+    color: #1d4ed8 !important;
+    border-color: #93c5fd !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.navbar-secondary .nav-icon i {
+    font-size: 1.2rem !important;
+    line-height: 1 !important;
+    display: block !important;
+    text-align: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Responsividade mobile */
+@media (max-width: 768px) {
+    .navbar-secondary {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 16px !important;
+        padding: 16px !important;
+    }
+    
+    .navbar-secondary .form-check {
+        justify-content: center !important;
+        margin-bottom: 8px !important;
+    }
+    
+    .navbar-secondary .nav-icons {
+        justify-content: center !important;
+        gap: 8px !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        padding: 8px 0 !important;
+    }
+    
+    .navbar-secondary .nav-icon {
+        width: 52px !important;
+        height: 52px !important;
+        flex-shrink: 0 !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar-secondary {
+        padding: 12px !important;
+        gap: 12px !important;
+    }
+    
+    .navbar-secondary .nav-icons {
+        gap: 6px !important;
+    }
+    
+    .navbar-secondary .nav-icon {
+        width: 50px !important;
+        height: 50px !important;
+    }
+    
+    .navbar-secondary .nav-icon i {
+        font-size: 1.1rem !important;
+    }
+}
+
+
+

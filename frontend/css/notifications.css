@@ -1,0 +1,405 @@
+/**
+ * Estilos para Sistema de Notificações Flutuantes
+ * Melhora o visual das notificações toast e modais
+ */
+
+/* Container de notificações toast */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1060;
+    max-width: 350px;
+    pointer-events: none;
+}
+
+.toast-container .toast {
+    pointer-events: auto;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: none;
+    border-radius: 8px;
+    overflow: hidden;
+    animation: slideInRight 0.3s ease-out;
+}
+
+/* Animações de entrada */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Cabeçalho das notificações */
+.toast-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    font-weight: 600;
+    padding: 12px 16px;
+    color: #000 !important; /* Forçar texto preto */
+    user-select: none; /* Evitar seleção de texto ao arrastar */
+}
+
+.toast-header .me-auto {
+    color: #000 !important; /* Forçar texto preto no título */
+}
+
+.toast-header .text-muted {
+    color: #333 !important; /* Forçar texto escuro no timestamp */
+}
+
+/* Notificações arrastáveis */
+.draggable-toast {
+    transition: all 0.2s ease !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 8px !important;
+    max-width: 350px !important;
+}
+
+.draggable-toast:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-2px) !important;
+}
+
+.draggable-toast:active {
+    transform: scale(0.98) !important;
+}
+
+/* Indicador visual de que é arrastável */
+.draggable-toast .toast-header::before {
+    content: "⋮⋮";
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    margin-right: 8px;
+    letter-spacing: 2px;
+}
+
+.toast-header .btn-close {
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: none;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.toast-header .btn-close:hover {
+    opacity: 1;
+}
+
+/* Corpo das notificações */
+.toast-body {
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* Cores específicas para cada tipo - Esquema melhorado */
+.toast-header.bg-success {
+    background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+    color: #fff !important;
+    border-left: 4px solid #15803d !important;
+}
+
+.toast-header.bg-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    color: #fff !important;
+    border-left: 4px solid #b91c1c !important;
+}
+
+.toast-header.bg-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    color: #fff !important;
+    border-left: 4px solid #b45309 !important;
+}
+
+.toast-header.bg-info {
+    background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+    color: #fff !important;
+    border-left: 4px solid #1d4ed8 !important;
+}
+
+/* Nova cor dourada para notificações neutras/importantes */
+.toast-header.bg-gold {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+    color: #fff !important;
+    border-left: 4px solid #d97706 !important;
+}
+
+/* Forçar texto branco em todos os elementos do cabeçalho */
+.toast-header.bg-success *,
+.toast-header.bg-danger *,
+.toast-header.bg-warning *,
+.toast-header.bg-info *,
+.toast-header.bg-gold * {
+    color: #fff !important;
+}
+
+/* Texto do corpo da notificação */
+.toast-body {
+    background-color: #fff;
+    color: #000 !important; /* Forçar texto preto para melhor contraste */
+    border-radius: 0 0 8px 8px;
+    font-weight: 500; /* Tornar texto um pouco mais escuro */
+}
+
+/* Forçar texto preto em todos os elementos do corpo */
+.toast-body * {
+    color: #000 !important;
+}
+
+/* Garantir que texto em cinza seja escuro */
+.toast-body .text-muted {
+    color: #333 !important;
+}
+
+.toast-body .text-light {
+    color: #000 !important;
+}
+
+/* Forçar contraste adequado para todos os tipos de notificação */
+.toast-body.text-dark {
+    color: #000 !important;
+    font-weight: 500;
+}
+
+/* Sobrescrever qualquer classe de cor que possa estar sendo aplicada */
+.toast-body[class*="text-"] {
+    color: #000 !important;
+}
+
+/* Garantir que links e elementos interativos tenham contraste adequado */
+.toast-body a {
+    color: #0066cc !important;
+    text-decoration: underline;
+}
+
+.toast-body a:hover {
+    color: #004499 !important;
+}
+
+/* Melhorar contraste para texto pequeno */
+.toast-body small {
+    color: #333 !important;
+    font-weight: 400;
+}
+
+/* Modal de confirmação personalizado */
+#notificationModal .modal-content {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+#notificationModal .modal-header {
+    border-bottom: 1px solid #e5e7eb;
+    padding: 20px 24px 16px;
+}
+
+#notificationModal .modal-title {
+    font-weight: 600;
+    font-size: 18px;
+    color: #1f2937;
+}
+
+#notificationModal .modal-body {
+    padding: 20px 24px;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #374151;
+}
+
+#notificationModal .modal-footer {
+    border-top: 1px solid #e5e7eb;
+    padding: 16px 24px 20px;
+    gap: 12px;
+}
+
+#notificationModal .btn {
+    padding: 10px 20px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+#notificationModal .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Botões específicos por tipo - Esquema melhorado */
+#notificationModal .btn-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border: none;
+    color: white;
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+#notificationModal .btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border: none;
+    color: white;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+#notificationModal .btn-info {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border: none;
+    color: white;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+#notificationModal .btn-success {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border: none;
+    color: white;
+    box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);
+}
+
+#notificationModal .btn-gold {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    border: none;
+    color: white;
+    box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .toast-container .toast {
+        margin-bottom: 8px;
+    }
+    
+    #notificationModal .modal-dialog {
+        margin: 20px;
+    }
+    
+    #notificationModal .modal-content {
+        border-radius: 8px;
+    }
+}
+
+/* Tema escuro */
+@media (prefers-color-scheme: dark) {
+    /* Corpo das notificações em tema escuro */
+    .toast-body {
+        background-color: #1f2937 !important;
+        color: #f9fafb !important;
+    }
+    
+    .toast-body * {
+        color: #f9fafb !important;
+    }
+    
+    .toast-body .text-muted {
+        color: #d1d5db !important;
+    }
+    
+    .toast-body .text-light {
+        color: #f9fafb !important;
+    }
+    
+    .toast-body.text-dark {
+        color: #f9fafb !important;
+    }
+    
+    .toast-body[class*="text-"] {
+        color: #f9fafb !important;
+    }
+    
+    .toast-body a {
+        color: #60a5fa !important;
+    }
+    
+    .toast-body a:hover {
+        color: #93c5fd !important;
+    }
+    
+    .toast-body small {
+        color: #d1d5db !important;
+    }
+    
+    /* Modal de confirmação em tema escuro */
+    #notificationModal .modal-content {
+        background-color: #1f2937;
+        color: #f9fafb;
+    }
+    
+    #notificationModal .modal-header {
+        border-bottom-color: #374151;
+    }
+    
+    #notificationModal .modal-title {
+        color: #f9fafb;
+    }
+    
+    #notificationModal .modal-body {
+        color: #d1d5db;
+    }
+    
+    #notificationModal .modal-footer {
+        border-top-color: #374151;
+    }
+}
+
+/* Animações de saída */
+.toast.fade-out {
+    animation: slideOutRight 0.3s ease-in forwards;
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* Melhorias de acessibilidade */
+.toast[role="alert"] {
+    border-left: 4px solid currentColor;
+}
+
+.toast-header .btn-close:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 2px;
+}
+
+/* Efeito de hover nas notificações */
+.toast:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+/* Indicador de progresso para notificações com duração */
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.3);
+    animation: progressBar linear;
+}
+
+@keyframes progressBar {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
+}

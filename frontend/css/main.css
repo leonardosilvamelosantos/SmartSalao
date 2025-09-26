@@ -360,6 +360,13 @@ body {
     z-index: 1030;
     height: 64px;
     padding: var(--space-2) var(--space-4);
+    overflow: visible !important; /* Permitir que dropdown seja visível */
+}
+
+/* Garantir que container da navbar permita overflow */
+.navbar .container-fluid {
+    overflow: visible !important;
+    position: relative !important;
 }
 
 /* Light mode - Background off-white para melhor contraste */
@@ -569,44 +576,37 @@ label[for="autoConfirmTopSwitch"] {
 }
 
 
-/* Auto-agendamento toggle switch - Estilo iOS */
+/* Auto-agendamento toggle switch - Estilo iOS Limpo */
 .navbar .form-check-input {
-    width: 50px !important;
-    height: 30px !important;
-    background-color: #f0f0f0 !important;
-    border: 2px solid #d0d0d0 !important;
-    border-radius: 15px !important;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    width: 52px !important;
+    height: 32px !important;
+    background-color: #e5e7eb !important;
+    border: none !important;
+    border-radius: 16px !important;
+    box-shadow: none !important;
+    transition: all 0.3s ease !important;
     position: relative;
     cursor: pointer;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    outline: none !important;
 }
 
 .navbar .form-check-input::before {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 22px;
-    height: 22px;
-    background-color: #ffffff;
-    border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: translateX(0);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    display: none;
 }
 
 .navbar .form-check-input:checked {
     background-color: #22c55e !important;
-    border-color: #22c55e !important;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: none !important;
+    box-shadow: none !important;
 }
 
 .navbar .form-check-input:checked::before {
-    transform: translateX(20px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    display: none;
 }
 
 .navbar .form-check-input:focus {
@@ -652,6 +652,356 @@ body:not(.dark-mode) .navbar .form-check-input:focus {
     }
 }
 
+/* Header responsivo para telas muito pequenas (Galaxy S9+ e similares) */
+@media (max-width: 360px) {
+    .navbar {
+        padding: 6px 8px;
+        height: 52px;
+    }
+    
+    .navbar .container-fluid {
+        padding: 0;
+        gap: 6px;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+    }
+    
+    /* Reorganizar navbar-brand - mais compacto */
+    .navbar-brand {
+        font-size: 12px;
+        margin-right: 4px;
+        min-width: 0;
+        flex-shrink: 1;
+        display: flex;
+        align-items: center;
+        max-width: 120px;
+    }
+    
+    .navbar-brand .d-sm-none {
+        font-size: 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* Logo compacto */
+    .navbar-brand div {
+        width: 20px !important;
+        height: 20px !important;
+        margin-right: 4px !important;
+        flex-shrink: 0;
+    }
+    
+    .navbar-brand img {
+        width: 20px !important;
+        height: 20px !important;
+    }
+    
+    /* Reorganizar controles da direita - layout em linha */
+    .navbar .d-flex {
+        gap: 2px;
+        flex-shrink: 0;
+        align-items: center;
+    }
+    
+    /* Esconder label do auto-agendamento */
+    .navbar .form-check-label {
+        display: none !important;
+    }
+    
+    /* Toggle switch compacto */
+    .navbar .form-check-input {
+        width: 36px !important;
+        height: 20px !important;
+        margin: 0;
+    }
+    
+    .navbar .form-check-input::before {
+        display: none;
+    }
+    
+    .navbar .form-check-input:checked::before {
+        display: none;
+    }
+    
+    /* Botões compactos */
+    .navbar .btn {
+        padding: 4px 6px;
+        font-size: 10px;
+        min-width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .navbar .btn-ghost {
+        padding: 2px 4px;
+    }
+    
+    /* Dropdown compacto */
+    .navbar .dropdown-toggle {
+        padding: 2px 6px;
+        font-size: 10px;
+        min-width: 32px;
+        height: 32px;
+    }
+    
+    .navbar .dropdown-toggle .bi {
+        font-size: 12px;
+    }
+    
+    /* Esconder nome do usuário */
+    .navbar .dropdown-toggle span {
+        display: none !important;
+    }
+    
+    /* Ajustar ícones dos botões */
+    .navbar .btn i {
+        font-size: 12px;
+    }
+}
+
+/* Header responsivo para telas intermediárias (340px) */
+@media (max-width: 340px) {
+    .navbar {
+        padding: 5px 7px;
+        height: 50px;
+    }
+    
+    .navbar .container-fluid {
+        gap: 3px;
+    }
+    
+    .navbar-brand {
+        font-size: 11px;
+        max-width: 100px;
+    }
+    
+    .navbar-brand .d-sm-none {
+        font-size: 9px;
+    }
+    
+    .navbar-brand div {
+        width: 18px !important;
+        height: 18px !important;
+        margin-right: 3px !important;
+    }
+    
+    .navbar-brand img {
+        width: 18px !important;
+        height: 18px !important;
+    }
+    
+    .navbar .d-flex {
+        gap: 1px;
+    }
+    
+    .navbar .form-check-input {
+        width: 32px !important;
+        height: 18px !important;
+    }
+    
+    .navbar .form-check-input::before {
+        display: none;
+    }
+    
+    .navbar .form-check-input:checked::before {
+        display: none;
+    }
+    
+    .navbar .btn {
+        padding: 3px 5px;
+        font-size: 9px;
+        min-width: 30px;
+        height: 30px;
+    }
+    
+    .navbar .dropdown-toggle {
+        padding: 1px 5px;
+        font-size: 9px;
+        min-width: 30px;
+        height: 30px;
+    }
+    
+    .navbar .dropdown-toggle .bi {
+        font-size: 11px;
+    }
+    
+    .navbar .btn i {
+        font-size: 11px;
+    }
+    
+    /* Ocultar ícones em botões pequenos em telas muito pequenas */
+    .btn-sm i {
+        display: none !important;
+    }
+    
+    .btn-sm {
+        padding: var(--space-1) var(--space-2) !important;
+        font-size: var(--text-xs) !important;
+    }
+    
+    /* Ações rápidas em telas muito pequenas - forçar lado a lado */
+    .quick-actions .row.g-2 {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: var(--space-1) !important;
+        margin: 0 !important;
+    }
+    
+    .quick-actions .row.g-2 .col-6 {
+        flex: 1 !important;
+        max-width: calc(50% - 4px) !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Ajustar botões para telas muito pequenas */
+    #btn-novo-cliente,
+    #btn-novo-servico {
+        height: 70px !important;
+        font-size: 0.8rem !important;
+        padding: var(--space-2) !important;
+    }
+    
+    #btn-novo-cliente i,
+    #btn-novo-servico i {
+        font-size: 1.2rem !important;
+        margin-bottom: var(--space-1) !important;
+    }
+}
+
+/* Header responsivo para telas extremamente pequenas (Galaxy S9+ 320px) */
+@media (max-width: 320px) {
+    .navbar {
+        padding: 4px 6px;
+        height: 48px;
+    }
+    
+    .navbar .container-fluid {
+        gap: 2px;
+        justify-content: space-between;
+    }
+    
+    /* Navbar-brand ultra compacto */
+    .navbar-brand {
+        font-size: 10px;
+        margin-right: 2px;
+        max-width: 80px;
+    }
+    
+    .navbar-brand .d-sm-none {
+        font-size: 8px;
+    }
+    
+    /* Logo ultra compacto */
+    .navbar-brand div {
+        width: 16px !important;
+        height: 16px !important;
+        margin-right: 2px !important;
+    }
+    
+    .navbar-brand img {
+        width: 16px !important;
+        height: 16px !important;
+    }
+    
+    /* Controles ultra compactos */
+    .navbar .d-flex {
+        gap: 1px;
+    }
+    
+    /* Toggle switch ultra compacto */
+    .navbar .form-check-input {
+        width: 30px !important;
+        height: 16px !important;
+    }
+    
+    .navbar .form-check-input::before {
+        display: none;
+    }
+    
+    .navbar .form-check-input:checked::before {
+        display: none;
+    }
+    
+    /* Botões ultra compactos */
+    .navbar .btn {
+        padding: 2px 4px;
+        font-size: 8px;
+        min-width: 28px;
+        height: 28px;
+    }
+    
+    .navbar .btn-ghost {
+        padding: 1px 2px;
+    }
+    
+    /* Dropdown ultra compacto */
+    .navbar .dropdown-toggle {
+        padding: 1px 4px;
+        font-size: 8px;
+        min-width: 28px;
+        height: 28px;
+    }
+    
+    .navbar .dropdown-toggle .bi {
+        font-size: 10px;
+    }
+    
+    /* Ícones ultra compactos */
+    .navbar .btn i {
+        font-size: 10px;
+    }
+    
+    /* Ocultar ícones em botões pequenos em telas extremamente pequenas */
+    .btn-sm i {
+        display: none !important;
+    }
+    
+    .btn-sm {
+        padding: 2px var(--space-1) !important;
+        font-size: 0.7rem !important;
+        min-width: 44px !important;
+    }
+    
+    /* Ações rápidas em telas extremamente pequenas - forçar lado a lado */
+    .quick-actions .row.g-2 {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 4px !important;
+        margin: 0 !important;
+    }
+    
+    .quick-actions .row.g-2 .col-6 {
+        flex: 1 !important;
+        max-width: calc(50% - 2px) !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Ajustar botões para telas extremamente pequenas */
+    #btn-novo-cliente,
+    #btn-novo-servico {
+        height: 65px !important;
+        font-size: 0.75rem !important;
+        padding: var(--space-1) !important;
+    }
+    
+    #btn-novo-cliente i,
+    #btn-novo-servico i {
+        font-size: 1rem !important;
+        margin-bottom: 2px !important;
+    }
+    
+    #btn-novo-cliente span,
+    #btn-novo-servico span {
+        font-size: 0.75rem !important;
+        line-height: 1.2 !important;
+    }
+}
+
 /* Navbar Icons - Alto contraste */
 .navbar .bi {
     color: white !important;
@@ -680,15 +1030,21 @@ body:not(.dark-mode) .navbar .bi:hover {
 
 /* Navbar Brand Logo */
 #brand-logo {
-    height: 32px;
-    width: auto;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 28px;
+    width: 28px;
+    object-fit: contain;
+    transition: none; /* Remover transições para logo base64 */
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    /* Garantir carregamento estável */
+    display: block;
+    opacity: 1;
+    transform: none;
 }
 
 .navbar-brand:hover #brand-logo {
-    transform: scale(1.05);
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+    transform: scale(1.02); /* Animação mais sutil */
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
+    transition: transform 0.2s ease, filter 0.2s ease; /* Transição suave apenas no hover */
 }
 
 /* Light mode - Brand logo com filtro dourado */
@@ -697,7 +1053,16 @@ body:not(.dark-mode) #brand-logo {
 }
 
 body:not(.dark-mode) .navbar-brand:hover #brand-logo {
-    filter: drop-shadow(0 4px 8px rgba(255, 255, 255, 0.4));
+    filter: drop-shadow(0 3px 6px rgba(255, 255, 255, 0.4));
+}
+
+/* Garantir que logo base64 seja sempre visível */
+#brand-logo[src*="data:image"] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    display: block !important;
+    visibility: visible !important;
 }
 
 /* Theme Toggle Icon */
@@ -788,6 +1153,59 @@ body:not(.dark-mode) .navbar .dropdown-toggle:hover {
     backdrop-filter: blur(10px);
 }
 
+/* CORREÇÃO CRÍTICA - DROPDOWN NÃO CORTADO */
+.navbar .dropdown-menu {
+    position: absolute !important;
+    top: 100% !important;
+    right: 0 !important;
+    left: auto !important;
+    z-index: 1050 !important; /* Maior que navbar (1030) */
+    min-width: 200px !important;
+    max-width: 300px !important;
+    background: white !important;
+    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    margin-top: 4px !important;
+    transform: none !important;
+    will-change: auto !important;
+}
+
+/* Garantir que dropdown seja visível */
+.navbar .dropdown-menu.show {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Items do dropdown */
+.navbar .dropdown-menu .dropdown-item {
+    padding: 8px 16px !important;
+    color: #374151 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.navbar .dropdown-menu .dropdown-item:hover {
+    background-color: #f8fafc !important;
+    color: #1f2937 !important;
+}
+
+.navbar .dropdown-menu .dropdown-item:active {
+    background-color: #e5e7eb !important;
+    color: #111827 !important;
+}
+
+/* Separador do dropdown */
+.navbar .dropdown-menu .dropdown-divider {
+    margin: 4px 0 !important;
+    border-top: 1px solid #e5e7eb !important;
+}
+
 .navbar .dropdown-toggle:hover {
     background-color: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.5);
@@ -835,6 +1253,107 @@ body:not(.dark-mode) .navbar .dropdown-toggle:hover {
     vertical-align: middle;
 }
 
+/* Navbar Responsive Fixes */
+.navbar {
+    min-height: 56px;
+    padding: 0.5rem 1rem;
+}
+
+.navbar-brand {
+    font-size: 1.1rem !important;
+    margin-right: 0.5rem !important;
+}
+
+.navbar .d-flex.gap-1 {
+    gap: 0.25rem !important;
+}
+
+.navbar .btn {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.875rem !important;
+}
+
+/* Limpeza específica do toggle para evitar sobreposições */
+.navbar .form-check-input {
+    transform: none !important;
+    margin: 0 !important;
+    width: 50px !important;
+    height: 30px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+}
+
+/* Garantir que não há elementos sobrepostos */
+.navbar .form-check-input::after {
+    display: none !important;
+}
+
+.navbar .form-check-input::-webkit-slider-thumb {
+    display: none !important;
+}
+
+.navbar .form-check-input::-moz-range-thumb {
+    display: none !important;
+}
+
+.navbar .dropdown-toggle {
+    padding: 0.25rem 0.5rem !important;
+}
+
+.navbar .form-check {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Mobile navbar adjustments */
+@media (max-width: 768px) {
+    .navbar .d-flex.gap-1 {
+        gap: 0.1rem !important;
+    }
+    
+    .navbar .btn {
+        padding: 0.2rem 0.4rem !important;
+        font-size: 0.8rem !important;
+    }
+    
+    /* Limpeza específica do toggle para evitar sobreposições */
+.navbar .form-check-input {
+    transform: none !important;
+    margin: 0 !important;
+    width: 50px !important;
+    height: 30px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+}
+
+/* Garantir que não há elementos sobrepostos */
+.navbar .form-check-input::after {
+    display: none !important;
+}
+
+.navbar .form-check-input::-webkit-slider-thumb {
+    display: none !important;
+}
+
+.navbar .form-check-input::-moz-range-thumb {
+    display: none !important;
+}
+    
+    .navbar .dropdown-toggle {
+        padding: 0.2rem 0.4rem !important;
+    }
+    
+    .navbar-brand {
+        font-size: 1rem !important;
+    }
+    
+    .navbar-brand span {
+        font-size: 0.9rem !important;
+    }
+}
+
 /* Mobile Sidebar Overlay */
 .sidebar-overlay {
     position: fixed;
@@ -842,13 +1361,62 @@ body:not(.dark-mode) .navbar .dropdown-toggle:hover {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1015;
-    display: none;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: 1010;
+    display: none !important;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
 }
 
 .sidebar-overlay.show {
     display: block;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Garantir que o overlay não interfira com o sidebar mobile */
+@media (max-width: 768px) {
+    /* Overlay só deve ter pointer-events quando o sidebar estiver realmente aberto */
+    .sidebar-overlay:not(.show) {
+        pointer-events: none !important;
+        display: none !important;
+    }
+    
+    .sidebar-overlay.show {
+        pointer-events: auto;
+    }
+    
+    /* Quando o sidebar mobile está aberto, garantir que o sidebar tenha prioridade total */
+    .sidebar .collapse.show {
+        z-index: 1030 !important;
+        position: relative !important;
+    }
+    
+    /* Todos os elementos do sidebar mobile devem ter prioridade sobre o overlay */
+    .sidebar .collapse.show * {
+        z-index: 1031 !important;
+        position: relative !important;
+    }
+    
+    /* Overlay deve ficar atrás do sidebar quando ele está aberto */
+    .sidebar .collapse.show + .sidebar-overlay {
+        z-index: 1010 !important;
+    }
+    
+    /* Garantir que os links do sidebar sejam clicáveis */
+    .sidebar .collapse.show .nav-link {
+        z-index: 1032 !important;
+        position: relative !important;
+        pointer-events: auto !important;
+    }
+    
+    /* Garantir que o overlay não apareça por padrão */
+    .sidebar-overlay {
+        display: none !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
 }
 
 /* Navbar Toggler Mobile */
@@ -999,9 +1567,9 @@ body:not(.dark-mode) .sidebar .nav-link.active {
 
 /* Main Content */
 main {
-    margin-top: 56px;
+    margin-top: 64px; /* Altura da navbar fixa */
     padding-top: 20px;
-    min-height: calc(100vh - 56px);
+    min-height: calc(100vh - 64px);
     position: relative;
     z-index: 1;
 }
@@ -1009,6 +1577,7 @@ main {
 .main-content {
     padding-left: 15px;
     padding-right: 15px;
+    padding-top: 0; /* Remover padding-top padrão */
 }
 
 .content-wrapper {
@@ -1198,21 +1767,569 @@ body:not(.dark-mode) .metric-value {
     background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(74, 222, 128, 0.05));
 }
 
-/* Appointment Items */
-.appointment-item {
+/* Ações Rápidas - Layout Otimizado */
+.quick-actions .btn {
     transition: all 0.3s ease;
-    border-left: 4px solid #e2e8f0 !important;
+    border-radius: 12px;
 }
 
-.appointment-item:hover {
-    background-color: #f8fafc;
-    transform: translateX(4px);
-    border-left-color: #2563eb !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+/* Forçar layout lado a lado para ações rápidas em todas as telas */
+.quick-actions .row.g-2 {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: var(--space-2) !important;
+    margin: 0 !important;
+}
+
+/* Garantir que ícones sejam exibidos em telas maiores */
+@media (min-width: 481px) {
+    .btn-sm i {
+        display: inline-block !important;
+    }
+}
+
+/* Ajuste específico para toggle com scale(0.6) */
+.navbar .form-check-input[style*="scale(0.6)"] {
+    position: relative !important;
+}
+
+.navbar .form-check-input[style*="scale(0.6)"]::before {
+    display: none;
+}
+
+.navbar .form-check-input[style*="scale(0.6)"]:checked::before {
+    display: none;
+}
+
+.quick-actions .row.g-2 .col-6 {
+    flex: 1 !important;
+    max-width: calc(50% - var(--space-1)) !important;
+    min-width: 0 !important;
+    padding: 0 var(--space-1) !important;
+}
+
+.quick-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.quick-actions .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border: none;
+}
+
+.quick-actions .btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+.quick-actions .btn-outline-info {
+    border-color: #06b6d4;
+    color: #06b6d4;
+}
+
+.quick-actions .btn-outline-info:hover {
+    background-color: #06b6d4;
+    border-color: #06b6d4;
+    color: white;
+}
+
+.quick-actions .btn-outline-warning {
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.quick-actions .btn-outline-warning:hover {
+    background-color: #f59e0b;
+    border-color: #f59e0b;
+    color: white;
+}
+
+/* Appointment Cards - Design Moderno Melhorado */
+.appointment-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    position: relative;
+    overflow: visible;
+    min-height: 120px;
+    padding: 20px;
+}
+
+.appointment-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 16px 16px 0 0;
+}
+
+.appointment-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    border-color: #3b82f6;
+}
+
+.appointment-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    gap: 16px;
+}
+
+.appointment-client-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.appointment-right-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.appointment-top-right {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    z-index: 10;
+}
+
+.appointment-top-right .appointment-time {
+    display: none;
+}
+
+/* Dark mode - Texto simples para appointment-time */
+.dark-mode .appointment-top-right .appointment-time {
+    background: none !important;
+    color: #9ca3af !important;
+    border: none !important;
+}
+
+/* Light mode - Texto simples para appointment-time */
+body:not(.dark-mode) .appointment-top-right .appointment-time {
+    background: none !important;
+    color: #6b7280 !important;
+    border: none !important;
+}
+
+.appointment-top-right .status-badge {
+    display: none;
+}
+
+.appointment-status-section {
+    margin: 12px 0;
+    display: flex;
+    justify-content: flex-start;
 }
 
 .appointment-avatar {
+    display: none;
+}
+
+.appointment-details {
+    flex: 1;
+    min-width: 0;
+    padding-right: 8px;
+}
+
+.appointment-client-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 4px 0;
+    line-height: 1.3;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.appointment-service {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 0 8px 0;
+    font-weight: 500;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.appointment-time {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #3b82f6;
+    font-weight: 500;
+    flex-wrap: wrap;
+    text-align: right;
+    justify-content: flex-end;
+}
+
+.appointment-time i {
+    display: none;
+}
+
+.appointment-status {
     flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    margin-top: 0;
+    margin-bottom: 0;
+    justify-content: flex-end;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    max-width: 120px;
+    text-align: center;
+}
+
+.status-badge.bg-success {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    color: white;
+}
+
+.status-badge.bg-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    color: white;
+}
+
+.status-badge.bg-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    color: white;
+}
+
+.appointment-card-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
+    flex-wrap: nowrap;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    overflow: visible;
+}
+
+.action-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.edit-btn {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.edit-btn:hover {
+    background: #3b82f6;
+    color: white;
+    transform: scale(1.05);
+}
+
+.complete-btn {
+    background: #f0fdf4;
+    color: #16a34a;
+}
+
+.complete-btn:hover {
+    background: #16a34a;
+    color: white;
+    transform: scale(1.05);
+}
+
+.cancel-btn {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.cancel-btn:hover {
+    background: #dc2626;
+    color: white;
+    transform: scale(1.05);
+}
+
+/* Botões maiores para cards de agendamento */
+.action-btn-large {
+    padding: 10px 16px;
+    height: 40px;
+    border: none;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 16px;
+    flex: 1;
+    min-width: 100px;
+    max-width: 120px;
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    vertical-align: top;
+    float: none;
+}
+
+.action-btn-large i {
+    font-size: 18px;
+}
+
+.action-btn-large span {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.action-btn-large.complete-btn {
+    background: #16a34a;
+    color: white;
+    order: 1;
+    position: relative;
+    z-index: 2;
+}
+
+.action-btn-large.complete-btn:hover {
+    background: #15803d;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+}
+
+.action-btn-large.edit-btn {
+    background: #1f2937;
+    color: white;
+    order: 2;
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    padding: 10px;
+    flex: 0 0 40px;
+    position: relative;
+    z-index: 1;
+}
+
+.action-btn-large.edit-btn span {
+    display: none;
+}
+
+.action-btn-large.edit-btn:hover {
+    background: #374151;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(31, 41, 55, 0.3);
+}
+
+.action-btn-large.cancel-btn {
+    background: #dc2626;
+    color: white;
+    order: 3;
+    position: relative;
+    z-index: 1;
+}
+
+.action-btn-large.cancel-btn:hover {
+    background: #b91c1c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* Dark Mode */
+.dark-mode .appointment-card {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    border-color: #374151;
+}
+
+.dark-mode .appointment-card:hover {
+    border-color: #3b82f6;
+}
+
+.dark-mode .appointment-client-name {
+    color: #f9fafb;
+}
+
+.dark-mode .appointment-service {
+    color: #9ca3af;
+}
+
+.dark-mode .appointment-time {
+    color: #60a5fa;
+}
+
+.dark-mode .edit-btn {
+    background: #374151;
+    color: #9ca3af;
+}
+
+.dark-mode .edit-btn:hover {
+    background: #3b82f6;
+    color: white;
+}
+
+/* Dark mode - Corrigir botões de ação dos cards de agendamento */
+.dark-mode .appointment-card-actions {
+    border-top-color: #374151;
+}
+
+.dark-mode .action-btn-large.complete-btn {
+    background: #16a34a;
+    color: white;
+}
+
+.dark-mode .action-btn-large.edit-btn {
+    background: #374151;
+    color: #9ca3af;
+}
+
+.dark-mode .action-btn-large.cancel-btn {
+    background: #dc2626;
+    color: white;
+}
+
+/* Light mode - Corrigir botões de ação dos cards de agendamento */
+body:not(.dark-mode) .appointment-card-actions {
+    border-top-color: #e2e8f0;
+}
+
+body:not(.dark-mode) .action-btn-large.complete-btn {
+    background: #16a34a;
+    color: white;
+}
+
+body:not(.dark-mode) .action-btn-large.edit-btn {
+    background: #6b7280;
+    color: white;
+}
+
+body:not(.dark-mode) .action-btn-large.cancel-btn {
+    background: #dc2626;
+    color: white;
+}
+
+/* Corrigir sobreposição dos botões */
+.appointment-card-actions {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+.action-btn-large {
+    position: relative !important;
+    z-index: 1 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Evitar sobreposição vertical dos botões */
+.appointment-card-actions .action-btn-large {
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+    vertical-align: top !important;
+    display: inline-flex !important;
+    float: left !important;
+    clear: none !important;
+}
+
+/* Layout dos botões lado a lado */
+.appointment-card-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    margin-top: 12px !important;
+    padding-top: 12px !important;
+    border-top: 1px solid #f1f5f9 !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Botões em linha horizontal dentro do container */
+.appointment-card-actions .action-btn-large {
+    display: inline-flex !important;
+    vertical-align: middle !important;
+    float: none !important;
+    margin: 0 !important;
+    flex: 1 !important;
+    max-width: none !important;
+}
+
+/* Container para botões em linha */
+.appointment-card-actions .btn-row {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+/* Ajustar altura dos botões para evitar sobreposição */
+.appointment-card-actions .action-btn-large {
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    padding: 8px 12px !important;
+}
+
+.dark-mode .complete-btn {
+    background: #064e3b;
+    color: #34d399;
+}
+
+.dark-mode .complete-btn:hover {
+    background: #16a34a;
+    color: white;
+}
+
+.dark-mode .cancel-btn {
+    background: #7f1d1d;
+    color: #fca5a5;
+}
+
+.dark-mode .cancel-btn:hover {
+    background: #dc2626;
+    color: white;
 }
 
 /* Alert melhorado */
@@ -1470,6 +2587,19 @@ body:not(.dark-mode) .metric-value {
         display: block !important;
     }
     
+    /* Garantir que o sidebar mobile tenha prioridade total quando aberto */
+    .sidebar .collapse.show {
+        z-index: 1030 !important;
+        position: relative !important;
+    }
+    
+    /* Todos os elementos do sidebar mobile devem ser clicáveis */
+    .sidebar .collapse.show .nav-link {
+        z-index: 1032 !important;
+        position: relative !important;
+        pointer-events: auto !important;
+    }
+    
     /* Conteúdo da sidebar mobile - Bootstrap collapse */
     .sidebar .collapse {
         display: none;
@@ -1539,6 +2669,7 @@ body:not(.dark-mode) .metric-value {
         margin-left: 0;
         margin-top: 64px;
         width: 100%;
+        padding-top: 20px; /* Espaçamento adicional em mobile */
     }
 
     .main-content {
@@ -1665,31 +2796,673 @@ body:not(.dark-mode) .metric-value {
         height: 250px !important;
     }
 
-    /* Ajustes para appointment items em mobile */
-    .appointment-item {
-        padding: var(--space-3) !important;
-        margin-bottom: var(--space-3) !important;
+    /* Ajustes para appointment cards em mobile */
+    .appointment-card {
+        padding: 16px;
+        margin-bottom: 12px;
     }
 
-    .appointment-item .d-flex {
+    .appointment-card-header {
         flex-direction: column;
-        align-items: stretch !important;
+        gap: 12px;
+        margin-bottom: 12px;
+        align-items: stretch;
     }
 
-    .appointment-item .text-end {
-        text-align: left !important;
-        margin-top: var(--space-3);
+    .appointment-client-info {
+        gap: 12px;
+        flex-direction: column;
+        align-items: flex-start;
     }
 
-    .appointment-item .btn-group {
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: var(--space-1);
+    .appointment-right-info {
+        align-items: flex-start;
+        gap: 6px;
     }
 
-    .appointment-item .btn-group .btn {
-        flex: 1;
-        min-width: 60px;
+    .appointment-top-right {
+        position: static;
+        align-items: flex-start;
+        margin-top: 8px;
+        flex-direction: column;
+    }
+
+
+
+
+    .appointment-details {
+        width: 100%;
+        padding-right: 0;
+    }
+
+    .appointment-client-name {
+        font-size: 16px;
+        margin-bottom: 6px;
+    }
+
+    .appointment-service {
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+
+
+    .appointment-status {
+        align-self: flex-start;
+        margin-top: 0;
+        margin-bottom: 8px;
+        justify-content: flex-start;
+    }
+
+    .status-badge {
+        font-size: 11px;
+        padding: 4px 8px;
+        max-width: 100px;
+    }
+
+    .appointment-card-actions {
+        justify-content: space-between;
+        gap: 6px;
+        margin-top: 12px;
+        padding-top: 12px;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        position: relative;
+        z-index: 10;
+    }
+    
+    /* Evitar sobreposição dos botões em mobile */
+    .action-btn-large {
+        position: relative;
+        z-index: 1;
+        flex-shrink: 0;
+        min-width: 0;
+    }
+
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+    }
+
+    .action-btn-large {
+        padding: 8px 10px;
+        height: 35px;
+        font-size: 11px;
+        min-width: 70px;
+        max-width: 80px;
+        gap: 4px;
+    }
+
+    .action-btn-large.edit-btn {
+        width: 35px;
+        min-width: 35px;
+        max-width: 35px;
+        padding: 8px;
+        flex: 0 0 35px;
+    }
+
+    .action-btn-large i {
+        font-size: 14px;
+    }
+
+    .action-btn-large span {
+        font-size: 10px;
+    }
+}
+
+/* === OTIMIZAÇÕES MOBILE ESPECÍFICAS === */
+
+/* Controle de ordem das seções do dashboard */
+.dashboard-sections-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-section-agendamentos {
+    order: 1;
+}
+
+.dashboard-section-metricas {
+    order: 2;
+}
+
+/* Em telas menores (mobile), manter a ordem atual (agendamentos primeiro) */
+@media (max-width: 768px) {
+    .dashboard-section-agendamentos {
+        order: 1;
+    }
+    
+    .dashboard-section-metricas {
+        order: 2;
+    }
+}
+
+/* Em telas muito pequenas, manter agendamentos primeiro */
+@media (max-width: 576px) {
+    .dashboard-section-agendamentos {
+        order: 1;
+    }
+    
+    .dashboard-section-metricas {
+        order: 2;
+    }
+}
+
+/* Melhorias para telas muito pequenas (até 480px) */
+@media (max-width: 480px) {
+    .appointment-card {
+        padding: 12px;
+        margin-bottom: 8px;
+    }
+
+    .appointment-card-header {
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .appointment-client-info {
+        gap: 8px;
+    }
+
+
+    .appointment-client-name {
+        font-size: 15px;
+    }
+
+    .appointment-service {
+        font-size: 12px;
+    }
+
+    .appointment-time {
+        font-size: 11px;
+    }
+
+    .status-badge {
+        font-size: 10px;
+        padding: 3px 6px;
+        max-width: 80px;
+    }
+
+    .appointment-card-actions {
+        gap: 4px;
+        margin-top: 8px;
+        padding-top: 8px;
+    }
+    
+    .appointment-time {
+        font-size: 10px;
+    }
+
+    .action-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+    }
+
+    /* Cards de agendamento alternativos */
+    .appointment-item {
+        padding: 12px;
+        margin-bottom: 8px;
+    }
+
+    .appointment-header {
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .appointment-client {
+        font-size: 15px;
+    }
+
+    .appointment-service {
+        font-size: 12px;
+    }
+
+    .appointment-time {
+        font-size: 11px;
+    }
+
+    .appointment-actions {
+        gap: 4px;
+        margin-top: 8px;
+        padding-top: 8px;
+    }
+
+    .btn-edit, .btn-reschedule, .btn-cancel {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+}
+
+/* Cards de Agendamento - Otimização Mobile */
+.appointment-item {
+    transition: all 0.3s ease;
+    border-left: 4px solid #e2e8f0 !important;
+    margin-bottom: var(--space-3);
+    border-radius: 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--gray-200);
+    position: relative;
+    overflow: hidden;
+    padding: 16px;
+}
+
+.appointment-item:hover {
+    background-color: #f8fafc;
+    transform: translateX(4px);
+    border-left-color: #2563eb !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Conteúdo do card de agendamento */
+.appointment-content {
+    position: relative;
+    z-index: 1;
+}
+
+.appointment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 12px;
+}
+
+.appointment-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.appointment-right-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.appointment-client {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.appointment-service {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 6px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.appointment-time {
+    font-size: 13px;
+    color: #3b82f6;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.appointment-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.btn-edit, .btn-reschedule, .btn-cancel {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-edit {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.btn-edit:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.btn-reschedule {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.btn-reschedule:hover {
+    background: #bfdbfe;
+    color: #1d4ed8;
+}
+
+.btn-cancel {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.btn-cancel:hover {
+    background: #fecaca;
+    color: #b91c1c;
+}
+
+/* Status do agendamento - Melhor visibilidade */
+.appointment-status {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    border-radius: 12px 12px 0 0;
+}
+
+.appointment-status.confirmed {
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.appointment-status.cancelled {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.appointment-status.pending {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+/* Conteúdo do agendamento */
+.appointment-content {
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.appointment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-2);
+}
+
+.appointment-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.appointment-client {
+    font-weight: var(--font-semibold);
+    font-size: var(--text-lg);
+    color: var(--text-primary);
+    margin-bottom: var(--space-1);
+}
+
+.appointment-service {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-1);
+}
+
+.appointment-time {
+    color: var(--primary-600);
+    font-weight: var(--font-medium);
+    font-size: var(--text-base);
+}
+
+/* Botões de ação - OTIMIZAÇÃO CRÍTICA PARA MOBILE */
+.appointment-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    align-items: flex-end;
+}
+
+.appointment-actions .btn-group {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* Botões de ação individuais - TAMANHO MÍNIMO 44px */
+.appointment-actions .btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: 8px;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-medium);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+}
+
+.appointment-actions .btn:hover {
+    background: var(--primary-50);
+    color: var(--primary-600);
+    border-color: var(--primary-300);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.appointment-actions .btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Botão de editar */
+.appointment-actions .btn-edit {
+    background: var(--primary-50);
+    color: var(--primary-600);
+    border-color: var(--primary-200);
+}
+
+.appointment-actions .btn-edit:hover {
+    background: var(--primary-100);
+    color: var(--primary-700);
+    border-color: var(--primary-300);
+}
+
+/* Botão de reagendar */
+.appointment-actions .btn-reschedule {
+    background: var(--warning-50);
+    color: var(--warning-600);
+    border-color: var(--warning-200);
+}
+
+.appointment-actions .btn-reschedule:hover {
+    background: var(--warning-100);
+    color: var(--warning-700);
+    border-color: var(--warning-300);
+}
+
+/* Botão de cancelar */
+.appointment-actions .btn-cancel {
+    background: var(--error-50);
+    color: var(--error-600);
+    border-color: var(--error-200);
+}
+
+.appointment-actions .btn-cancel:hover {
+    background: var(--error-100);
+    color: var(--error-700);
+    border-color: var(--error-300);
+}
+
+/* Botão de deletar - Posicionamento separado */
+.appointment-delete {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--error-50);
+    color: var(--error-600);
+    border: 1px solid var(--error-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.appointment-delete:hover {
+    background: var(--error-100);
+    color: var(--error-700);
+    border-color: var(--error-300);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Barra de navegação secundária - OTIMIZAÇÃO MOBILE */
+.navbar-secondary {
+    background: var(--bg-primary) !important;
+    border-bottom: 1px solid var(--border-light) !important;
+    padding: var(--space-3) var(--space-4) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--space-4) !important;
+    flex-wrap: wrap !important;
+    margin-bottom: var(--space-4) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    position: relative !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    clear: both !important;
+    float: none !important;
+}
+
+.navbar-secondary .form-check {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--space-2) !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+.navbar-secondary .form-check-label {
+    font-size: var(--text-sm) !important;
+    font-weight: var(--font-medium) !important;
+    color: var(--text-primary) !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+}
+
+.navbar-secondary .form-check-input {
+    width: 50px !important;
+    height: 30px !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+.navbar-secondary .nav-icons {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--space-2) !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    flex: 1 !important;
+}
+
+.navbar-secondary .nav-icon {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 8px !important;
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border-light) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: var(--text-secondary) !important;
+    transition: all 0.2s ease !important;
+    text-decoration: none !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+}
+
+.navbar-secondary .nav-icon:hover {
+    background: var(--primary-50) !important;
+    color: var(--primary-600) !important;
+    border-color: var(--primary-200) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.navbar-secondary .nav-icon.active {
+    background: var(--primary-100) !important;
+    color: var(--primary-700) !important;
+    border-color: var(--primary-300) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.navbar-secondary .nav-icon i {
+    font-size: 1.2rem !important;
+    line-height: 1 !important;
+    display: block !important;
+    text-align: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Forçar posicionamento fixo dos ícones */
+.navbar-secondary .nav-icons {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+.navbar-secondary .nav-icon {
+    position: relative !important;
+    z-index: 2 !important;
+    overflow: hidden !important;
+}
+
+/* Tablet e mobile médio (até 768px) */
+@media (max-width: 768px) {
+    .navbar-secondary {
+        padding: var(--space-3) var(--space-3) !important;
+        gap: var(--space-3) !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+    }
+
+    .navbar-secondary .form-check {
+        flex-shrink: 0 !important;
+        margin: 0 !important;
+    }
+
+    .navbar-secondary .nav-icons {
+        flex: 1 !important;
+        justify-content: center !important;
+        gap: var(--space-2) !important;
+        flex-wrap: wrap !important;
+    }
+
+    .navbar-secondary .nav-icon {
+        width: 50px !important;
+        height: 50px !important;
+        flex-shrink: 0 !important;
     }
 }
 
@@ -1698,6 +3471,15 @@ body:not(.dark-mode) .metric-value {
     .main-content {
         padding-left: var(--space-2);
         padding-right: var(--space-2);
+    }
+    
+    /* Ocultar ícones em botões pequenos em mobile */
+    .btn-sm i {
+        display: none !important;
+    }
+    
+    .btn-sm {
+        padding: var(--space-2) var(--space-3) !important;
     }
 
     .page {
@@ -1751,6 +3533,21 @@ body:not(.dark-mode) .metric-value {
     /* Ações rápidas em mobile pequeno */
     .row.g-2 .col-6 {
         padding: 0;
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+    
+    /* Forçar layout lado a lado em mobile pequeno */
+    .quick-actions .row.g-2 {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: var(--space-2) !important;
+    }
+    
+    .quick-actions .row.g-2 .col-6 {
+        flex: 1 !important;
+        max-width: calc(50% - var(--space-1)) !important;
+        min-width: 0 !important;
     }
 
     /* Gráfico em mobile pequeno */
@@ -1758,15 +3555,78 @@ body:not(.dark-mode) .metric-value {
         height: 200px !important;
     }
 
-    /* Appointment items em mobile pequeno */
+    /* Appointment items em mobile pequeno - OTIMIZAÇÃO CRÍTICA */
     .appointment-item {
         padding: var(--space-2) !important;
+        margin-bottom: var(--space-2) !important;
     }
 
-    .appointment-item .btn-group .btn {
-        padding: var(--space-1) var(--space-2);
+    .appointment-content {
+        padding: var(--space-3);
+        gap: var(--space-2);
+    }
+
+    .appointment-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-2);
+    }
+
+    .appointment-actions {
+        align-items: stretch;
+    }
+
+    .appointment-actions .btn-group {
+        justify-content: stretch;
+        gap: var(--space-1);
+    }
+
+    .appointment-actions .btn {
+        flex: 1;
+        min-width: 44px;
+        min-height: 44px;
         font-size: var(--text-xs);
-        min-width: 50px;
+        padding: var(--space-2);
+    }
+
+    .appointment-delete {
+        position: static;
+        width: 100%;
+        height: 44px;
+        border-radius: 8px;
+        margin-top: var(--space-2);
+    }
+
+    /* Barra de navegação secundária em mobile pequeno */
+    .navbar-secondary {
+        padding: var(--space-3) var(--space-2) !important;
+        gap: var(--space-3) !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        margin-bottom: var(--space-3) !important;
+    }
+
+    .navbar-secondary .form-check {
+        justify-content: center !important;
+        margin-bottom: var(--space-2) !important;
+    }
+
+    .navbar-secondary .nav-icons {
+        justify-content: center !important;
+        gap: var(--space-2) !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        padding: var(--space-1) 0 !important;
+    }
+
+    .navbar-secondary .nav-icon {
+        width: 52px !important;
+        height: 52px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .navbar-secondary .nav-icon i {
+        font-size: 1.3rem !important;
     }
 
     /* Sidebar em mobile pequeno */
@@ -1902,6 +3762,37 @@ html {
     transform: translateY(-4px);
     box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
     border-color: #2563eb;
+}
+
+/* Animação de exclusão instantânea para cards */
+.servico-card.removing {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Animação de exclusão instantânea para tabela */
+tr.removing {
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Animação de reorganização dos cards */
+#servicos-cards-container {
+    transition: all 0.3s ease;
+}
+
+/* Animação suave para cards individuais durante reorganização */
+.servico-card {
+    transition: all 0.3s ease;
+}
+
+/* Efeito de reorganização */
+.servico-card.reorganizing {
+    transform: scale(0.98);
+    opacity: 0.8;
+    transition: all 0.2s ease;
 }
 
 .servico-card-header {
@@ -2577,6 +4468,42 @@ body:not(.dark-mode) #avisos-list .alert-info {
   #avisos-list .alert .btn {
     font-size: 0.7rem;
     padding: 3px 6px;
+  }
+}
+
+/* === CORREÇÃO DE DESFOQUE NO MOBILE === */
+@media (max-width: 768px) {
+  /* Desabilitar transforms e filters que causam desfoque */
+  * {
+    transform: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Manter apenas transforms essenciais para funcionalidade */
+  .navbar .form-check-input:checked::before {
+    display: none;
+  }
+
+  /* Corrigir hover effects no mobile */
+  .btn:hover,
+  .card:hover,
+  .metric-card:hover,
+  .appointment-card:hover {
+    transform: none !important;
+    filter: none !important;
+  }
+
+  /* Garantir que textos estejam nítidos */
+  body, html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Corrigir zoom automático em inputs */
+  input, textarea, select {
+    font-size: 16px !important;
   }
 }
 

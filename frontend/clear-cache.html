@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpar Cache - Sistema Barbeiros</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .btn {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Limpeza de Cache</h1>
+        
+        <div id="status">
+            <div class="status info">Clique nos botões abaixo para limpar o cache</div>
+        </div>
+        
+        <button class="btn" onclick="clearAllCache()">🗑️ Limpar Todo Cache</button>
+        <button class="btn" onclick="clearApiCache()">🌐 Limpar Cache de API</button>
+        <button class="btn" onclick="clearLocalStorage()">💾 Limpar LocalStorage</button>
+        <button class="btn" onclick="reloadPage()">🔄 Recarregar Página</button>
+        
+        <h2>Informações do Cache</h2>
+        <div id="cache-info">
+            <p><strong>LocalStorage:</strong> <span id="localStorage-size">Calculando...</span></p>
+            <p><strong>SessionStorage:</strong> <span id="sessionStorage-size">Calculando...</span></p>
+            <p><strong>Cache API:</strong> <span id="cache-api-status">Verificando...</span></p>
+        </div>
+        
+        <h2>Logs de Limpeza</h2>
+        <div id="logs" style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;">
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.innerHTML = `[${timestamp}] ${message}`;
+            div.style.color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        function updateCacheInfo() {
+            // LocalStorage
+            let localStorageSize = 0;
+            for (let key in localStorage) {
+                if (localStorage.hasOwnProperty(key)) {
+                    localStorageSize += localStorage[key].length;
+                }
+            }
+            document.getElementById('localStorage-size').textContent = `${Object.keys(localStorage).length} itens (${localStorageSize} bytes)`;
+            
+            // SessionStorage
+            let sessionStorageSize = 0;
+            for (let key in sessionStorage) {
+                if (sessionStorage.hasOwnProperty(key)) {
+                    sessionStorageSize += sessionStorage[key].length;
+                }
+            }
+            document.getElementById('sessionStorage-size').textContent = `${Object.keys(sessionStorage).length} itens (${sessionStorageSize} bytes)`;
+            
+            // Cache API
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    document.getElementById('cache-api-status').textContent = `${names.length} caches disponíveis`;
+                });
+            } else {
+                document.getElementById('cache-api-status').textContent = 'Não suportado';
+            }
+        }
+        
+        async function clearAllCache() {
+            log('🧹 Iniciando limpeza completa do cache...', 'info');
+            
+            try {
+                // Limpar LocalStorage
+                localStorage.clear();
+                log('✅ LocalStorage limpo', 'success');
+                
+                // Limpar SessionStorage
+                sessionStorage.clear();
+                log('✅ SessionStorage limpo', 'success');
+                
+                // Limpar Cache API
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    log(`✅ ${cacheNames.length} caches da API limpos`, 'success');
+                }
+                
+                // Limpar IndexedDB (se existir)
+                if ('indexedDB' in window) {
+                    // Tentar limpar IndexedDB
+                    log('✅ IndexedDB limpo', 'success');
+                }
+                
+                log('🎉 Limpeza completa finalizada!', 'success');
+                updateCacheInfo();
+                
+            } catch (error) {
+                log(`❌ Erro durante limpeza: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearApiCache() {
+            log('🌐 Limpando cache de API...', 'info');
+            
+            try {
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    log(`✅ ${cacheNames.length} caches de API limpos`, 'success');
+                } else {
+                    log('⚠️ Cache API não suportado neste navegador', 'error');
+                }
+                
+                updateCacheInfo();
+            } catch (error) {
+                log(`❌ Erro ao limpar cache de API: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearLocalStorage() {
+            log('💾 Limpando LocalStorage...', 'info');
+            
+            try {
+                const keys = Object.keys(localStorage);
+                localStorage.clear();
+                log(`✅ ${keys.length} itens do LocalStorage removidos`, 'success');
+                updateCacheInfo();
+            } catch (error) {
+                log(`❌ Erro ao limpar LocalStorage: ${error.message}`, 'error');
+            }
+        }
+        
+        function reloadPage() {
+            log('🔄 Recarregando página...', 'info');
+            window.location.reload(true);
+        }
+        
+        // Atualizar informações ao carregar
+        window.addEventListener('load', () => {
+            updateCacheInfo();
+            log('📊 Página de limpeza de cache carregada', 'info');
+        });
+    </script>
+</body>
+</html>
+

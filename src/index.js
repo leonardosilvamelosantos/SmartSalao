@@ -5,11 +5,18 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
+// Validar variáveis de ambiente antes de continuar
+const { initializeEnvValidation } = require('./config/env-validation');
+initializeEnvValidation();
+
 // Importações locais
 const path = require('path');
 
 // Carregar configuração do banco (detecção automática)
 const pool = require('./config/database');
+
+// Testes de conectividade no startup
+const { runStartupTests, setupGracefulShutdown } = require('./config/startup-tests');
 
 const cronJobService = require('./services/CronJobService');
 
@@ -19,20 +26,7 @@ const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 
 // Middlewares de segurança e utilitários
-app.use(helmet({
-  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
-    useDefaults: true,
-    directives: {
-      "default-src": ["'self'"],
-      "img-src": ["'self'", 'data:', 'https:'],
-      "script-src": ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
-      "style-src": ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://fonts.googleapis.com'],
-      "font-src": ["'self'", 'https://fonts.gstatic.com'],
-      "connect-src": ["'self'", 'https:', 'http:'],
-      "frame-src": ["'self'"]
-    }
-  } : false
-})); // Segurança básica com CSP em produção
+app.use(helmet());
 
 app.use(cors({
   origin: (origin, cb) => {
@@ -79,8 +73,8 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'apikey']
-})); // CORS configurado para desenvolvimento
+  allowedHeaders: ['Content-Type', 'Authorization', 'apikey', 'X-Requested-With', 'Accept', 'Origin']
+}));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev')); // Logging de requests
 
 // Rate limiting - Desabilitado em desenvolvimento
@@ -551,26 +545,37 @@ function getLocalIP() {
 
 // Iniciar servidor somente quando este arquivo for o entrypoint e não estiver em teste
 if (require.main === module && process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, HOST, () => {
-    const localIP = getLocalIP();
-    
-    console.log(`🚀 Servidor rodando na porta ${PORT}`);
-    // console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`); // Otimizado para reduzir spam no console
-    console.log(`🌐 Host: ${HOST}`);
-    console.log(`🏥 Health check: http://localhost:${PORT}/health`);
-    console.log(`💻 Acesso local: http://localhost:${PORT}/frontend`);
-    
-    if (localIP) {
-      console.log(`🌐 IP da rede local: ${localIP}`);
-      console.log(`📱 Acesse do celular: http://${localIP}:${PORT}/frontend`);
-      console.log(`💻 Acesse de outros PCs: http://${localIP}:${PORT}/frontend`);
-    } else {
-      console.log(`❌ Não foi possível detectar o IP da rede local`);
-      console.log(`💡 Verifique sua conexão de rede ou configure manualmente`);
-    }
+  // Configurar shutdown graceful
+  setupGracefulShutdown();
+  
+  // Executar testes de startup antes de iniciar o servidor
+  runStartupTests().then(() => {
+    // Iniciar servidor após testes bem-sucedidos
+    app.listen(PORT, HOST, () => {
+      const localIP = getLocalIP();
+      
+      console.log(`🚀 Servidor rodando na porta ${PORT}`);
+      // console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`); // Otimizado para reduzir spam no console
+      console.log(`🌐 Host: ${HOST}`);
+      console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+      console.log(`💻 Acesso local: http://localhost:${PORT}/frontend`);
+      
+      if (localIP) {
+        console.log(`🌐 IP da rede local: ${localIP}`);
+        console.log(`📱 Acesse do celular: http://${localIP}:${PORT}/frontend`);
+        console.log(`💻 Acesse de outros PCs: http://${localIP}:${PORT}/frontend`);
+      } else {
+        console.log(`❌ Não foi possível detectar o IP da rede local`);
+        console.log(`💡 Verifique sua conexão de rede ou configure manualmente`);
+      }
 
-    // Iniciar jobs cron
-    cronJobService.startJobs();
+      // Iniciar jobs cron
+      cronJobService.startJobs();
+    });
+  }).catch((error) => {
+    console.error('💥 Falha nos testes de startup:', error.message);
+    console.error('🛑 Encerrando aplicação...');
+    process.exit(1);
   });
 }
 

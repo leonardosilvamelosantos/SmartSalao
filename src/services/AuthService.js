@@ -91,9 +91,11 @@ class AuthService {
       const role = decoded.role || 'barbeiro';
       const isAdmin = role === 'system_admin' || role === 'admin';
 
-      return {
+      const result = {
         id: decoded.userId,
+        userId: decoded.userId, // Adicionar userId para compatibilidade
         tenant_id: decoded.tenantId || 1,
+        tenantId: decoded.tenantId || 1, // Adicionar tenantId para compatibilidade
         name: decoded.name || 'Usuário',
         email: decoded.email || null,
         role,
@@ -104,9 +106,11 @@ class AuthService {
         config: { timezone: 'America/Sao_Paulo' },
         type: decoded.type
       };
+      
+      return result;
 
     } catch (error) {
-      console.error('Erro na verificação do token:', error);
+      console.error('❌ Erro na verificação do token:', error);
       throw new Error('Token inválido ou expirado');
     }
   }

@@ -127,7 +127,7 @@ class UsuariosPage {
         const data = Object.fromEntries(formData);
         
         if (!data.nome_usuario || !data.email_usuario || !data.tipo_usuario) {
-            alert('Nome, email e tipo são obrigatórios!');
+            window.notificationManager?.showWarning('Nome, email e tipo são obrigatórios!');
             return;
         }
 
@@ -162,7 +162,8 @@ class UsuariosPage {
     }
 
     async excluir(id) {
-        if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
+        const confirmed = await window.notificationManager?.confirmDelete('este usuário');
+        if (!confirmed) return;
 
         try {
             const response = await this.app.apiRequest(`/api/usuarios/${id}`, {

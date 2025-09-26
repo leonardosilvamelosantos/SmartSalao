@@ -9,14 +9,8 @@ const { validateId, validatePagination } = require('../middleware/validation');
  */
 router.get('/', async (req, res) => {
   try {
-    // Log reduzido para evitar spam
-    // console.log('🔍 [DEBUG] GET /api/agendamentos chamado');
-    
     const agendamentoService = new AgendamentoService();
     const resultado = await agendamentoService.buscarAgendamentos(req.user.id, req.query);
-    
-    // Log reduzido
-    // console.log('🔍 [DEBUG] Resultado final:', resultado.success, resultado.data?.length || 0, 'agendamentos');
     
     res.json(resultado);
   } catch (error) {
@@ -131,14 +125,8 @@ router.get('/:id', validateId, async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    // Log reduzido para evitar spam
-    // console.log('🔍 [DEBUG] POST /api/agendamentos chamado');
-    
     const agendamentoService = new AgendamentoService();
     const resultado = await agendamentoService.criarAgendamento(req.user.id, req.body);
-    
-    // Log reduzido
-    // console.log('🔍 [DEBUG] Resultado da criação:', resultado);
     
     if (resultado.success) {
       res.status(201).json(resultado);
@@ -209,6 +197,21 @@ router.patch('/:id/cancelar', validateId, async (req, res) => {
     res.json(resultado);
   } catch (error) {
     console.error('Erro ao cancelar agendamento:', error);
+    res.status(500).json({ success: false, message: 'Erro interno do servidor' });
+  }
+});
+
+/**
+ * PATCH /api/agendamentos/:id - Atualizar agendamento
+ */
+router.patch('/:id', validateId, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const agendamentoService = new AgendamentoService();
+    const resultado = await agendamentoService.atualizarAgendamento(id, req.user.id, req.body);
+    res.json(resultado);
+  } catch (error) {
+    console.error('Erro ao atualizar agendamento:', error);
     res.status(500).json({ success: false, message: 'Erro interno do servidor' });
   }
 });

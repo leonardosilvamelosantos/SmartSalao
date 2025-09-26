@@ -392,7 +392,7 @@ class ConfiguracoesPage {
         // Debug: verificar se o formulário existe
         if (!form) {
             console.error('Formulário configuracoesForm não encontrado!');
-            alert('Erro: Formulário não encontrado. Recarregue a página e tente novamente.');
+            window.notificationManager?.showError('Erro: Formulário não encontrado. Recarregue a página e tente novamente.');
             return;
         }
         
@@ -451,7 +451,7 @@ class ConfiguracoesPage {
         if (camposVazios.length > 0) {
             const camposFaltando = camposVazios.map(campo => campo.nome).join(', ');
             console.error('Campos vazios encontrados:', camposFaltando);
-            alert(`Preencha os seguintes campos obrigatórios: ${camposFaltando}`);
+            window.notificationManager?.showWarning(`Preencha os seguintes campos obrigatórios: ${camposFaltando}`);
             return;
         }
 
@@ -473,13 +473,13 @@ class ConfiguracoesPage {
 
         // Verificar se pelo menos um dia foi selecionado
         if (diasFuncionamento.length === 0) {
-            alert('Selecione pelo menos um dia de funcionamento!');
+            window.notificationManager?.showWarning('Selecione pelo menos um dia de funcionamento!');
             return;
         }
 
         // Validar email se fornecido
         if (data.email_contato && !this.validarEmail(data.email_contato)) {
-            alert('Email de contato inválido!');
+            window.notificationManager?.showWarning('Email de contato inválido!');
             return;
         }
 
@@ -489,26 +489,26 @@ class ConfiguracoesPage {
             const numeros = data.telefone.replace(/\D/g, '');
             console.log('Números extraídos:', numeros, 'Tamanho:', numeros.length);
             if (!this.validarTelefone(data.telefone)) {
-                alert('Telefone principal inválido! Use apenas números.');
+                window.notificationManager?.showWarning('Telefone principal inválido! Use apenas números.');
                 return;
             }
         }
 
         // Validar WhatsApp se fornecido
         if (data.whatsapp && !this.validarTelefone(data.whatsapp)) {
-            alert('WhatsApp inválido! Use apenas números.');
+            window.notificationManager?.showWarning('WhatsApp inválido! Use apenas números.');
             return;
         }
 
         // Validar CNPJ se fornecido
         if (data.cnpj && !this.validarCNPJ(data.cnpj)) {
-            alert('CNPJ inválido!');
+            window.notificationManager?.showWarning('CNPJ inválido!');
             return;
         }
 
         // Validar CEP se fornecido
         if (data.cep && !this.validarCEP(data.cep)) {
-            alert('CEP inválido! Use o formato 00000-000.');
+            window.notificationManager?.showWarning('CEP inválido! Use o formato 00000-000.');
             return;
         }
 
@@ -518,7 +518,7 @@ class ConfiguracoesPage {
             const fechamento = new Date(`2000-01-01T${data.horario_fechamento}`);
             
             if (abertura >= fechamento) {
-                alert('Horário de abertura deve ser anterior ao horário de fechamento!');
+                window.notificationManager?.showWarning('Horário de abertura deve ser anterior ao horário de fechamento!');
                 return;
             }
         }
@@ -526,17 +526,17 @@ class ConfiguracoesPage {
         // Validar senha se fornecida
         if (data.nova_senha) {
             if (data.nova_senha !== data.confirmar_senha) {
-                alert('As senhas não coincidem!');
+                window.notificationManager?.showWarning('As senhas não coincidem!');
                 return;
             }
             
             if (data.nova_senha.length < 6) {
-                alert('A nova senha deve ter pelo menos 6 caracteres!');
+                window.notificationManager?.showWarning('A nova senha deve ter pelo menos 6 caracteres!');
                 return;
             }
             
             if (!data.senha_atual) {
-                alert('Digite a senha atual para alterar a senha!');
+                window.notificationManager?.showWarning('Digite a senha atual para alterar a senha!');
                 return;
             }
         }
@@ -654,7 +654,7 @@ class ConfiguracoesPage {
         if (camposVazios2.length > 0) {
             console.error('Campos vazios encontrados:', camposVazios2);
             const camposFaltando = camposVazios2.map(campo => campo.nome).join(', ');
-            alert(`Preencha os seguintes campos obrigatórios: ${camposFaltando}`);
+            window.notificationManager?.showWarning(`Preencha os seguintes campos obrigatórios: ${camposFaltando}`);
             return;
         }
         

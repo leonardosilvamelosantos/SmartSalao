@@ -1,0 +1,37 @@
+[33mcommit b1dc155b4a16e58aa7ed1c39826453b823f71821[m
+Author: Leonardo Silva <leonardosilvamelosantos@gmail.com>
+Date:   Wed Sep 24 20:56:41 2025 -0300
+
+    FEAT: Dev Console completo - Modais, validação, loading states e funcionalidades Ver/Editar implementadas
+
+[1mdiff --git a/frontend/js/core/api.js b/frontend/js/core/api.js[m
+[1mindex 6cd19a9..669efc2 100644[m
+[1m--- a/frontend/js/core/api.js[m
+[1m+++ b/frontend/js/core/api.js[m
+[36m@@ -45,7 +45,12 @@[m [mconst ApiClient = (() => {[m
+       [m
+       if (!res.ok) {[m
+         if (res.status === 401) {[m
+[31m-          alert('Sessão expirada. Faça login novamente.');[m
+[32m+[m[32m          // Usar notificação toast em vez de alert[m
+[32m+[m[32m          if (window.toastSystem) {[m
+[32m+[m[32m            window.toastSystem.error('Sessão expirada. Faça login novamente.');[m
+[32m+[m[32m          } else {[m
+[32m+[m[32m            alert('Sessão expirada. Faça login novamente.');[m
+[32m+[m[32m          }[m
+           try { localStorage.removeItem('barbeiros-token'); localStorage.removeItem('barbeiros-user'); } catch(_){}[m
+           if (!location.pathname.includes('login')) location.href = '/frontend/pages/login';[m
+         }[m
+[36m@@ -54,6 +59,12 @@[m [mconst ApiClient = (() => {[m
+       return data;[m
+     } catch (error) {[m
+       console.error(`❌ [API] Erro na requisição:`, error);[m
+[32m+[m[41m      [m
+[32m+[m[32m      // Mostrar notificação de erro se disponível[m
+[32m+[m[32m      if (window.toastSystem && error.message) {[m
+[32m+[m[32m        window.toastSystem.error(error.message);[m
+[32m+[m[32m      }[m
+[32m+[m[41m      [m
+       throw error;[m
+     }[m
+   }[m

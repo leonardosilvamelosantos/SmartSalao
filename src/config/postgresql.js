@@ -4,13 +4,24 @@
  */
 const { Pool } = require('pg');
 
+// Validar variáveis de ambiente obrigatórias
+const requiredVars = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD'];
+const missingVars = requiredVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+  console.error('❌ Variáveis de ambiente do banco de dados não encontradas:');
+  missingVars.forEach(varName => console.error(`   - ${varName}`));
+  console.error('\n💡 Defina essas variáveis no arquivo .env');
+  process.exit(1);
+}
+
 // Configuração PostgreSQL com variáveis de ambiente
 const config = {
-  host: process.env.PGHOST || process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.PGPORT || process.env.DB_PORT || '5433', 10),
-  database: process.env.PGDATABASE || process.env.DB_NAME || 'agendamento',
-  user: process.env.PGUSER || process.env.DB_USER || 'agendamento_user',
-  password: process.env.PGPASSWORD || process.env.DB_PASSWORD || 'agendamento_pass_2024',
+  host: process.env.PGHOST || process.env.DB_HOST,
+  port: parseInt(process.env.PGPORT || process.env.DB_PORT, 10),
+  database: process.env.PGDATABASE || process.env.DB_NAME,
+  user: process.env.PGUSER || process.env.DB_USER,
+  password: process.env.PGPASSWORD || process.env.DB_PASSWORD,
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
   max: parseInt(process.env.DB_MAX_CONNECTIONS || '20', 10),
   min: parseInt(process.env.DB_MIN_CONNECTIONS || '2', 10),

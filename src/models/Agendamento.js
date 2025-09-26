@@ -22,7 +22,7 @@ class Agendamento extends BaseModel {
         c.whatsapp as cliente_whatsapp,
         s.nome_servico,
         s.duracao_min,
-        s.preco
+        s.valor
       FROM ${prefix}agendamentos a
       JOIN ${prefix}clientes c ON a.id_cliente = c.id_cliente
       JOIN ${prefix}servicos s ON a.id_servico = s.id_servico
@@ -37,16 +37,16 @@ class Agendamento extends BaseModel {
     }
 
     if (startDate) {
-      query += ` AND a.data_agendamento >= ?`;
+      query += ` AND a.start_at >= ?`;
       values.push(startDate);
     }
 
     if (endDate) {
-      query += ` AND a.data_agendamento <= ?`;
+      query += ` AND a.start_at <= ?`;
       values.push(endDate);
     }
 
-    query += ` ORDER BY a.data_agendamento ASC`;
+    query += ` ORDER BY a.start_at ASC`;
 
     if (limit) {
       query += ` LIMIT ?`;
@@ -73,7 +73,7 @@ class Agendamento extends BaseModel {
         a.*,
         s.nome_servico,
         s.duracao_min,
-        s.preco,
+        s.valor,
         u.nome as usuario_nome
       FROM agendamentos a
       JOIN servicos s ON a.id_servico = s.id_servico
@@ -88,7 +88,7 @@ class Agendamento extends BaseModel {
       values.push(status);
     }
 
-    query += ` ORDER BY a.data_agendamento DESC`;
+    query += ` ORDER BY a.start_at DESC`;
 
     if (limit) {
       query += ` LIMIT ?`;
@@ -114,7 +114,7 @@ class Agendamento extends BaseModel {
         c.whatsapp as cliente_whatsapp,
         s.nome_servico,
         s.duracao_min,
-        s.preco,
+        s.valor,
         u.nome as usuario_nome,
         u.timezone
       FROM agendamentos a
@@ -144,12 +144,12 @@ class Agendamento extends BaseModel {
       throw new Error('ID do serviço é obrigatório');
     }
 
-    if (!data.data_agendamento) {
+    if (!data.start_at) {
       throw new Error('Data/hora de início é obrigatória');
     }
 
     // Verificar se o horário está disponível
-    await this.checkAvailability(data.id_usuario, data.data_agendamento, data.id_servico);
+    await this.checkAvailability(data.id_usuario, data.start_at, data.id_servico);
 
     // Calcular end_at baseado na duração do serviço
     const Servico = require('./Servico');
@@ -159,12 +159,12 @@ class Agendamento extends BaseModel {
       throw new Error('Serviço não encontrado');
     }
 
-    const startAt = new Date(data.data_agendamento);
+    const startAt = new Date(data.start_at);
     const endAt = new Date(startAt.getTime() + servico.duracao_min * 60000);
 
     const agendamentoData = {
       ...data,
-      data_agendamento: startAt,
+      start_at: startAt,
       end_at: endAt,
       status: data.status || 'confirmed'
     };
@@ -193,9 +193,9 @@ class Agendamento extends BaseModel {
       WHERE id_usuario = ?
       AND status = 'confirmed'
       AND (
-        (data_agendamento <= ? AND end_at > ?) OR
-        (data_agendamento < ? AND end_at >= ?) OR
-        (data_agendamento >= ? AND end_at <= ?)
+        (start_at <= ? AND end_at > ?) OR
+        (start_at < ? AND end_at >= ?) OR
+        (start_at >= ? AND end_at <= ?)
       )
       LIMIT 1
     `;
@@ -248,13 +248,13 @@ class Agendamento extends BaseModel {
         c.whatsapp as cliente_whatsapp,
         s.nome_servico,
         s.duracao_min,
-        s.preco
+        s.valor
       FROM agendamentos a
       JOIN clientes c ON a.id_cliente = c.id_cliente
       JOIN servicos s ON a.id_servico = s.id_servico
       WHERE a.id_usuario = ?
-      AND a.data_agendamento >= ?
-      AND a.data_agendamento <= ?
+      AND a.start_at >= ?
+      AND a.start_at <= ?
     `;
 
     const values = [idUsuario, startDate, endDate];
@@ -264,7 +264,7 @@ class Agendamento extends BaseModel {
       values.push(status);
     }
 
-    query += ` ORDER BY a.data_agendamento ASC`;
+    query += ` ORDER BY a.start_at ASC`;
 
     return await this.query(query, values);
   }

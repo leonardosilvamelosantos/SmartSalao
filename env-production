@@ -1,0 +1,24 @@
+# Configuração do Servidor
+PORT=3000
+HOST=0.0.0.0
+NODE_ENV=development
+
+# Configuração do Banco de Dados PostgreSQL (Docker)
+DB_TYPE=postgresql
+DB_HOST=localhost
+DB_PORT=5433
+DB_NAME=agendamento
+DB_USER=agendamento_user
+DB_PASSWORD=agendamento_pass_2024
+
+# Configuração de Segurança
+JWT_SECRET=troque-para-um-segredo-forte
+JWT_EXPIRES_IN=24h
+
+# Configuração de Rede
+ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+
+# Configuração do WhatsApp (opcional)
+WHATSAPP_SESSION_PATH=./data/whatsapp-auth
+WHATSAPP_WEBHOOK_URL=http://localhost:3000/api/whatsapp/webhook
+

@@ -2,6 +2,29 @@
 class AgendaPage {
     constructor() {
         this.data = [];
+        this.setupThemeListener();
+    }
+    
+    setupThemeListener() {
+        // Escutar mudanças de tema
+        document.addEventListener('themeUpdate', (event) => {
+            console.log('🎨 Agenda: Tema atualizado para', event.detail.theme);
+            this.updateTheme(event.detail.theme);
+        });
+    }
+    
+    updateTheme(theme) {
+        // Forçar re-render dos elementos da agenda
+        const agendaContent = document.getElementById('agenda-content');
+        if (agendaContent) {
+            // Adicionar classe de transição
+            agendaContent.classList.add('theme-transitioning');
+            
+            // Remover classe após transição
+            setTimeout(() => {
+                agendaContent.classList.remove('theme-transitioning');
+            }, 300);
+        }
     }
 
     get app() {
@@ -20,7 +43,7 @@ class AgendaPage {
             window.agendaData = null;
             
             // Mostrar loading
-            content.innerHTML = '<div class="text-center"><i class="bi bi-arrow-clockwise" style="font-size: 3rem;"></i><p class="mt-2">Carregando agenda...</p></div>';
+            this.showLoadingState();
 
             try {
                 const response = await this.app.apiRequest('/api/agendamentos');
@@ -30,11 +53,11 @@ class AgendaPage {
                     console.log('📊 Dados recarregados da API:', this.data.length, 'agendamentos');
                     this.render();
                 } else {
-                    content.innerHTML = '<div class="text-center text-muted"><i class="bi bi-calendar-x" style="font-size: 3rem;"></i><p class="mt-2">Erro ao carregar agenda</p></div>';
+                    this.showErrorState('Erro ao carregar agenda');
                 }
             } catch (error) {
                 console.error('Erro ao recarregar agenda:', error);
-                content.innerHTML = '<div class="text-center text-muted"><i class="bi bi-wifi-off" style="font-size: 3rem;"></i><p class="mt-2">Erro de conexão</p></div>';
+                this.showErrorState('Erro de conexão');
             }
             return;
         }
@@ -49,7 +72,7 @@ class AgendaPage {
 
         // Se não há dados em cache, carregar da API
         console.log('📡 Carregando dados da API...');
-        content.innerHTML = '<div class="text-center"><i class="bi bi-arrow-clockwise" style="font-size: 3rem;"></i><p class="mt-2">Carregando agenda...</p></div>';
+        this.showLoadingState();
 
         try {
             const response = await this.app.apiRequest('/api/agendamentos');
@@ -59,11 +82,11 @@ class AgendaPage {
                 console.log('📊 Dados carregados da API:', this.data.length, 'agendamentos');
                 this.render();
             } else {
-                content.innerHTML = '<div class="text-center text-muted"><i class="bi bi-calendar-x" style="font-size: 3rem;"></i><p class="mt-2">Erro ao carregar agenda</p></div>';
+                this.showErrorState('Erro ao carregar agenda');
             }
         } catch (error) {
             console.error('Erro ao carregar agenda:', error);
-            content.innerHTML = '<div class="text-center text-muted"><i class="bi bi-wifi-off" style="font-size: 3rem;"></i><p class="mt-2">Erro de conexão</p></div>';
+            this.showErrorState('Erro de conexão');
         }
     }
 
@@ -81,16 +104,7 @@ class AgendaPage {
         
         if (!this.data || this.data.length === 0) {
             console.log('📭 Nenhum agendamento para renderizar');
-            content.innerHTML = `
-                <div class="text-center text-muted py-5">
-                    <i class="bi bi-calendar-week" style="font-size: 4rem; opacity: 0.3;"></i>
-                    <h4 class="mt-3 mb-2">Nenhum agendamento encontrado</h4>
-                    <p class="text-muted mb-4">Comece criando seu primeiro agendamento</p>
-                    <button class="btn btn-primary btn-lg" onclick="agendaPage.novo()">
-                        <i class="bi bi-plus-circle me-2"></i>Criar Primeiro Agendamento
-                    </button>
-                </div>
-            `;
+            this.showEmptyState();
             return;
         }
 
@@ -130,17 +144,19 @@ class AgendaPage {
                                         <p class="mb-1 text-muted">
                                             <i class="bi bi-scissors me-1"></i>${agendamento.nome_servico || 'Serviço'}
                                         </p>
-                                        <div class="d-flex align-items-center text-muted small">
-                                            <i class="bi bi-clock me-1"></i>
-                                            <span>${new Date(agendamento.start_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
-                                            ${agendamento.observacoes ? `
-                                                <span class="ms-3">
-                                                    <i class="bi bi-chat-text me-1"></i>
-                                                    ${agendamento.observacoes}
-                                                </span>
-                                            ` : ''}
-                                        </div>
                                     </div>
+                                </div>
+                                <div class="appointment-right-info">
+                                    <div class="d-flex align-items-center text-muted small">
+                                        <i class="bi bi-clock me-1"></i>
+                                        <span>${new Date(agendamento.start_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
+                                    </div>
+                                    ${agendamento.observacoes ? `
+                                        <div class="d-flex align-items-center text-muted small">
+                                            <i class="bi bi-chat-text me-1"></i>
+                                            <span>${agendamento.observacoes}</span>
+                                        </div>
+                                    ` : ''}
                                 </div>
                                 <div class="text-end">
                                     <div class="btn-group btn-group-sm">
@@ -171,7 +187,13 @@ class AgendaPage {
             </div>
         `).join('');
 
-        content.innerHTML = html;
+        // Mostrar a lista de agendamentos
+        this.showAgendaList();
+        
+        const agendaList = document.getElementById('agenda-list');
+        if (agendaList) {
+            agendaList.innerHTML = html;
+        }
         
         // Aplicar classes de cards animados a todos os cards existentes
         setTimeout(() => {
@@ -203,7 +225,103 @@ class AgendaPage {
             if (window.refreshAnimatedCards) {
                 window.refreshAnimatedCards();
             }
+            
         }, 100);
+    }
+
+    // Mostrar estado vazio
+    showEmptyState() {
+        const content = document.getElementById('agenda-content');
+        if (!content) return;
+        
+        // Esconder outros estados
+        this.hideLoadingState();
+        this.hideAgendaList();
+        
+        // Mostrar estado vazio
+        const emptyState = document.getElementById('agenda-empty');
+        if (emptyState) {
+            emptyState.style.display = 'block';
+        }
+    }
+
+    // Mostrar estado de carregamento
+    showLoadingState() {
+        const content = document.getElementById('agenda-content');
+        if (!content) return;
+        
+        // Esconder outros estados
+        this.hideEmptyState();
+        this.hideAgendaList();
+        
+        // Mostrar loading
+        const loadingState = document.getElementById('agenda-loading');
+        if (loadingState) {
+            loadingState.style.display = 'block';
+        }
+    }
+
+    // Mostrar lista de agendamentos
+    showAgendaList() {
+        const content = document.getElementById('agenda-content');
+        if (!content) return;
+        
+        // Esconder outros estados
+        this.hideLoadingState();
+        this.hideEmptyState();
+        
+        // Mostrar lista
+        const agendaList = document.getElementById('agenda-list');
+        if (agendaList) {
+            agendaList.style.display = 'block';
+        }
+    }
+
+    // Esconder estado vazio
+    hideEmptyState() {
+        const emptyState = document.getElementById('agenda-empty');
+        if (emptyState) {
+            emptyState.style.display = 'none';
+        }
+    }
+
+    // Esconder estado de carregamento
+    hideLoadingState() {
+        const loadingState = document.getElementById('agenda-loading');
+        if (loadingState) {
+            loadingState.style.display = 'none';
+        }
+    }
+
+    // Esconder lista de agendamentos
+    hideAgendaList() {
+        const agendaList = document.getElementById('agenda-list');
+        if (agendaList) {
+            agendaList.style.display = 'none';
+        }
+    }
+
+    // Mostrar estado de erro
+    showErrorState(message) {
+        const content = document.getElementById('agenda-content');
+        if (!content) return;
+        
+        // Esconder outros estados
+        this.hideLoadingState();
+        this.hideEmptyState();
+        this.hideAgendaList();
+        
+        // Mostrar erro
+        content.innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-exclamation-triangle" style="font-size: 4rem; color: #dc3545;"></i>
+                <h4 class="mt-3 mb-2 text-danger">Erro</h4>
+                <p class="text-muted mb-4">${message}</p>
+                <button class="btn btn-outline-primary" onclick="agendaPage.load(true)">
+                    <i class="bi bi-arrow-clockwise me-2"></i>Tentar Novamente
+                </button>
+            </div>
+        `;
     }
 
     atualizarEstatisticas() {
@@ -218,20 +336,144 @@ class AgendaPage {
         const agendamentosHoje = this.data.filter(a => new Date(a.start_at).toDateString() === hoje);
         const agendamentosConfirmados = this.data.filter(a => a.status === 'confirmed');
         const agendamentosPendentes = this.data.filter(a => a.status === 'pending');
+        const agendamentosCancelados = this.data.filter(a => a.status === 'cancelled');
         const agendamentosSemana = this.data.filter(a => {
             const data = new Date(a.start_at);
             return data >= inicioSemana && data <= fimSemana;
         });
         
+        // Atualizar estatísticas principais
         document.getElementById('agenda-hoje').textContent = agendamentosHoje.length;
         document.getElementById('agenda-confirmados').textContent = agendamentosConfirmados.length;
         document.getElementById('agenda-pendentes').textContent = agendamentosPendentes.length;
         document.getElementById('agenda-semana').textContent = agendamentosSemana.length;
+        
+        // Atualizar contadores dos filtros
+        document.getElementById('count-all').textContent = this.data.length;
+        document.getElementById('count-confirmed').textContent = agendamentosConfirmados.length;
+        document.getElementById('count-pending').textContent = agendamentosPendentes.length;
+        document.getElementById('count-cancelled').textContent = agendamentosCancelados.length;
     }
 
     filtrar() {
         const filters = document.getElementById('agenda-filters');
         filters.style.display = filters.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Filtrar agendamentos por status
+    filtrarPorStatus(status) {
+        // Atualizar botões ativos
+        document.querySelectorAll('.status-filters .btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        const activeBtn = document.querySelector(`[data-status="${status}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
+        
+        // Aplicar filtro
+        if (status === 'all') {
+            this.render();
+        } else {
+            const dadosFiltrados = this.data.filter(a => a.status === status);
+            this.renderComDados(dadosFiltrados);
+        }
+    }
+
+    // Renderizar com dados específicos
+    renderComDados(dados) {
+        if (!dados || dados.length === 0) {
+            this.showEmptyState();
+            return;
+        }
+
+        const sorted = [...dados].sort((a, b) => new Date(a.start_at) - new Date(b.start_at));
+        const agendamentosPorData = {};
+        sorted.forEach(agendamento => {
+            const data = new Date(agendamento.start_at).toLocaleDateString('pt-BR');
+            if (!agendamentosPorData[data]) {
+                agendamentosPorData[data] = [];
+            }
+            agendamentosPorData[data].push(agendamento);
+        });
+
+        const html = Object.entries(agendamentosPorData).map(([data, agendamentosDoDia]) => `
+            <div class="agenda-day mb-4" data-date="${data}">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                        <i class="bi bi-calendar-day"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-0">${data}</h5>
+                        <small class="text-muted">${agendamentosDoDia.length} agendamento(s)</small>
+                    </div>
+                </div>
+                <div class="agenda-items">
+                    ${agendamentosDoDia.map(agendamento => `
+                        <div class="agenda-item p-3 mb-3 border rounded shadow-sm hover-lift animated-card status-${agendamento.status}" data-agendamento-id="${agendamento.id_agendamento}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="d-flex align-items-center flex-grow-1">
+                                    <div class="me-3">
+                                        <div class="badge bg-${agendamento.status === 'confirmed' ? 'success' : agendamento.status === 'pending' ? 'warning' : 'secondary'} fs-6">
+                                            ${agendamento.status === 'confirmed' ? '✅ Confirmado' : agendamento.status === 'pending' ? '⏳ Pendente' : '❌ Cancelado'}
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold">${agendamento.cliente_nome || 'Cliente'}</h6>
+                                        <p class="mb-1 text-muted">
+                                            <i class="bi bi-scissors me-1"></i>${agendamento.nome_servico || 'Serviço'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="appointment-right-info">
+                                    <div class="d-flex align-items-center text-muted small">
+                                        <i class="bi bi-clock me-1"></i>
+                                        <span>${new Date(agendamento.start_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
+                                    </div>
+                                    ${agendamento.observacoes ? `
+                                        <div class="d-flex align-items-center text-muted small">
+                                            <i class="bi bi-chat-text me-1"></i>
+                                            <span>${agendamento.observacoes}</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <div class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        ${agendamento.status === 'pending' ? `
+                                            <button class="btn btn-success" onclick="agendaPage.confirmar(${agendamento.id_agendamento})" title="Confirmar">
+                                                <i class="bi bi-check-circle"></i>
+                                            </button>
+                                        ` : ''}
+                                        <button class="btn btn-outline-primary" onclick="agendaPage.editar(${agendamento.id_agendamento})" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-info" onclick="agendaPage.reagendar(${agendamento.id_agendamento})" title="Reagendar">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" onclick="agendaPage.cancelar(${agendamento.id_agendamento})" title="Cancelar">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Botão de lixeira para exclusão -->
+                            <button class="btn btn-trash" onclick="agendaPage.excluir(${agendamento.id_agendamento})" title="Excluir Agendamento">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+
+        // Mostrar a lista de agendamentos
+        this.showAgendaList();
+        
+        const agendaList = document.getElementById('agenda-list');
+        if (agendaList) {
+            agendaList.innerHTML = html;
+        }
     }
 
     aplicarFiltros() {
@@ -267,7 +509,8 @@ class AgendaPage {
     }
 
     async confirmar(id) {
-        if (confirm('Confirmar este agendamento?')) {
+        const confirmed = await window.notificationManager?.showConfirm('Confirmar este agendamento?');
+        if (confirmed) {
             // Atualização otimista - atualizar UI imediatamente
             this.updateAgendamentoStatus(id, 'confirmed');
             
@@ -407,7 +650,7 @@ class AgendaPage {
         const data = Object.fromEntries(formData);
         
         if (!data.cliente_id || !data.servico_id || !data.data_agendamento || !data.hora_agendamento) {
-            alert('Preencha todos os campos obrigatórios!');
+            window.notificationManager?.showWarning('Preencha todos os campos obrigatórios!');
             return;
         }
 
@@ -453,7 +696,8 @@ class AgendaPage {
     }
 
     async cancelar(id) {
-        if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
+        const confirmed = await window.notificationManager?.confirmCancel('este agendamento');
+        if (!confirmed) return;
 
         // Atualização otimista - atualizar UI imediatamente
         this.updateAgendamentoStatus(id, 'cancelled');
@@ -485,7 +729,13 @@ class AgendaPage {
     }
 
     async excluir(id) {
-        if (!confirm('⚠️ ATENÇÃO: Esta ação é irreversível!\n\nTem certeza que deseja EXCLUIR permanentemente este agendamento?')) return;
+        const confirmed = await window.notificationManager?.showConfirm('⚠️ ATENÇÃO: Esta ação é irreversível!\n\nTem certeza que deseja EXCLUIR permanentemente este agendamento?', {
+            title: 'Confirmar Exclusão',
+            type: 'danger',
+            confirmText: 'Excluir',
+            cancelText: 'Cancelar'
+        });
+        if (!confirmed) return;
 
         try {
             const response = await this.app.apiRequest(`/api/agendamentos/${id}/permanent`, {
@@ -669,3 +919,10 @@ class AgendaPage {
 }
 
 window.agendaPage = new AgendaPage();
+
+// Função global para filtrar por status (chamada pelos botões)
+function filtrarAgendaPorStatus(status) {
+    if (window.agendaPage) {
+        window.agendaPage.filtrarPorStatus(status);
+    }
+}

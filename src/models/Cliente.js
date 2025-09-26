@@ -130,7 +130,7 @@ class Cliente extends BaseModel {
 
     // Buscar agendamentos do cliente
     const agendamentos = await this.query(`
-      SELECT a.id_agendamento, s.nome_servico as servico_nome, a.data_agendamento, a.status, s.preco
+      SELECT a.id_agendamento, s.nome_servico as servico_nome, a.data_agendamento, a.status, s.valor
       FROM agendamentos a
       JOIN servicos s ON a.id_servico = s.id_servico
       WHERE a.id_cliente = ?

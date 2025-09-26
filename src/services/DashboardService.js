@@ -277,7 +277,7 @@ class DashboardService {
         c.whatsapp,
         COUNT(a.id_agendamento) as appointments_count,
         MAX(a.data_agendamento) as last_appointment,
-        COALESCE(SUM(CASE WHEN a.status = 'completed' THEN s.preco END), 0) as total_spent
+        COALESCE(SUM(CASE WHEN a.status = 'completed' THEN s.valor END), 0) as total_spent
       FROM clientes c
       LEFT JOIN agendamentos a ON c.id_cliente = a.id_cliente
       LEFT JOIN servicos s ON a.id_servico = s.id_servico

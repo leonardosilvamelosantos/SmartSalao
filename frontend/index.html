@@ -2,12 +2,12 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
     <meta name="description" content="Sistema de gestão para barbearias e salões - Dashboard completo">
     <meta name="theme-color" content="#0ea5e9">
     <title>Sistema Barbeiros - Dashboard</title>
     
-    <!-- Favicon -->
+    <!-- Favicon - usando logo sem fundo -->
     <link rel="icon" type="image/png" href="assets/logo.png">
     <link rel="shortcut icon" type="image/png" href="assets/logo.png">
 
@@ -15,6 +15,224 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Preload de Recursos Críticos -->
+    <!-- Logo agora é inline em base64, não precisa de preload -->
+    
+    <!-- CSS Inline para Prevenção de Flash - DEVE vir antes dos CSS externos -->
+    <style>
+        /* Prevenção de Flash - Aplicar tema imediatamente */
+        :root {
+            --theme-bg: #f5f5f5;
+            --theme-text: #1e293b;
+            --theme-navbar: linear-gradient(135deg, #D4AF37, #F4E4BC);
+        }
+        
+        /* Dark mode por padrão se preferido */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme-bg: #1e293b;
+                --theme-text: #f1f5f9;
+                --theme-navbar: linear-gradient(135deg, #1f2937, #111827);
+            }
+        }
+        
+        /* Aplicar tema baseado na classe */
+        .dark-mode {
+            --theme-bg: #1e293b;
+            --theme-text: #f1f5f9;
+            --theme-navbar: linear-gradient(135deg, #1f2937, #111827);
+        }
+        
+        /* Aplicar estilos imediatamente */
+        body {
+            background-color: var(--theme-bg) !important;
+            color: var(--theme-text) !important;
+            transition: none !important; /* Desabilitar transições iniciais */
+        }
+        
+        .navbar {
+            background: var(--theme-navbar) !important;
+        }
+        
+        /* Ocultar conteúdo até o tema ser aplicado */
+        .main-content {
+            opacity: 0;
+            transition: opacity 0.1s ease-in-out;
+        }
+        
+        .theme-loaded .main-content {
+            opacity: 1;
+        }
+        
+        /* FORÇA TEMA DARK IMEDIATAMENTE SE SALVO */
+        body[data-theme="dark"],
+        body.dark-mode {
+            background-color: #1e293b !important;
+            color: #f1f5f9 !important;
+        }
+        
+        body[data-theme="dark"] .navbar,
+        body.dark-mode .navbar {
+            background: linear-gradient(135deg, #1f2937, #111827) !important;
+        }
+        
+        /* FORÇA TEMA LIGHT IMEDIATAMENTE SE SALVO */
+        body[data-theme="light"] {
+            background-color: #f5f5f5 !important;
+            color: #1e293b !important;
+        }
+        
+        body[data-theme="light"] .navbar {
+            background: linear-gradient(135deg, #D4AF37, #F4E4BC) !important;
+        }
+        
+        /* SOLUÇÃO DEFINITIVA - Aplicar tema baseado em data attribute no HTML */
+        html[data-theme="dark"] body {
+            background-color: #1e293b !important;
+            color: #f1f5f9 !important;
+        }
+        
+        html[data-theme="dark"] .navbar {
+            background: linear-gradient(135deg, #1f2937, #111827) !important;
+        }
+        
+        html[data-theme="light"] body {
+            background-color: #f5f5f5 !important;
+            color: #1e293b !important;
+        }
+        
+        html[data-theme="light"] .navbar {
+            background: linear-gradient(135deg, #D4AF37, #F4E4BC) !important;
+        }
+        
+        /* Aplicar tema imediatamente após mudança */
+        .theme-transitioning * {
+            transition: all 0.3s ease !important;
+        }
+        
+        /* Garantir que cards e elementos específicos sejam atualizados */
+        html[data-theme="dark"] .card {
+            background-color: #1e293b !important;
+            color: #f1f5f9 !important;
+            border-color: #475569 !important;
+        }
+        
+        html[data-theme="light"] .card {
+            background-color: #ffffff !important;
+            color: #1e293b !important;
+            border-color: rgba(212, 175, 55, 0.3) !important;
+        }
+        
+        /* Forçar atualização de elementos específicos */
+        html[data-theme="dark"] .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa) !important;
+            border-color: #3b82f6 !important;
+            color: white !important;
+        }
+        
+        html[data-theme="light"] .btn-primary {
+            background: linear-gradient(135deg, #D4AF37, #F4E4BC) !important;
+            border-color: #B8860B !important;
+            color: #8B4513 !important;
+        }
+        
+        /* CORREÇÃO DO TOGGLE - Verde quando ativo no dark mode */
+        html[data-theme="dark"] .form-check-input:checked {
+            background-color: #22c55e !important;
+            border-color: #22c55e !important;
+        }
+        
+        html[data-theme="dark"] .form-check-input {
+            background-color: #6b7280 !important;
+            border-color: #6b7280 !important;
+        }
+        
+        html[data-theme="light"] .form-check-input:checked {
+            background-color: #22c55e !important;
+            border-color: #22c55e !important;
+        }
+        
+        html[data-theme="light"] .form-check-input {
+            background-color: #ffffff !important;
+            border-color: #D4AF37 !important;
+        }
+        
+        /* Forçar atualização imediata do toggle */
+        .form-check-input {
+            transition: all 0.2s ease !important;
+        }
+    </style>
+    
+    <!-- Script Inline para Aplicar Tema IMEDIATAMENTE -->
+    <script>
+        (function() {
+            'use strict';
+            
+            // Aplicar tema imediatamente baseado no localStorage
+            function applyThemeNow() {
+                try {
+                    const savedTheme = localStorage.getItem('barbeiros-theme');
+                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    
+                    let theme = 'light'; // Padrão
+                    
+                    if (savedTheme) {
+                        theme = savedTheme;
+                    } else if (prefersDark) {
+                        theme = 'dark';
+                    }
+                    
+                    // Aplicar tema imediatamente no HTML
+                    if (theme === 'dark') {
+                        document.documentElement.classList.add('dark-mode');
+                        document.documentElement.setAttribute('data-theme', 'dark');
+                    } else {
+                        document.documentElement.classList.remove('dark-mode');
+                        document.documentElement.setAttribute('data-theme', 'light');
+                    }
+                    
+                    // Aplicar tema no body quando estiver disponível
+                    function applyToBody() {
+                        if (document.body) {
+                            if (theme === 'dark') {
+                                document.body.classList.add('dark-mode');
+                                document.body.setAttribute('data-theme', 'dark');
+                            } else {
+                                document.body.classList.remove('dark-mode');
+                                document.body.setAttribute('data-theme', 'light');
+                            }
+                            
+                            // Mostrar conteúdo após aplicar tema
+                            document.body.classList.add('theme-loaded');
+                        } else {
+                            // Tentar novamente em 10ms
+                            setTimeout(applyToBody, 10);
+                        }
+                    }
+                    
+                    applyToBody();
+                    
+                    console.log('🎨 Tema aplicado imediatamente:', theme);
+                } catch (error) {
+                    console.error('Erro ao aplicar tema:', error);
+                    // Fallback para light mode
+                    if (document.body) {
+                        document.body.classList.add('theme-loaded');
+                    }
+                }
+            }
+            
+            // Aplicar imediatamente
+            applyThemeNow();
+            
+            // Aplicar quando DOM estiver pronto (fallback)
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', applyThemeNow);
+            }
+            
+        })();
+    </script>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -27,6 +245,11 @@
     <link href="css/animated-cards.css" rel="stylesheet">
     <link href="css/golden-icons.css" rel="stylesheet">
     <link href="css/golden-colors.css" rel="stylesheet">
+    <link href="css/mobile-complete-fix.css" rel="stylesheet">
+    <link href="css/mobile-render-fix.css" rel="stylesheet">
+    <link href="css/notifications.css" rel="stylesheet">
+    <link href="css/performance.css" rel="stylesheet">
+    <link href="css/agenda-page.css" rel="stylesheet">
 </head>
 <body>
     <!-- Header -->
@@ -38,28 +261,32 @@
             </button>
 
                 <a class="navbar-brand d-flex align-items-center" href="#" style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--primary-600);">
-                    <img src="assets/logo.png" alt="Logo" id="brand-logo" style="margin-right: 8px;">
+                    <!-- Logo fixo - carregamento imediato -->
+                    <img src="assets/logo.png" alt="Logo SmartSalao" id="brand-logo" 
+                         style="margin-right: 8px; width: 32px; height: 32px; object-fit: contain; opacity: 1; transform: scale(1) rotate(0deg); filter: none; transition: none;"
+                         loading="eager" decoding="sync" fetchpriority="high" title="SmartSalao - Sistema de Gestão" onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='block';">
+                    <span style="font-size: 20px; color: white; display: none;" id="logo-fallback">✂️</span>
                     <span class="fw-bold d-none d-sm-inline" id="establishment-name">SmartSalao</span>
                     <span class="fw-bold d-sm-none" id="establishment-name-mobile">SmartSalao</span>
                 </a>
 
             <!-- Theme Toggle & Auto-Agendamento Toggle -->
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-1">
                 <!-- Auto-Agendamento ON/OFF (estilo iPhone) -->
-                <div class="d-flex align-items-center me-2">
-                    <label for="autoConfirmTopSwitch" class="me-2 mb-0 small d-none d-sm-inline">Auto-agendamento</label>
+                <div class="d-flex align-items-center me-1">
+                    <label for="autoConfirmTopSwitch" class="me-1 mb-0 small d-none d-lg-inline" style="font-size: 0.7rem;">Auto-agendamento</label>
                     <div class="form-check form-switch m-0">
-                        <input class="form-check-input" type="checkbox" id="autoConfirmTopSwitch" aria-label="Auto-agendamento WhatsApp">
+                        <input class="form-check-input" type="checkbox" id="autoConfirmTopSwitch" aria-label="Auto-agendamento WhatsApp" style="transform: scale(0.6);">
                     </div>
                 </div>
-                <button id="theme-toggle" class="btn btn-ghost me-2 me-lg-3" type="button" title="Mudar para Barbearia (Tema Escuro)">
+                <button id="theme-toggle" class="btn btn-ghost me-1" type="button" title="Mudar para Barbearia (Tema Escuro)" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
                     <i class="bi bi-scissors"></i>
                 </button>
 
                 <div class="dropdown">
-                    <button class="btn btn-ghost dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle me-2"></i>
-                        <span id="user-name" class="d-none d-sm-inline">Barbeiro Teste</span>
+                    <button class="btn btn-ghost dropdown-toggle" type="button" data-bs-toggle="dropdown" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+                        <i class="bi bi-person-circle me-1"></i>
+                        <span id="user-name" class="d-none d-lg-inline">Barbeiro Teste</span>
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#" onclick="logout()">
@@ -249,8 +476,10 @@
                             </div>
                         </div>
 
+                        <!-- Container para controle de ordem das seções -->
+                        <div class="dashboard-sections-container">
                         <!-- Próximos Agendamentos e Ações Rápidas -->
-                        <div class="row mb-4">
+                        <div class="row mb-4 dashboard-section-agendamentos">
                             <div class="col-lg-8 mb-4">
                                 <div class="card border-0 shadow-sm">
                                     <div class="card-header bg-white border-0 py-3">
@@ -329,7 +558,7 @@
                                         </h5>
                                     </div>
                                     <div class="card-body">
-                                        <div class="d-grid gap-3">
+                                        <div class="d-grid gap-3 quick-actions">
                                             <!-- CTA Principal - Novo Agendamento -->
                                             <button class="btn btn-primary btn-lg d-flex align-items-center justify-content-center py-4" onclick="novoAgendamento()" id="btn-novo-agendamento">
                                                 <div class="text-center">
@@ -359,19 +588,15 @@
                                                 </div>
                                             </div>
                                             
-                                            <!-- Ações Adicionais - Lado a lado com cores e emojis -->
+                                            <!-- Ações Adicionais - Centralizadas -->
                                             <div class="border-top pt-3">
-                                                <div class="row g-2">
-                                                    <div class="col-6">
-                                                        <button class="btn btn-outline-info w-100 py-2" onclick="showPage('agenda')">
-                                                            <i class="bi bi-calendar-week me-2"></i>📅 (Agenda)
-                                                        </button>
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <button class="btn btn-outline-warning w-100 py-2" onclick="showPage('clientes')">
-                                                            <i class="bi bi-people me-2"></i>👥 (Clientes)
-                                                        </button>
-                                                    </div>
+                                                <div class="d-flex justify-content-center gap-2">
+                                                    <button class="btn btn-outline-info px-3 py-2" onclick="showPage('agenda')">
+                                                        <i class="bi bi-calendar-week me-2"></i>📅 (Agenda)
+                                                    </button>
+                                                    <button class="btn btn-outline-warning px-3 py-2" onclick="showPage('clientes')">
+                                                        <i class="bi bi-people me-2"></i>👥 (Clientes)
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -381,7 +606,7 @@
                         </div>
 
                         <!-- Cards de Métricas Melhorados -->
-                        <div class="row mb-4">
+                        <div class="row mb-4 dashboard-section-metricas">
                             <div class="col-lg-3 col-md-6 mb-4">
                                 <div class="metric-card">
                                     <div class="metric-icon success">
@@ -450,6 +675,7 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
                         </div>
 
                         <!-- Gráfico de Performance Semanal Melhorado -->
@@ -682,14 +908,14 @@
                                     </h5>
                                     <div class="btn-group btn-group-sm">
                                         <button type="button" class="btn btn-outline-secondary" onclick="toggleVisualizacaoServicos()" id="btn-toggle-view">
-                                            <i class="bi bi-grid me-1"></i>Grade
+                                            <i class="bi bi-list me-1"></i>Tabela
                                         </button>
                                     </div>
                                 </div>
                             </div>
                             <div class="card-body">
                                 <!-- Visualização em Tabela -->
-                                <div id="servicos-table-view" class="servicos-view">
+                                <div id="servicos-table-view" class="servicos-view" style="display: none;">
                                     <div class="table-responsive">
                                         <table class="table table-hover mb-0">
                                             <thead class="table-light">
@@ -718,7 +944,7 @@
                                 </div>
 
                                 <!-- Visualização em Cards -->
-                                <div id="servicos-cards-view" class="servicos-view" style="display: none;">
+                                <div id="servicos-cards-view" class="servicos-view">
                                     <div id="servicos-cards-container" class="row g-4">
                                         <!-- Cards de serviços serão carregados dinamicamente -->
                                     </div>
@@ -788,120 +1014,191 @@
                     </div>
 
                     <div id="agenda-page" class="page" style="display: none;">
-                        <!-- Header da Agenda -->
-                        <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-4 border-bottom">
-                            <div>
-                                <h1 class="h2 mb-1">📅 Agenda</h1>
-                                <p class="text-muted small mb-0">Gerencie seus agendamentos</p>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-outline-primary" onclick="agendaPage.filtrar()">
-                                    <i class="bi bi-funnel me-1"></i>Filtros
-                                </button>
-                                <button class="btn btn-primary" onclick="novoAgendamento()">
-                                    <i class="bi bi-calendar-plus me-2"></i>Novo Agendamento
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Filtros da Agenda -->
-                        <div id="agenda-filters" class="row mb-4" style="display: none;">
-                            <div class="col-md-3">
-                                <label class="form-label small">Data Inicial</label>
-                                <input type="date" class="form-control form-control-sm" id="filter-data-inicial">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label small">Data Final</label>
-                                <input type="date" class="form-control form-control-sm" id="filter-data-final">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label small">Status</label>
-                                <select class="form-select form-select-sm" id="filter-status">
-                                    <option value="">Todos</option>
-                                    <option value="confirmed">Confirmados</option>
-                                    <option value="pending">Pendentes</option>
-                                    <option value="cancelled">Cancelados</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3 d-flex align-items-end">
-                                <button class="btn btn-outline-secondary btn-sm me-2" onclick="agendaPage.aplicarFiltros()">
-                                    <i class="bi bi-search me-1"></i>Filtrar
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="agendaPage.limparFiltros()">
-                                    <i class="bi bi-x-circle me-1"></i>Limpar
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Estatísticas Rápidas -->
-                        <div class="row mb-4">
-                            <div class="col-md-3">
-                                <div class="card border-0 bg-warning text-dark">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <i class="bi bi-calendar-check fs-4"></i>
-                                            </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <div class="small">Hoje</div>
-                                                <div class="h5 mb-0" id="agenda-hoje">0</div>
-                                            </div>
-                                        </div>
-                                    </div>
+                        <!-- Header Principal da Agenda -->
+                        <div class="agenda-header">
+                            <div class="d-flex justify-content-between align-items-center pt-3 pb-3 mb-4 border-bottom">
+                                <div class="header-info">
+                                    <h1 class="h2 mb-1 d-flex align-items-center">
+                                        <i class="bi bi-calendar3 me-2 text-primary"></i>
+                                        Agenda
+                                    </h1>
+                                    <p class="text-muted small mb-0">Gerencie seus agendamentos de forma eficiente</p>
                                 </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card border-0 bg-success text-white">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <i class="bi bi-check-circle fs-4"></i>
-                                            </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <div class="small">Confirmados</div>
-                                                <div class="h5 mb-0" id="agenda-confirmados">0</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card border-0 bg-warning text-white">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <i class="bi bi-clock fs-4"></i>
-                                            </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <div class="small">Pendentes</div>
-                                                <div class="h5 mb-0" id="agenda-pendentes">0</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="card border-0 bg-info text-white">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="flex-shrink-0">
-                                                <i class="bi bi-calendar-week fs-4"></i>
-                                            </div>
-                                            <div class="flex-grow-1 ms-3">
-                                                <div class="small">Esta Semana</div>
-                                                <div class="h5 mb-0" id="agenda-semana">0</div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div class="header-actions d-flex gap-2">
+                                    <button class="btn btn-outline-primary" onclick="agendaPage.filtrar()" title="Filtros avançados">
+                                        <i class="bi bi-funnel me-1"></i>
+                                        <span class="d-none d-sm-inline">Filtros</span>
+                                    </button>
+                                    <button class="btn btn-primary" onclick="novoAgendamento()">
+                                        <i class="bi bi-calendar-plus me-2"></i>
+                                        <span class="d-none d-sm-inline">Novo Agendamento</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Conteúdo da Agenda -->
-                        <div id="agenda-content">
-                            <div class="text-center">
-                                <i class="bi bi-calendar-week" style="font-size: 3rem;"></i>
-                                <p class="mt-2">Agenda será carregada aqui</p>
+                        <!-- Barra de Controles e Filtros -->
+                        <div class="agenda-controls mb-4">
+                            <!-- Toggle Auto-agendamento -->
+                            <div class="auto-schedule-toggle mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="autoConfirmAgendaSwitch" aria-label="Auto-agendamento WhatsApp">
+                                    <label class="form-check-label fw-medium" for="autoConfirmAgendaSwitch">
+                                        <i class="bi bi-whatsapp me-1 text-success"></i>
+                                        Auto-agendamento WhatsApp
+                                    </label>
+                                </div>
+                                
+                            </div>
+                            
+                            <!-- Filtros Rápidos por Status -->
+                            <div class="status-filters mb-3">
+                                <div class="btn-group w-100" role="group" aria-label="Filtros de status">
+                                    <button type="button" class="btn btn-outline-primary active" onclick="filtrarAgendaPorStatus('all')" data-status="all">
+                                        <i class="bi bi-list-ul me-1"></i>
+                                        <span class="d-none d-sm-inline">Todos</span>
+                                        <span class="badge bg-primary ms-1" id="count-all">0</span>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success" onclick="filtrarAgendaPorStatus('confirmed')" data-status="confirmed">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        <span class="d-none d-sm-inline">Confirmados</span>
+                                        <span class="badge bg-success ms-1" id="count-confirmed">0</span>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning" onclick="filtrarAgendaPorStatus('pending')" data-status="pending">
+                                        <i class="bi bi-clock me-1"></i>
+                                        <span class="d-none d-sm-inline">Pendentes</span>
+                                        <span class="badge bg-warning ms-1" id="count-pending">0</span>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" onclick="filtrarAgendaPorStatus('cancelled')" data-status="cancelled">
+                                        <i class="bi bi-x-circle me-1"></i>
+                                        <span class="d-none d-sm-inline">Cancelados</span>
+                                        <span class="badge bg-danger ms-1" id="count-cancelled">0</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Filtros Avançados (Expandível) -->
+                            <div id="agenda-filters" class="filters-panel" style="display: none;">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0 d-flex align-items-center">
+                                            <i class="bi bi-funnel me-2"></i>
+                                            Filtros Avançados
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-medium">Data Inicial</label>
+                                                <input type="date" class="form-control form-control-sm" id="filter-data-inicial">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-medium">Data Final</label>
+                                                <input type="date" class="form-control form-control-sm" id="filter-data-final">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-medium">Status</label>
+                                                <select class="form-select form-select-sm" id="filter-status">
+                                                    <option value="">Todos os status</option>
+                                                    <option value="confirmed">Confirmados</option>
+                                                    <option value="pending">Pendentes</option>
+                                                    <option value="cancelled">Cancelados</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3 d-flex align-items-end">
+                                                <div class="btn-group w-100">
+                                                    <button class="btn btn-primary btn-sm" onclick="agendaPage.aplicarFiltros()">
+                                                        <i class="bi bi-search me-1"></i>Filtrar
+                                                    </button>
+                                                    <button class="btn btn-outline-secondary btn-sm" onclick="agendaPage.limparFiltros()">
+                                                        <i class="bi bi-x-circle me-1"></i>Limpar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cards de Estatísticas -->
+                        <div class="agenda-stats mb-4">
+                            <div class="row g-3">
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="stat-card stat-today">
+                                        <div class="stat-icon">
+                                            <i class="bi bi-calendar-check"></i>
+                                        </div>
+                                        <div class="stat-content">
+                                            <div class="stat-label">Hoje</div>
+                                            <div class="stat-value" id="agenda-hoje">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="stat-card stat-confirmed">
+                                        <div class="stat-icon">
+                                            <i class="bi bi-check-circle"></i>
+                                        </div>
+                                        <div class="stat-content">
+                                            <div class="stat-label">Confirmados</div>
+                                            <div class="stat-value" id="agenda-confirmados">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="stat-card stat-pending">
+                                        <div class="stat-icon">
+                                            <i class="bi bi-clock"></i>
+                                        </div>
+                                        <div class="stat-content">
+                                            <div class="stat-label">Pendentes</div>
+                                            <div class="stat-value" id="agenda-pendentes">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="stat-card stat-week">
+                                        <div class="stat-icon">
+                                            <i class="bi bi-calendar-week"></i>
+                                        </div>
+                                        <div class="stat-content">
+                                            <div class="stat-label">Esta Semana</div>
+                                            <div class="stat-value" id="agenda-semana">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conteúdo Principal da Agenda -->
+                        <div class="agenda-content">
+                            <div id="agenda-content">
+                                <!-- Loading State -->
+                                <div id="agenda-loading" class="loading-state" style="display: none;">
+                                    <div class="loading-spinner">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </div>
+                                    <p class="loading-text">Carregando agendamentos...</p>
+                                </div>
+
+                                <!-- Empty State -->
+                                <div id="agenda-empty" class="empty-state" style="display: none;">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-calendar-x"></i>
+                                    </div>
+                                    <h4 class="empty-title">Nenhum agendamento encontrado</h4>
+                                    <p class="empty-description">Comece criando seu primeiro agendamento</p>
+                                    <button class="btn btn-primary btn-lg" onclick="agendaPage.novo()">
+                                        <i class="bi bi-plus-circle me-2"></i>
+                                        Criar Primeiro Agendamento
+                                    </button>
+                                </div>
+
+                                <!-- Agenda List -->
+                                <div id="agenda-list">
+                                    <!-- Os agendamentos serão renderizados aqui -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -974,24 +1271,58 @@
 
     <!-- JavaScript Core - Carregamento prioritário -->
     <!-- Scripts Críticos - Carregamento imediato -->
+    <script src="js/auth-router.js"></script>
     <script src="js/clear-auth.js"></script>
     <script src="js/security.js"></script>
     <script src="js/core/api.js"></script>
     <script src="js/theme.js"></script>
+    <script src="js/notification-manager.js"></script>
     <script src="js/main.js"></script>
+    
+    <!-- Sistema de Lazy Loading Inteligente -->
+    <script src="js/lazy-loader.js"></script>
+    <script src="js/page-cache.js"></script>
+    <!-- <script src="js/api-optimizer.js"></script> -->
+    <script src="js/theme-sync.js"></script>
+    
+    <!-- Scripts de Otimização - Carregamento prioritário -->
+    <script src="js/performance-optimizer-simple.js"></script>
+    <script src="js/image-optimizer.js"></script>
+    
+    <!-- Script para sincronização do tema -->
+    <script>
+        
+        // Melhorar sincronização do tema
+        window.addEventListener('themeChanged', function(event) {
+            console.log('🎨 Tema alterado para:', event.detail.theme);
+            
+            // Forçar re-render de elementos da agenda
+            const agendaContent = document.getElementById('agenda-content');
+            if (agendaContent) {
+                // Disparar evento customizado para a página da agenda
+                agendaContent.dispatchEvent(new CustomEvent('themeUpdate', {
+                    detail: { theme: event.detail.theme }
+                }));
+            }
+        });
+    </script>
     
     <!-- Scripts Não-Críticos - Carregamento diferido -->
     <script src="js/animated-cards.js" defer></script>
     <script src="js/router.js" defer></script>
-    <script src="js/pages/clientes.js" defer></script>
-    <script src="js/pages/servicos.js" defer></script>
-    <script src="js/pages/agenda.js" defer></script>
-    <script src="js/pages/usuarios.js" defer></script>
-    <script src="js/pages/configuracoes.js" defer></script>
-    <script src="js/pages/whatsapp.js" defer></script>
     <script src="js/notifications.js" defer></script>
-    <script src="js/toast-notifications.js" defer></script>
-    <script src="js/dashboard.js" defer></script>
+    
+    <!-- Scripts das Páginas - Carregamento sob demanda (removidos do carregamento inicial) -->
+    <!-- Estes scripts serão carregados automaticamente quando o usuário navegar para cada página -->
+    <!-- js/pages/clientes.js - Carregado sob demanda -->
+    <!-- js/pages/servicos.js - Carregado sob demanda -->
+    <!-- js/pages/agenda.js - Carregado sob demanda -->
+    <!-- js/pages/usuarios.js - Carregado sob demanda -->
+    <!-- js/pages/configuracoes.js - Carregado sob demanda -->
+    <!-- js/pages/whatsapp.js - Carregado sob demanda -->
+    <!-- js/dashboard.js - Carregado imediatamente para o dashboard principal -->
+    <script src="js/dashboard.js"></script>
+    
     
     <!-- Scripts Externos - Carregamento diferido -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>

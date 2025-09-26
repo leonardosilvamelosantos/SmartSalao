@@ -219,8 +219,6 @@ class BaseModel {
    * Atualizar registro por ID
    */
   async update(id, data, tenantId = null, schema = null) {
-    console.log(`🔄 BaseModel.update: ${this.tableName} - ID: ${id}, data:`, data, `tenantId: ${tenantId}, schema: ${schema}`);
-    
     let tableName = this.tableName;
     if (schema) {
       const isSQLite = isSQLiteRuntime;
@@ -235,7 +233,7 @@ class BaseModel {
 
     let query = `
       UPDATE ${tableName}
-      SET ${setClause}, updated_at = CURRENT_TIMESTAMP
+      SET ${setClause}, updated_at = NOW()
       WHERE ${this.primaryKey} = ${isSQLite ? '?' : `$${columns.length + 1}`}
     `;
 
@@ -247,12 +245,8 @@ class BaseModel {
       values.push(tenantId);
     }
 
-    console.log(`🔄 Query: ${query}`);
-    console.log(`🔄 Values:`, values);
-    
     // Executar UPDATE
     const result = await pool.query(query, values);
-    console.log(`🔄 Resultado do UPDATE:`, result);
 
     // Para SQLite, buscar o registro atualizado
     if (isSQLite) {

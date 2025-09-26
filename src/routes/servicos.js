@@ -8,6 +8,16 @@ const { requireOwnership } = require('../middleware/auth');
 const { checkLimits } = require('../middleware/tenant');
 
 /**
+ * GET /api/servicos/export - Exportar serviços do usuário (JSON)
+ */
+router.get('/export', servicoController.export);
+
+/**
+ * POST /api/servicos/import - Importar serviços em massa (JSON)
+ */
+router.post('/import', servicoController.import);
+
+/**
  * GET /api/servicos - Listar serviços
  * Query params: page, limit, id_usuario, search
  */
@@ -260,7 +270,7 @@ router.put('/:id', async (req, res) => {
     ];
     const updateResult = await pool.query(updateSql, updateParams);
 
-    if (updateResult.changes === 0) {
+    if (updateResult.rowCount === 0) {
       return res.status(500).json({
         success: false,
         message: 'Falha ao atualizar serviço'
@@ -294,36 +304,74 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const pool = require('../config/database');
     const idUsuario = req.user?.id || 1;
-    const idTenant = req.user?.tenant_id || req.tenant?.id || null;
+    const idTenant = req.user?.tenant_id || req.tenant?.id || req.user?.id_tenant || null;
+    
+    console.log('🗑️ DELETE /api/servicos/:id - Iniciando exclusão');
+    console.log('  - ID do serviço:', id);
+    console.log('  - ID do usuário:', idUsuario);
+    console.log('  - ID do tenant:', idTenant);
+    console.log('  - Usuário autenticado:', req.user);
+
+    // Verificar existência da coluna id_tenant em servicos
+    console.log('🔍 Verificando coluna id_tenant em servicos...');
+    const col = await pool.query("SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='servicos' AND column_name='id_tenant'");
+    const hasTenantCol = col.rows.length > 0;
+    console.log('  - hasTenantCol:', hasTenantCol);
 
     // Validar se há agendamentos vinculados ao serviço
-    // Verificar existência da coluna id_tenant em agendamentos
+    console.log('🔍 Verificando agendamentos vinculados...');
     const colA = await pool.query("SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='agendamentos' AND column_name='id_tenant'");
     const hasTenantAg = colA.rows.length > 0;
+    console.log('  - hasTenantAg:', hasTenantAg);
+    
     const agSql = hasTenantAg ?
       'SELECT COUNT(*) as c FROM agendamentos WHERE id_servico = $1 AND (id_tenant = $2 OR id_tenant IS NULL)' :
       'SELECT COUNT(*) as c FROM agendamentos WHERE id_servico = $1';
     const agRes = await pool.query(agSql, hasTenantAg ? [id, idTenant] : [id]);
-    if (parseInt(agRes.rows?.[0]?.c || 0) > 0) {
+    const agendamentosCount = parseInt(agRes.rows?.[0]?.c || 0);
+    console.log('  - Agendamentos vinculados:', agendamentosCount);
+    
+    if (agendamentosCount > 0) {
+      console.log('❌ Serviço tem agendamentos vinculados, não pode ser deletado');
       return res.status(400).json({
         success: false,
         message: 'Não é possível deletar serviço com agendamentos vinculados'
       });
     }
 
+    // Se não temos o tenant, buscar do serviço
+    let finalTenant = idTenant;
+    if (hasTenantCol && !idTenant) {
+      console.log('🔍 Buscando tenant do serviço...');
+      const servicoQuery = await pool.query('SELECT id_tenant FROM servicos WHERE id_servico = $1', [id]);
+      if (servicoQuery.rows.length > 0) {
+        finalTenant = servicoQuery.rows[0].id_tenant;
+        console.log('  - Tenant encontrado:', finalTenant);
+      }
+    }
+
     // Tentar deletar o serviço diretamente
+    console.log('🗑️ Executando exclusão do serviço...');
     const delSql = hasTenantCol ?
       'DELETE FROM servicos WHERE id_servico = $1 AND id_usuario = $2 AND (id_tenant = $3 OR id_tenant IS NULL)' :
       'DELETE FROM servicos WHERE id_servico = $1 AND id_usuario = $2';
-    const deleteResult = await pool.query(delSql, hasTenantCol ? [id, idUsuario, idTenant] : [id, idUsuario]);
+    const deleteParams = hasTenantCol ? [id, idUsuario, finalTenant] : [id, idUsuario];
+    
+    console.log('  - SQL:', delSql);
+    console.log('  - Parâmetros:', deleteParams);
+    
+    const deleteResult = await pool.query(delSql, deleteParams);
+    console.log('  - Resultado:', deleteResult.rowCount, 'linhas afetadas');
 
-    if (deleteResult.changes === 0) {
+    if (deleteResult.rowCount === 0) {
+      console.log('❌ Nenhuma linha foi afetada - serviço não encontrado');
       return res.status(404).json({
         success: false,
         message: 'Serviço não encontrado ou já foi deletado'
       });
     }
 
+    console.log('✅ Serviço deletado com sucesso');
     res.json({
       success: true,
       message: 'Serviço deletado com sucesso'
@@ -374,7 +422,7 @@ router.patch('/:id/status', async (req, res) => {
       'UPDATE servicos SET ativo = $1 WHERE id_servico = $2 AND id_usuario = $3';
     const updateResult = await pool.query(updSql, hasTenantCol ? [newStatus ? true : false, id, idUsuario, idTenant] : [newStatus ? true : false, id, idUsuario]);
 
-    if (updateResult.changes === 0) {
+    if (updateResult.rowCount === 0) {
       return res.status(500).json({
         success: false,
         message: 'Falha ao atualizar status do serviço'

@@ -139,7 +139,7 @@ class NotificationService {
           c.whatsapp as cliente_whatsapp,
           s.nome_servico,
           s.duracao_min,
-          s.preco,
+          s.valor,
           u.nome as usuario_nome
         FROM agendamentos a
         JOIN clientes c ON a.id_cliente = c.id_cliente

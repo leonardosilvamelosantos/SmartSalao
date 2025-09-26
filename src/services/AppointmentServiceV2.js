@@ -31,7 +31,7 @@ class AppointmentServiceV2 {
           s.id_servico as id,
           s.nome_servico as name,
           s.duracao_min as duration_minutes,
-          s.preco as price,
+          s.valor as price,
           s.descricao as description,
           s.ativo as is_active,
           s.created_at,
@@ -42,7 +42,7 @@ class AppointmentServiceV2 {
           AND a.data_agendamento >= NOW() - INTERVAL '30 days'
         WHERE a.id_usuario = $1
           AND ($2::boolean IS NULL OR s.ativo = $2)
-        GROUP BY s.id_servico, s.nome_servico, s.duracao_min, s.preco, s.descricao, s.ativo, s.created_at
+        GROUP BY s.id_servico, s.nome_servico, s.duracao_min, s.valor, s.descricao, s.ativo, s.created_at
         ORDER BY s.ativo DESC, s.nome_servico ASC
         LIMIT $3 OFFSET $4
       `;

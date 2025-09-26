@@ -148,12 +148,12 @@ class ValidationQueries {
 
     // Cria novo cliente
     const createQuery = `
-      INSERT INTO clientes (id_usuario, nome, whatsapp, email, created_at)
-      VALUES ($1, $2, $3, $4, NOW())
-      RETURNING id_cliente, nome, whatsapp, email
+      INSERT INTO clientes (id_usuario, nome, whatsapp, created_at)
+      VALUES ($1, $2, $3, NOW())
+      RETURNING id_cliente, nome, whatsapp
     `;
 
-    result = await pool.query(createQuery, [barberId, name, phone, email || null]);
+    result = await pool.query(createQuery, [barberId, name, phone]);
     return result.rows[0];
   }
 

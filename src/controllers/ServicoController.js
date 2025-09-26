@@ -374,7 +374,7 @@ class ServicoController {
           s.*,
           COUNT(a.id_agendamento) as total_agendamentos,
           COUNT(CASE WHEN a.status = 'completed' THEN 1 END) as agendamentos_concluidos,
-          AVG(CASE WHEN a.status = 'completed' THEN s.preco END) as receita_media,
+          AVG(CASE WHEN a.status = 'completed' THEN s.valor END) as receita_media,
           MAX(a.data_agendamento) as ultimo_agendamento
         FROM servicos s
         LEFT JOIN agendamentos a ON s.id_servico = a.id_servico
@@ -393,6 +393,143 @@ class ServicoController {
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor'
+      });
+    }
+  }
+
+  /**
+   * Exportar serviços do usuário (JSON)
+   */
+  async export(req, res) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Usuário não autenticado' });
+      }
+
+      const servicos = await Servico.findByUsuario(userId);
+      
+      res.json({
+        success: true,
+        data: servicos,
+        total: servicos.length
+      });
+
+    } catch (error) {
+      console.error('Erro ao exportar serviços:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Erro interno do servidor' 
+      });
+    }
+  }
+
+  /**
+   * Importar serviços em massa (JSON)
+   */
+  async import(req, res) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Usuário não autenticado' });
+      }
+
+      const payload = req.body;
+      const lista = Array.isArray(payload) ? payload : payload?.data;
+      if (!Array.isArray(lista)) {
+        return res.status(400).json({ success: false, message: 'Formato inválido. Envie um array de serviços ou { data: [...] }' });
+      }
+
+      let inseridos = 0;
+      let atualizados = 0;
+      let ignorados = 0;
+      const resultados = [];
+
+      for (const item of lista) {
+        const nome = (item.nome_servico || item.nome || item.name || '').toString().trim();
+        const duracao = parseInt(item.duracao_min || item.duracao || item.duration || 0);
+        const valor = parseFloat(item.valor || item.price || item.preco || 0);
+        const descricao = (item.descricao || item.description || '').toString().trim();
+        const ativo = item.ativo !== undefined ? !!item.ativo : (item.active !== undefined ? !!item.active : true);
+
+        if (!nome || !duracao || valor < 0) {
+          ignorados++;
+          resultados.push({ 
+            status: 'ignored', 
+            reason: 'dados obrigatórios ausentes (nome, duração ou valor inválido)', 
+            item 
+          });
+          continue;
+        }
+
+        // Verificar existente por nome e usuário
+        const existente = await Servico.query(
+          'SELECT * FROM servicos WHERE id_usuario = ? AND nome_servico = ?',
+          [userId, nome]
+        );
+
+        if (existente && existente.length > 0) {
+          const servicoExistente = existente[0];
+          // Atualizar campos se vierem preenchidos
+          const update = {};
+          if (duracao && duracao !== servicoExistente.duracao_min) update.duracao_min = duracao;
+          if (valor !== servicoExistente.valor) update.valor = valor;
+          if (descricao && descricao !== servicoExistente.descricao) update.descricao = descricao;
+          if (ativo !== servicoExistente.ativo) update.ativo = ativo;
+
+          if (Object.keys(update).length > 0) {
+            await Servico.update(servicoExistente.id_servico, update);
+            atualizados++;
+            resultados.push({ 
+              status: 'updated', 
+              id_servico: servicoExistente.id_servico, 
+              nome_servico: nome 
+            });
+          } else {
+            ignorados++;
+            resultados.push({ 
+              status: 'skipped', 
+              id_servico: servicoExistente.id_servico, 
+              nome_servico: nome 
+            });
+          }
+          continue;
+        }
+
+        // Criar novo serviço
+        const novo = await Servico.create({
+          id_usuario: userId,
+          nome_servico: nome,
+          duracao_min: duracao,
+          valor: valor,
+          descricao: descricao || null,
+          ativo: ativo
+        });
+        inseridos++;
+        resultados.push({ 
+          status: 'created', 
+          id_servico: novo.id_servico, 
+          nome_servico: nome 
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Importação concluída',
+        data: {
+          inseridos,
+          atualizados,
+          ignorados,
+          total: lista.length,
+          resultados
+        }
+      });
+
+    } catch (error) {
+      console.error('Erro ao importar serviços:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Erro interno do servidor' 
       });
     }
   }

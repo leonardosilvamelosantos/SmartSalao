@@ -28,9 +28,10 @@ class TenantMiddleware {
         });
       }
 
-      const { tenant_id, schema, plan, limits } = req.user;
+      const { tenant_id, tenantId, schema, plan, limits } = req.user;
+      const actualTenantId = tenant_id || tenantId;
 
-      if (!tenant_id) {
+      if (!actualTenantId) {
         logger.warn('TenantMiddleware: tenant_id ausente no token do usuário');
       }
 
@@ -39,7 +40,7 @@ class TenantMiddleware {
 
       // Configurar contexto do tenant na requisição
       req.tenant = {
-        id: tenant_id,
+        id: actualTenantId,
         schema: schema,
         plan: plan,
         limits: limits,

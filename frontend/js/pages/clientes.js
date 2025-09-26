@@ -169,19 +169,19 @@ class ClientesPage {
         
         if (camposVazios.length > 0) {
             const camposFaltando = camposVazios.map(campo => campo.nome).join(', ');
-            alert(`Preencha os seguintes campos obrigatórios: ${camposFaltando}`);
+            window.notificationManager?.showWarning(`Preencha os seguintes campos obrigatórios: ${camposFaltando}`);
             return;
         }
 
         // Validar WhatsApp
         if (data.whatsapp_cliente && !this.validarTelefone(data.whatsapp_cliente)) {
-            alert('WhatsApp inválido! Use apenas números.');
+            window.notificationManager?.showWarning('WhatsApp inválido! Use apenas números.');
             return;
         }
 
         // Validar email se fornecido
         if (data.email_cliente && !this.validarEmail(data.email_cliente)) {
-            alert('Email inválido!');
+            window.notificationManager?.showWarning('Email inválido!');
             return;
         }
 

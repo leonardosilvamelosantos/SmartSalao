@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Logo SVG</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .logo-test { margin: 20px 0; padding: 20px; border: 2px solid #ccc; border-radius: 8px; }
+        .logo-container { display: flex; align-items: center; gap: 15px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Teste do Logo SVG</h1>
+    
+    <div class="logo-test">
+        <h2>Logo SVG Inline</h2>
+        <div class="logo-container">
+            <div style="margin-right: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #D4AF37, #F4E4BC); border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" id="brand-logo" style="width: 24px; height: 24px;">
+                    <rect width="24" height="24" rx="4" fill="#D4AF37"/>
+                    <path d="M8 12H16M10 8V16M12 8V16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div>
+                <strong>Logo SVG Inline</strong><br>
+                <small>Este logo deve aparecer instantaneamente</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="logo-test">
+        <h2>Logo com Emoji Fallback</h2>
+        <div class="logo-container">
+            <div style="margin-right: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #D4AF37, #F4E4BC); border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <span style="font-size: 20px;">✂️</span>
+            </div>
+            <div>
+                <strong>Logo Emoji</strong><br>
+                <small>Fallback simples e confiável</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="logo-test">
+        <h2>Logo com Texto</h2>
+        <div class="logo-container">
+            <div style="margin-right: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #D4AF37, #F4E4BC); border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <span style="color: white; font-weight: bold; font-size: 16px;">S</span>
+            </div>
+            <div>
+                <strong>Logo Texto</strong><br>
+                <small>Inicial do SmartSalao</small>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        console.log('🚀 Teste do logo iniciado');
+        console.log('✅ Logo SVG deve estar visível');
+    </script>
+</body>
+</html>
+

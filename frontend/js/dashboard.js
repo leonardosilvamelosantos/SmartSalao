@@ -192,11 +192,19 @@ class DashboardManager {
     // Fechar sidebar mobile
     closeMobileSidebar() {
         const sidebarCollapse = document.getElementById('sidebarCollapse');
+        const overlay = document.getElementById('sidebarOverlay');
+        
+        // Fechar collapse do Bootstrap
         if (sidebarCollapse) {
             const bsCollapse = new bootstrap.Collapse(sidebarCollapse, {
                 toggle: false
             });
             bsCollapse.hide();
+        }
+        
+        // Remover overlay
+        if (overlay) {
+            overlay.classList.remove('show');
         }
     }
 
@@ -356,18 +364,22 @@ class DashboardManager {
     // Carregar próximos agendamentos
     async loadProximosAgendamentos() {
         try {
+            console.log('🔄 Dashboard: Carregando próximos agendamentos...');
             // Mostrar loading
             this.showAgendamentosLoading();
 
             const response = await this.app.apiRequest('/api/agendamentos?status=confirmed&limit=5&sort=start_at');
+            console.log('📡 Dashboard: Resposta da API:', response);
 
             if (response.success && response.data && response.data.length > 0) {
+                console.log('✅ Dashboard: Dados recebidos:', response.data.length, 'agendamentos');
                 this.renderProximosAgendamentos(response.data);
             } else {
+                console.log('⚠️ Dashboard: Nenhum agendamento encontrado ou dados inválidos');
                 this.renderEmptyAgendamentos();
             }
         } catch (error) {
-            console.error('Erro ao carregar próximos agendamentos:', error);
+            console.error('❌ Dashboard: Erro ao carregar próximos agendamentos:', error);
             this.renderEmptyAgendamentos();
         }
     }
@@ -417,6 +429,8 @@ class DashboardManager {
 
     // Renderizar próximos agendamentos com separação Hoje/Próximos
     renderProximosAgendamentos(agendamentos) {
+        console.log('🎨 Dashboard: Renderizando agendamentos:', agendamentos);
+        
         const loading = document.getElementById('agendamentos-loading');
         const empty = document.getElementById('agendamentos-empty');
         const list = document.getElementById('agendamentos-list');
@@ -427,6 +441,7 @@ class DashboardManager {
         if (list) list.style.display = 'block';
 
         if (!agendamentos || agendamentos.length === 0) {
+            console.log('⚠️ Dashboard: Nenhum agendamento para renderizar');
             this.renderEmptyAgendamentos();
             return;
         }
@@ -440,31 +455,28 @@ class DashboardManager {
         const agendamentosHoje = [];
         const agendamentosProximos = [];
 
-        // console.log('📅 Data de hoje:', hoje.toISOString()); // Otimizado - log removido
-        // console.log('📅 Agendamentos recebidos:', agendamentos.length); // Otimizado - log removido
+        console.log('📅 Dashboard: Separando agendamentos por data...');
+        console.log('📅 Dashboard: Data de hoje:', hoje.toISOString().split('T')[0]);
 
         agendamentos.forEach(agendamento => {
             const dataAgendamento = new Date(agendamento.start_at);
             
-            // Comparar apenas a data (sem hora) usando toDateString()
-            const dataAgendamentoStr = dataAgendamento.toDateString();
-            const hojeStr = hoje.toDateString();
-            
-            // console.log('📅 Agendamento data string:', dataAgendamentoStr); // Otimizado - log removido
-            // console.log('📅 Hoje string:', hojeStr); // Otimizado - log removido
-            // console.log('📅 São iguais?', dataAgendamentoStr === hojeStr); // Otimizado - log removido
+            // Comparar apenas a data (sem hora) - método mais simples e confiável
+            const dataAgendamentoStr = dataAgendamento.toISOString().split('T')[0];
+            const hojeStr = hoje.toISOString().split('T')[0];
+
+            console.log('📅 Dashboard: Agendamento:', agendamento.cliente_nome, 'Data:', dataAgendamentoStr, 'Hoje:', hojeStr);
 
             if (dataAgendamentoStr === hojeStr) {
                 agendamentosHoje.push(agendamento);
-                // console.log('✅ Adicionado a HOJE:', agendamento.cliente_nome); // Otimizado - log removido
+                console.log('✅ Dashboard: Agendamento de hoje:', agendamento.cliente_nome);
             } else {
                 agendamentosProximos.push(agendamento);
-                // console.log('✅ Adicionado a PRÓXIMOS:', agendamento.cliente_nome); // Otimizado - log removido
+                console.log('📅 Dashboard: Agendamento futuro:', agendamento.cliente_nome);
             }
         });
 
-        // console.log('📅 Agendamentos HOJE:', agendamentosHoje.length); // Otimizado - log removido
-        // console.log('📅 Agendamentos PRÓXIMOS:', agendamentosProximos.length); // Otimizado - log removido
+        console.log('📊 Dashboard: Resultado da separação - Hoje:', agendamentosHoje.length, 'Próximos:', agendamentosProximos.length);
 
         // Renderizar seção "Hoje"
         this.renderSecaoAgendamentos('agendamentos-hoje-list', agendamentosHoje, 'hoje-count');
@@ -523,37 +535,38 @@ class DashboardManager {
             }
 
             return `
-                <div class="appointment-item p-3 mb-3 border rounded">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="d-flex align-items-center">
-                            <div class="appointment-avatar me-3">
-                                <i class="bi bi-person-circle text-primary" style="font-size: 2.5rem;"></i>
+                <div class="appointment-card">
+                    <div class="appointment-card-header">
+                        <div class="appointment-client-info">
+                            <div class="appointment-avatar">
+                                <i class="bi bi-person-circle"></i>
                             </div>
-                            <div>
-                                <h6 class="mb-1">${agendamento.cliente_nome || 'Cliente'}</h6>
-                                <p class="mb-1 text-muted small">${agendamento.nome_servico || 'Serviço'}</p>
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-clock me-1 text-muted"></i>
-                                    <small class="text-muted">
-                                        ${dataHora.toLocaleDateString('pt-BR')} às ${dataHora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
-                                    </small>
-                                </div>
+                            <div class="appointment-details">
+                                <h6 class="appointment-client-name">${agendamento.cliente_nome || 'Cliente'}</h6>
+                                <p class="appointment-service">${agendamento.nome_servico || 'Serviço'}</p>
                             </div>
                         </div>
-                        <div class="text-end">
-                            <span class="badge ${badgeClass} mb-2">${statusText}</span>
-                            <div class="mt-2">
-                                <button class="btn btn-outline-primary btn-sm me-1" title="Editar" onclick="editarAgendamento(${agendamento.id})">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-outline-success btn-sm me-1" title="Concluir" onclick="concluirAgendamento(${agendamento.id})">
-                                    <i class="bi bi-check-circle"></i>
-                                </button>
-                                <button class="btn btn-outline-danger btn-sm" title="Cancelar" onclick="cancelarAgendamento(${agendamento.id})">
-                                    <i class="bi bi-x-circle"></i>
-                                </button>
+                        <div class="appointment-top-right">
+                            <div class="appointment-time">
+                                <i class="bi bi-clock"></i>
+                                <span>${dataHora.toLocaleDateString('pt-BR')} às ${dataHora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
                             </div>
+                            <span class="status-badge ${badgeClass}">${statusText}</span>
                         </div>
+                    </div>
+                    <div class="appointment-card-actions">
+                        <button class="action-btn-large complete-btn" title="Concluir" onclick="concluirAgendamento(${agendamento.id_agendamento || agendamento.id})">
+                            <i class="bi bi-check-circle"></i>
+                            <span>Concluir</span>
+                        </button>
+                        <button class="action-btn-large edit-btn" title="Editar" onclick="editarAgendamento(${agendamento.id_agendamento || agendamento.id})">
+                            <i class="bi bi-pencil"></i>
+                            <span>Editar</span>
+                        </button>
+                        <button class="action-btn-large cancel-btn" title="Cancelar" onclick="cancelarAgendamento(${agendamento.id_agendamento || agendamento.id})">
+                            <i class="bi bi-x-circle"></i>
+                            <span>Cancelar</span>
+                        </button>
                     </div>
                 </div>
             `;
@@ -818,8 +831,30 @@ document.head.appendChild(dashboardStyles);
 
 // Inicializar dashboard quando a página estiver carregada
 document.addEventListener('DOMContentLoaded', () => {
-    if (window.barbeirosApp) {
-        window.dashboardManager = new DashboardManager(window.barbeirosApp);
+    console.log('🔄 Dashboard.js: DOMContentLoaded - Inicializando dashboardManager...');
+    
+    // Função para criar dashboardManager
+    const createDashboardManager = () => {
+        if (window.barbeirosApp) {
+            console.log('✅ Dashboard.js: barbeirosApp disponível, criando dashboardManager');
+            window.dashboardManager = new DashboardManager(window.barbeirosApp);
+            console.log('✅ Dashboard.js: dashboardManager criado:', !!window.dashboardManager);
+            
+            // Disparar evento para notificar que dashboardManager está pronto
+            window.dispatchEvent(new CustomEvent('dashboardManager:ready', {
+                detail: { dashboardManager: window.dashboardManager }
+            }));
+        } else {
+            console.warn('⚠️ Dashboard.js: barbeirosApp não está disponível ainda');
+        }
+    };
+    
+    // Tentar criar imediatamente
+    createDashboardManager();
+    
+    // Se não conseguiu, tentar novamente após um delay
+    if (!window.dashboardManager) {
+        setTimeout(createDashboardManager, 100);
     }
 });
 
@@ -830,9 +865,10 @@ function refreshDashboard() {
     }
 }
 
-// Função global para fechar sidebar mobile
-function closeMobileSidebar() {
-    if (window.dashboardManager) {
-        window.dashboardManager.closeMobileSidebar();
-    }
-}
+// Função global para fechar sidebar mobile - REMOVIDA (conflito com main.js)
+// function closeMobileSidebar() {
+//     if (window.dashboardManager) {
+//         window.dashboardManager.closeMobileSidebar();
+//     }
+// }
+
